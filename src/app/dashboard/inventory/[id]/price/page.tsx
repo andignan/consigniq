@@ -6,9 +6,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
-  ExternalLink, AlertCircle, RefreshCw, Search, Camera, X,
+  ExternalLink, AlertCircle, RefreshCw, Search, Camera, X, Pencil,
 } from 'lucide-react'
-import type { Item } from '@/types'
+import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
@@ -25,6 +25,58 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null)
   const [manualPrice, setManualPrice] = useState('')
   const [pendingCount, setPendingCount] = useState<number | null>(null)
+
+  // Inline editing
+  const [editing, setEditing] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editCondition, setEditCondition] = useState<ItemCondition>('good')
+  const [editDescription, setEditDescription] = useState('')
+
+  function startEditing() {
+    if (!item) return
+    setEditName(item.name)
+    setEditCategory(item.category)
+    setEditCondition(item.condition)
+    setEditDescription(item.description ?? '')
+    setEditing(true)
+  }
+
+  function cancelEditing() {
+    setEditing(false)
+  }
+
+  async function saveEdits() {
+    if (!item || !editName.trim()) return
+    setEditSaving(true)
+    try {
+      const res = await fetch('/api/items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: item.id,
+          name: editName.trim(),
+          category: editCategory,
+          condition: editCondition,
+          description: editDescription.trim() || null,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to save')
+      setItem(prev => prev ? {
+        ...prev,
+        name: editName.trim(),
+        category: editCategory,
+        condition: editCondition,
+        description: editDescription.trim() || null,
+      } : prev)
+      setEditing(false)
+    } catch {
+      setError('Failed to save item details')
+    } finally {
+      setEditSaving(false)
+    }
+  }
 
   // Photo
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -303,35 +355,117 @@ export default function PricingPage() {
 
       {/* Item details card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">{item.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
-                {item.category}
-              </span>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                {item.condition}
-              </span>
-              {(item as Item & { consignor?: { name: string } }).consignor?.name && (
-                <span className="text-xs text-gray-400">
-                  {(item as Item & { consignor?: { name: string } }).consignor?.name}
-                </span>
-              )}
+        {editing ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Item Name</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                disabled={editSaving}
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+              />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+                <select
+                  value={editCategory}
+                  onChange={e => setEditCategory(e.target.value)}
+                  disabled={editSaving}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  {ITEM_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Condition</label>
+                <select
+                  value={editCondition}
+                  onChange={e => setEditCondition(e.target.value as ItemCondition)}
+                  disabled={editSaving}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  {Object.entries(CONDITION_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+              <textarea
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                disabled={editSaving}
+                rows={3}
+                placeholder="Brand, size, color, markings, damage, extras (box, papers)..."
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={saveEdits}
+                disabled={editSaving || !editName.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                Save
+              </button>
+              <button
+                onClick={cancelEditing}
+                disabled={editSaving}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-            item.status === 'pending'
-              ? 'bg-amber-50 text-amber-600'
-              : item.status === 'priced'
-              ? 'bg-emerald-50 text-emerald-600'
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {item.status}
-          </span>
-        </div>
-        {item.description && (
-          <p className="text-sm text-gray-500">{item.description}</p>
+        ) : (
+          <>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-gray-900">{item.name}</h1>
+                  <button
+                    onClick={startEditing}
+                    className="text-gray-300 hover:text-indigo-500 transition-colors"
+                    title="Edit item details"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
+                    {item.category}
+                  </span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    {item.condition}
+                  </span>
+                  {(item as Item & { consignor?: { name: string } }).consignor?.name && (
+                    <span className="text-xs text-gray-400">
+                      {(item as Item & { consignor?: { name: string } }).consignor?.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                item.status === 'pending'
+                  ? 'bg-amber-50 text-amber-600'
+                  : item.status === 'priced'
+                  ? 'bg-emerald-50 text-emerald-600'
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                {item.status}
+              </span>
+            </div>
+            {item.description && (
+              <p className="text-sm text-gray-500">{item.description}</p>
+            )}
+          </>
         )}
       </div>
 
