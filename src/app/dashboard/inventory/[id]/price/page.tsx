@@ -1,18 +1,18 @@
 // app/dashboard/inventory/[id]/price/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
-  ExternalLink, AlertCircle, RefreshCw, Search,
+  ExternalLink, AlertCircle, RefreshCw, Search, Camera, X,
 } from 'lucide-react'
 import type { Item } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
-type Stage = 'loading' | 'loaded' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'applying' | 'done' | 'error'
+type Stage = 'loading' | 'loaded' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'applying' | 'done' | 'error'
 
 export default function PricingPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +25,62 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null)
   const [manualPrice, setManualPrice] = useState('')
   const [pendingCount, setPendingCount] = useState<number | null>(null)
+
+  // Photo
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null)
+  const [photoMediaType, setPhotoMediaType] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handlePhoto(file: File) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setError('Only JPG, PNG, and WebP images are supported')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => setPhotoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+
+    const bytes = await file.arrayBuffer()
+    const base64 = Buffer.from(bytes).toString('base64')
+    setPhotoBase64(base64)
+    setPhotoMediaType(file.type)
+
+    // Call identify API to update item details
+    setStage('identifying')
+    setError(null)
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Identification failed')
+      }
+      const { result } = await res.json()
+      // Update the item in local state with AI-identified details
+      setItem(prev => prev ? {
+        ...prev,
+        name: result.name,
+        category: result.category,
+        condition: result.condition,
+        description: result.description,
+      } : prev)
+      setStage('loaded')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Photo identification failed')
+      setStage('loaded')
+    }
+  }
+
+  function clearPhoto() {
+    setPhotoPreview(null)
+    setPhotoBase64(null)
+    setPhotoMediaType(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   // Load item
   useEffect(() => {
@@ -109,6 +165,7 @@ export default function PricingPage() {
           condition: item.condition,
           description: item.description,
           comps: fetchedComps,
+          ...(photoBase64 && photoMediaType ? { photoBase64, photoMediaType } : {}),
         }),
       })
       if (!suggestRes.ok) {
@@ -277,6 +334,54 @@ export default function PricingPage() {
           <p className="text-sm text-gray-500">{item.description}</p>
         )}
       </div>
+
+      {/* Photo Upload */}
+      {(stage === 'loaded' || stage === 'identifying') && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) handlePhoto(file)
+            }}
+          />
+          {photoPreview ? (
+            <div className="relative">
+              <img
+                src={photoPreview}
+                alt="Item photo"
+                className="w-full h-48 object-contain rounded-xl bg-gray-50"
+              />
+              <button
+                onClick={clearPhoto}
+                className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+              {stage === 'identifying' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
+                  <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Identifying item...
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={stage === 'identifying'}
+              className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+            >
+              <Camera className="w-5 h-5" />
+              Upload a photo to re-identify &amp; enhance pricing
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Action buttons */}
       {stage === 'loaded' && (
