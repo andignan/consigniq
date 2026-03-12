@@ -373,10 +373,10 @@ export default function PricingPage() {
           {comps.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                eBay Sold Comparables ({comps.length})
+                eBay Comparable Sales
               </h2>
               <div className="space-y-2">
-                {comps.map((comp, i) => (
+                {comps.slice(0, 5).map((comp, i) => (
                   <a
                     key={i}
                     href={comp.link}

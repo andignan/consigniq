@@ -42,10 +42,14 @@ export default function PriceLookupPage() {
       if (compsRes.ok) {
         const data = await compsRes.json()
         fetchedComps = data.comps ?? []
+        console.log('[price-lookup] Comps response:', { source: data.source, count: fetchedComps.length, comps: fetchedComps })
+      } else {
+        console.error('[price-lookup] Comps fetch failed:', compsRes.status)
       }
-    } catch {
-      // Comps are optional
+    } catch (err) {
+      console.error('[price-lookup] Comps fetch error:', err)
     }
+    console.log('[price-lookup] Setting comps state:', fetchedComps.length)
     setComps(fetchedComps)
 
     // Step 2: AI pricing
@@ -232,10 +236,10 @@ export default function PriceLookupPage() {
           {comps.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                eBay Sold Comparables ({comps.length})
+                eBay Comparable Sales
               </h2>
               <div className="space-y-2">
-                {comps.map((comp, i) => (
+                {comps.slice(0, 5).map((comp, i) => (
                   <a
                     key={i}
                     href={comp.link}
