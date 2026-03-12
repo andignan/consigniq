@@ -33,11 +33,13 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams({
       engine: 'ebay',
       _nkw: searchQuery,
-      LH_ItemCondition: '3000',  // used items only
+      LH_Sold: '1',
+      LH_Complete: '1',
       api_key: serpApiKey,
     })
-    // tbs filter for sold/completed listings
-    params.set('tbs', 'LH_Complete:1,LH_Sold:1')
+
+    const debugUrl = `https://serpapi.com/search.json?${new URLSearchParams({ ...Object.fromEntries(params), api_key: '***' })}`
+    console.log('[comps] SerpApi request URL:', debugUrl)
 
     const res = await fetch(`https://serpapi.com/search.json?${params}`)
     if (!res.ok) {
@@ -56,8 +58,10 @@ export async function POST(request: NextRequest) {
         link: results[0].link?.substring(0, 60),
       }))
     }
-    if (results.length === 0 && data.error) {
-      console.error('[comps] SerpApi error in body:', data.error)
+    if (results.length === 0) {
+      console.log('[comps] Zero results. Response keys:', Object.keys(data))
+      if (data.error) console.error('[comps] SerpApi error in body:', data.error)
+      if (data.search_information) console.log('[comps] search_information:', JSON.stringify(data.search_information))
     }
 
     const comps: CompResult[] = results

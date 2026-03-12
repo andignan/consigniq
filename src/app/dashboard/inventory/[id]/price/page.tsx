@@ -469,6 +469,9 @@ export default function PricingPage() {
         )}
       </div>
 
+      {/* Everything below is hidden during edit mode */}
+      {!editing && <>
+
       {/* Photo Upload */}
       {(stage === 'loaded' || stage === 'identifying') && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
@@ -703,6 +706,8 @@ export default function PricingPage() {
           </button>
         </div>
       )}
+
+      </>}
     </div>
   )
 }
