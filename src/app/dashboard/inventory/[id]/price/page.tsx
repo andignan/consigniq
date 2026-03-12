@@ -6,13 +6,13 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
-  ExternalLink, AlertCircle, RefreshCw,
+  ExternalLink, AlertCircle, RefreshCw, Search,
 } from 'lucide-react'
 import type { Item } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
-type Stage = 'loading' | 'loaded' | 'fetching-comps' | 'pricing' | 'ready' | 'applying' | 'done' | 'error'
+type Stage = 'loading' | 'loaded' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'applying' | 'done' | 'error'
 
 export default function PricingPage() {
   const { id } = useParams<{ id: string }>()
@@ -35,7 +35,6 @@ export default function PricingPage() {
         const { items } = await allRes.json()
         const found = (items as Item[]).find(i => i.id === id)
         if (!found) {
-          // Try without status filter in case item was already priced
           const anyRes = await fetch(`/api/items?search=`)
           const { items: allItems } = await anyRes.json()
           const anyFound = (allItems as Item[]).find((i: Item) => i.id === id)
@@ -53,16 +52,11 @@ export default function PricingPage() {
     loadItem()
   }, [id])
 
-  // Run AI pricing pipeline
-  async function runPricing() {
-    if (!item) return
-    setError(null)
-
-    // Step 1: Fetch comps
+  async function fetchComps(): Promise<CompResult[]> {
+    if (!item) return []
     setStage('fetching-comps')
-    let fetchedComps: CompResult[] = []
     try {
-      const compsRes = await fetch('/api/pricing/comps', {
+      const res = await fetch('/api/pricing/comps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,16 +66,38 @@ export default function PricingPage() {
           condition: item.condition,
         }),
       })
-      if (compsRes.ok) {
-        const data = await compsRes.json()
-        fetchedComps = data.comps ?? []
+      if (res.ok) {
+        const data = await res.json()
+        return data.comps ?? []
       }
     } catch {
-      // Comps are optional — continue without them
+      // Comps are optional
     }
+    return []
+  }
+
+  async function runCompsOnly() {
+    if (!item) return
+    setError(null)
+    setSuggestion(null)
+    setComps([])
+    setManualPrice('')
+
+    const fetchedComps = await fetchComps()
+    setComps(fetchedComps)
+    setStage('comps-ready')
+  }
+
+  async function runFullPricing() {
+    if (!item) return
+    setError(null)
+    setSuggestion(null)
+    setComps([])
+    setManualPrice('')
+
+    const fetchedComps = await fetchComps()
     setComps(fetchedComps)
 
-    // Step 2: AI pricing
     setStage('pricing')
     try {
       const suggestRes = await fetch('/api/pricing/suggest', {
@@ -95,12 +111,10 @@ export default function PricingPage() {
           comps: fetchedComps,
         }),
       })
-
       if (!suggestRes.ok) {
         const errData = await suggestRes.json()
         throw new Error(errData.error ?? 'Pricing failed')
       }
-
       const { suggestion: s } = await suggestRes.json()
       setSuggestion(s)
       setStage('ready')
@@ -110,13 +124,14 @@ export default function PricingPage() {
     }
   }
 
-  // Determine which price to apply
   const hasManualPrice = manualPrice !== '' && parseFloat(manualPrice) > 0
   const finalPrice = hasManualPrice ? parseFloat(manualPrice) : suggestion?.price ?? 0
+  const hasResults = stage === 'comps-ready' || stage === 'ready'
+  // Comps-only mode requires manual price; full AI mode can use suggestion or manual
+  const canApply = hasResults && (suggestion ? finalPrice > 0 : hasManualPrice)
 
-  // Apply the price (manual override or AI suggestion)
   async function applyPrice() {
-    if (!item || (!suggestion && !hasManualPrice)) return
+    if (!item || !canApply) return
     setStage('applying')
     try {
       const res = await fetch('/api/items', {
@@ -132,7 +147,6 @@ export default function PricingPage() {
       })
       if (!res.ok) throw new Error('Failed to apply price')
 
-      // Check how many pending items remain
       try {
         const pendingRes = await fetch('/api/items?status=pending')
         if (pendingRes.ok) {
@@ -140,7 +154,7 @@ export default function PricingPage() {
           setPendingCount((pending as Item[]).length)
         }
       } catch {
-        // Non-critical — just won't know the count
+        // Non-critical
       }
 
       setStage('done')
@@ -165,7 +179,7 @@ export default function PricingPage() {
       <div className="max-w-xl mx-auto px-4 py-8 text-center">
         <p className="text-sm text-red-600">{error ?? 'Item not found'}</p>
         <Link href="/dashboard" className="text-indigo-600 text-sm mt-4 block">
-          ← Back to Dashboard
+          &larr; Back to Dashboard
         </Link>
       </div>
     )
@@ -264,15 +278,24 @@ export default function PricingPage() {
         )}
       </div>
 
-      {/* Action area */}
+      {/* Action buttons */}
       {stage === 'loaded' && (
-        <button
-          onClick={runPricing}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm text-sm"
-        >
-          <Sparkles className="w-4 h-4" />
-          Get AI Price Suggestion
-        </button>
+        <div className="flex gap-3 mb-4">
+          <button
+            onClick={runCompsOnly}
+            className="flex-1 flex items-center justify-center gap-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-semibold py-3.5 rounded-xl transition-colors text-sm"
+          >
+            <Search className="w-4 h-4" />
+            eBay Comps Only
+          </button>
+          <button
+            onClick={runFullPricing}
+            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm text-sm"
+          >
+            <Sparkles className="w-4 h-4" />
+            Full AI Pricing
+          </button>
+        </div>
       )}
 
       {/* Progress states */}
@@ -298,76 +321,33 @@ export default function PricingPage() {
       )}
 
       {/* Results */}
-      {stage === 'ready' && suggestion && (
+      {hasResults && (
         <div className="space-y-4">
-          {/* Price suggestion */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
-            </div>
+          {/* AI Price suggestion (only in full pricing mode) */}
+          {suggestion && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
+              </div>
 
-            {/* Price display */}
-            <div className="flex items-baseline gap-3 mb-3">
-              <div className="flex items-baseline gap-1">
-                <DollarSign className="w-5 h-5 text-gray-400 self-center" />
-                <span className="text-3xl font-bold text-gray-900">
-                  {suggestion.price.toFixed(2)}
+              <div className="flex items-baseline gap-3 mb-3">
+                <div className="flex items-baseline gap-1">
+                  <DollarSign className="w-5 h-5 text-gray-400 self-center" />
+                  <span className="text-3xl font-bold text-gray-900">
+                    {suggestion.price.toFixed(2)}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-400">
+                  Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
                 </span>
               </div>
-              <span className="text-sm text-gray-400">
-                Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
-              </span>
-            </div>
 
-            {/* Reasoning */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
-            </div>
-
-            {/* Manual override */}
-            <div className="border border-gray-200 rounded-xl p-4 mb-4">
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                Manual Price Override
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={manualPrice}
-                  onChange={e => setManualPrice(e.target.value)}
-                  placeholder={suggestion.price.toFixed(2)}
-                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
               </div>
-              {hasManualPrice && (
-                <p className="text-xs text-amber-600 mt-1.5">
-                  Manual price will be used instead of AI suggestion
-                </p>
-              )}
             </div>
-
-            {/* Apply button */}
-            <div className="flex gap-3">
-              <button
-                onClick={applyPrice}
-                disabled={stage !== 'ready'}
-                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Apply Price — ${finalPrice.toFixed(2)}
-              </button>
-              <button
-                onClick={runPricing}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition-colors text-sm"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Retry
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Comparable sales */}
           {comps.length > 0 && (
@@ -408,11 +388,67 @@ export default function PricingPage() {
               </div>
             </div>
           )}
+
+          {/* No comps found (comps-only mode) */}
+          {comps.length === 0 && !suggestion && (
+            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 text-center">
+              <p className="text-sm text-gray-400">No eBay comparable sales found for this item.</p>
+            </div>
+          )}
+
+          {/* Manual price + Apply */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="border border-gray-200 rounded-xl p-4 mb-4">
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                {suggestion ? 'Manual Price Override' : 'Enter Price'}
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={manualPrice}
+                  onChange={e => setManualPrice(e.target.value)}
+                  placeholder={suggestion ? suggestion.price.toFixed(2) : '0.00'}
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              {hasManualPrice && suggestion && (
+                <p className="text-xs text-amber-600 mt-1.5">
+                  Manual price will be used instead of AI suggestion
+                </p>
+              )}
+              {!suggestion && !hasManualPrice && (
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Enter a price based on the comps above
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={applyPrice}
+                disabled={!canApply}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {canApply ? `Apply Price — $${finalPrice.toFixed(2)}` : 'Enter a price to apply'}
+              </button>
+              <button
+                onClick={suggestion ? runFullPricing : runCompsOnly}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition-colors text-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Error state */}
-      {stage === 'error' && error && (
+      {stage === 'error' && error && item && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="w-4 h-4 text-red-500" />
@@ -420,7 +456,7 @@ export default function PricingPage() {
           </div>
           <p className="text-sm text-red-600 mb-3">{error}</p>
           <button
-            onClick={runPricing}
+            onClick={runFullPricing}
             className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />

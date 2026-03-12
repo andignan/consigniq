@@ -4,13 +4,13 @@
 import { useRef, useState } from 'react'
 import {
   Sparkles, Loader2, DollarSign, ExternalLink, RefreshCw, AlertCircle,
-  Camera, X,
+  Camera, X, Search,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type ItemCondition } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
-type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'ready' | 'error'
+type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'error'
 
 export default function PriceLookupPage() {
   // Form
@@ -38,18 +38,15 @@ export default function PriceLookupPage() {
       return
     }
 
-    // Show preview
     const reader = new FileReader()
     reader.onload = () => setPhotoPreview(reader.result as string)
     reader.readAsDataURL(file)
 
-    // Store base64 for pricing call
     const bytes = await file.arrayBuffer()
     const base64 = Buffer.from(bytes).toString('base64')
     setPhotoBase64(base64)
     setPhotoMediaType(file.type)
 
-    // Call identify API
     setStage('identifying')
     setError(null)
     try {
@@ -62,9 +59,7 @@ export default function PriceLookupPage() {
       }
       const { result } = await res.json()
       setName(result.name)
-      if (ITEM_CATEGORIES.includes(result.category)) {
-        setCategory(result.category)
-      }
+      if (ITEM_CATEGORIES.includes(result.category)) setCategory(result.category)
       if (['excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
         setCondition(result.condition as ItemCondition)
       }
@@ -83,35 +78,44 @@ export default function PriceLookupPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  async function runPricing() {
+  async function fetchComps(): Promise<CompResult[]> {
+    setStage('fetching-comps')
+    try {
+      const res = await fetch('/api/pricing/comps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, description, condition }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        return data.comps ?? []
+      }
+    } catch (err) {
+      console.error('[price-lookup] Comps fetch error:', err)
+    }
+    return []
+  }
+
+  async function runCompsOnly() {
     if (!name.trim()) return
     setError(null)
     setSuggestion(null)
     setComps([])
 
-    // Step 1: Fetch comps
-    setStage('fetching-comps')
-    let fetchedComps: CompResult[] = []
-    try {
-      const compsRes = await fetch('/api/pricing/comps', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category, description, condition }),
-      })
-      if (compsRes.ok) {
-        const data = await compsRes.json()
-        fetchedComps = data.comps ?? []
-        console.log('[price-lookup] Comps response:', { source: data.source, count: fetchedComps.length, comps: fetchedComps })
-      } else {
-        console.error('[price-lookup] Comps fetch failed:', compsRes.status)
-      }
-    } catch (err) {
-      console.error('[price-lookup] Comps fetch error:', err)
-    }
-    console.log('[price-lookup] Setting comps state:', fetchedComps.length)
+    const fetchedComps = await fetchComps()
+    setComps(fetchedComps)
+    setStage(fetchedComps.length > 0 ? 'comps-ready' : 'comps-ready')
+  }
+
+  async function runFullPricing() {
+    if (!name.trim()) return
+    setError(null)
+    setSuggestion(null)
+    setComps([])
+
+    const fetchedComps = await fetchComps()
     setComps(fetchedComps)
 
-    // Step 2: AI pricing
     setStage('pricing')
     try {
       const suggestRes = await fetch('/api/pricing/suggest', {
@@ -122,12 +126,10 @@ export default function PriceLookupPage() {
           ...(photoBase64 && photoMediaType ? { photoBase64, photoMediaType } : {}),
         }),
       })
-
       if (!suggestRes.ok) {
         const errData = await suggestRes.json()
         throw new Error(errData.error ?? 'Pricing failed')
       }
-
       const { suggestion: s } = await suggestRes.json()
       setSuggestion(s)
       setStage('ready')
@@ -150,6 +152,7 @@ export default function PriceLookupPage() {
   }
 
   const isRunning = stage === 'identifying' || stage === 'fetching-comps' || stage === 'pricing'
+  const hasResults = stage === 'comps-ready' || stage === 'ready'
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -216,7 +219,7 @@ export default function PriceLookupPage() {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !isRunning && runPricing()}
+              onKeyDown={e => e.key === 'Enter' && !isRunning && runFullPricing()}
               placeholder="e.g. Waterford Crystal Lismore Vase"
               disabled={isRunning}
               className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
@@ -267,11 +270,28 @@ export default function PriceLookupPage() {
 
         <div className="flex gap-2 mt-4">
           <button
-            onClick={runPricing}
+            onClick={runCompsOnly}
+            disabled={!name.trim() || isRunning}
+            className="flex-1 flex items-center justify-center gap-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 disabled:border-gray-200 disabled:text-gray-400 font-semibold py-3 rounded-xl transition-colors text-sm"
+          >
+            {isRunning && !suggestion && stage === 'fetching-comps' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Searching comps...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4" />
+                eBay Comps Only
+              </>
+            )}
+          </button>
+          <button
+            onClick={runFullPricing}
             disabled={!name.trim() || isRunning}
             className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
-            {isRunning ? (
+            {isRunning && (stage === 'pricing' || (stage === 'fetching-comps' && !suggestion)) ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {stage === 'fetching-comps' ? 'Searching comps...' : 'Analyzing...'}
@@ -279,11 +299,11 @@ export default function PriceLookupPage() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Get AI Price Suggestion
+                Full AI Pricing
               </>
             )}
           </button>
-          {(stage === 'ready' || stage === 'error') && (
+          {(hasResults || stage === 'error') && (
             <button
               onClick={reset}
               className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition-colors text-sm"
@@ -307,39 +327,41 @@ export default function PriceLookupPage() {
       )}
 
       {/* Results */}
-      {stage === 'ready' && suggestion && (
+      {hasResults && (
         <div className="space-y-4">
-          {/* Price suggestion */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
-            </div>
+          {/* AI Price suggestion (only in full pricing mode) */}
+          {suggestion && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
+              </div>
 
-            <div className="flex items-baseline gap-3 mb-3">
-              <div className="flex items-baseline gap-1">
-                <DollarSign className="w-5 h-5 text-gray-400 self-center" />
-                <span className="text-3xl font-bold text-gray-900">
-                  {suggestion.price.toFixed(2)}
+              <div className="flex items-baseline gap-3 mb-3">
+                <div className="flex items-baseline gap-1">
+                  <DollarSign className="w-5 h-5 text-gray-400 self-center" />
+                  <span className="text-3xl font-bold text-gray-900">
+                    {suggestion.price.toFixed(2)}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-400">
+                  Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
                 </span>
               </div>
-              <span className="text-sm text-gray-400">
-                Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
-              </span>
-            </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
-            </div>
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
+              </div>
 
-            <button
-              onClick={runPricing}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Re-run
-            </button>
-          </div>
+              <button
+                onClick={runFullPricing}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Re-run
+              </button>
+            </div>
+          )}
 
           {/* Comparable sales */}
           {comps.length > 0 && (
@@ -380,6 +402,13 @@ export default function PriceLookupPage() {
               </div>
             </div>
           )}
+
+          {/* No comps found */}
+          {comps.length === 0 && !suggestion && (
+            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 text-center">
+              <p className="text-sm text-gray-400">No eBay comparable sales found for this item.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -392,7 +421,7 @@ export default function PriceLookupPage() {
           </div>
           <p className="text-sm text-red-600 mb-3">{error}</p>
           <button
-            onClick={runPricing}
+            onClick={runFullPricing}
             className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
