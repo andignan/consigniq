@@ -23,6 +23,8 @@ export default function PricingPage() {
   const [suggestion, setSuggestion] = useState<PriceSuggestion | null>(null)
   const [stage, setStage] = useState<Stage>('loading')
   const [error, setError] = useState<string | null>(null)
+  const [manualPrice, setManualPrice] = useState('')
+  const [pendingCount, setPendingCount] = useState<number | null>(null)
 
   // Load item
   useEffect(() => {
@@ -108,9 +110,13 @@ export default function PricingPage() {
     }
   }
 
-  // Apply the suggested price
+  // Determine which price to apply
+  const hasManualPrice = manualPrice !== '' && parseFloat(manualPrice) > 0
+  const finalPrice = hasManualPrice ? parseFloat(manualPrice) : suggestion?.price ?? 0
+
+  // Apply the price (manual override or AI suggestion)
   async function applyPrice() {
-    if (!suggestion || !item) return
+    if (!item || (!suggestion && !hasManualPrice)) return
     setStage('applying')
     try {
       const res = await fetch('/api/items', {
@@ -118,13 +124,25 @@ export default function PricingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: item.id,
-          price: suggestion.price,
-          low_price: suggestion.low,
-          high_price: suggestion.high,
-          ai_reasoning: suggestion.reasoning,
+          price: finalPrice,
+          low_price: hasManualPrice ? null : suggestion?.low ?? null,
+          high_price: hasManualPrice ? null : suggestion?.high ?? null,
+          ai_reasoning: suggestion?.reasoning ?? null,
         }),
       })
       if (!res.ok) throw new Error('Failed to apply price')
+
+      // Check how many pending items remain
+      try {
+        const pendingRes = await fetch('/api/items?status=pending')
+        if (pendingRes.ok) {
+          const { items: pending } = await pendingRes.json()
+          setPendingCount((pending as Item[]).length)
+        }
+      } catch {
+        // Non-critical — just won't know the count
+      }
+
       setStage('done')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply price')
@@ -163,24 +181,38 @@ export default function PricingPage() {
           <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
           <h2 className="text-lg font-bold text-gray-900 mb-1">Price Applied</h2>
           <p className="text-sm text-gray-500 mb-1">
-            {item.name} — <strong>${suggestion?.price.toFixed(2)}</strong>
+            {item.name} — <strong>${finalPrice.toFixed(2)}</strong>
           </p>
-          <p className="text-xs text-gray-400 mb-6">
-            Range: ${suggestion?.low.toFixed(2)} – ${suggestion?.high.toFixed(2)}
-          </p>
+          {!hasManualPrice && suggestion && (
+            <p className="text-xs text-gray-400 mb-6">
+              Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
+            </p>
+          )}
+          {hasManualPrice && (
+            <p className="text-xs text-gray-400 mb-6">Manual override</p>
+          )}
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => router.back()}
+            <Link
+              href="/dashboard/inventory?status=priced"
               className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
             >
-              Back
-            </button>
-            <Link
-              href="/dashboard/inventory?status=pending"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
-            >
-              Price Next Item
+              View Priced
             </Link>
+            {pendingCount != null && pendingCount > 0 ? (
+              <Link
+                href="/dashboard/inventory?status=pending"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+              >
+                Price Next Item ({pendingCount})
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard/inventory"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+              >
+                View Inventory
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -293,6 +325,30 @@ export default function PricingPage() {
               <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
             </div>
 
+            {/* Manual override */}
+            <div className="border border-gray-200 rounded-xl p-4 mb-4">
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                Manual Price Override
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={manualPrice}
+                  onChange={e => setManualPrice(e.target.value)}
+                  placeholder={suggestion.price.toFixed(2)}
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              {hasManualPrice && (
+                <p className="text-xs text-amber-600 mt-1.5">
+                  Manual price will be used instead of AI suggestion
+                </p>
+              )}
+            </div>
+
             {/* Apply button */}
             <div className="flex gap-3">
               <button
@@ -301,7 +357,7 @@ export default function PricingPage() {
                 className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
               >
                 <CheckCircle className="w-4 h-4" />
-                Apply Price — ${suggestion.price.toFixed(2)}
+                Apply Price — ${finalPrice.toFixed(2)}
               </button>
               <button
                 onClick={runPricing}

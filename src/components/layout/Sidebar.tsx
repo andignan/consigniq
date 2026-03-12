@@ -27,16 +27,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: 'Intake',
-    href: '/dashboard/intake',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
     label: 'Inventory',
     href: '/dashboard/inventory',
     icon: (
@@ -47,7 +37,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: 'Pricing',
+    label: 'Price Lookup',
     href: '/dashboard/pricing',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

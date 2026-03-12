@@ -368,10 +368,10 @@ function IntakeRow({
           )}
         </div>
 
-        {/* Fields */}
-        <div className="flex-1 grid grid-cols-12 gap-2">
-          {/* Name — 5 cols */}
-          <div className="col-span-12 sm:col-span-5">
+        {/* Fields — stacked two rows */}
+        <div className="flex-1 space-y-2">
+          {/* Row 1: Name, Category, Condition */}
+          <div className="flex gap-2">
             <input
               ref={isFirst ? firstInputRef : undefined}
               type="text"
@@ -380,13 +380,10 @@ function IntakeRow({
               onKeyDown={onNameKeyDown}
               placeholder="Item name"
               disabled={draft.saved || draft.saving}
-              className="item-name-input w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
+              className="item-name-input flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
             />
-          </div>
 
-          {/* Category — 3 cols */}
-          <div className="col-span-6 sm:col-span-3">
-            <div className="relative">
+            <div className="relative w-40 shrink-0">
               <select
                 id={`category-${draft.id}`}
                 value={draft.category}
@@ -400,11 +397,8 @@ function IntakeRow({
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
-          </div>
 
-          {/* Condition — 2 cols */}
-          <div className="col-span-6 sm:col-span-2">
-            <div className="relative">
+            <div className="relative w-28 shrink-0">
               <select
                 id={`condition-${draft.id}`}
                 value={draft.condition}
@@ -420,18 +414,16 @@ function IntakeRow({
             </div>
           </div>
 
-          {/* Notes — full width below on mobile, 2 cols sm */}
-          <div className="col-span-12 sm:col-span-2">
-            <input
-              type="text"
-              value={draft.description}
-              onChange={e => onChange(draft.id, 'description', e.target.value)}
-              onKeyDown={onDescKeyDown}
-              placeholder="Notes…"
-              disabled={draft.saved || draft.saving}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
-            />
-          </div>
+          {/* Row 2: Description — full width */}
+          <textarea
+            value={draft.description}
+            onChange={e => onChange(draft.id, 'description', e.target.value)}
+            onKeyDown={onDescKeyDown}
+            placeholder="Notes / description (brand, size, color, markings, damage...)"
+            disabled={draft.saved || draft.saving}
+            rows={2}
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
+          />
         </div>
 
         {/* Remove */}
