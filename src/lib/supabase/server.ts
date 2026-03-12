@@ -1,13 +1,12 @@
-// src/lib/supabase/server.ts
-// Server-side Supabase client — use in Server Components, Route Handlers, Server Actions
-import { createServerClient } from '@supabase/ssr'
+// lib/supabase/server.ts
+// Server-side Supabase client (use in Server Components and API routes)
+import { createServerClient as createSSRClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import type { Database } from '@/types/database'
 
-export async function createClient() {
-  const cookieStore = await cookies()
+export function createServerClient() {
+  const cookieStore = cookies()
 
-  return createServerClient<Database>(
+  return createSSRClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -21,10 +20,11 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Called from Server Component — middleware handles session refresh
+            // Server Component — cookie setting will be handled by middleware
           }
         },
       },
     }
   )
 }
+export const createClient = createServerClient

@@ -5,28 +5,10 @@
 export type Tier = 'starter' | 'standard' | 'pro'
 export type AccountStatus = 'active' | 'suspended' | 'cancelled'
 export type UserRole = 'owner' | 'staff'
-export type ItemCondition = 'excellent' | 'good' | 'fair' | 'poor'
+export type ItemCondition = 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
 export type ItemStatus = 'pending' | 'priced' | 'sold' | 'donated' | 'returned'
 export type ConsignorStatus = 'active' | 'expired' | 'grace' | 'closed'
 export type MarkdownTrigger = 'schedule' | 'manual'
-
-export type ItemCategory =
-  | 'clothing'
-  | 'shoes'
-  | 'furniture'
-  | 'jewelry'
-  | 'silver'
-  | 'china'
-  | 'crystal'
-  | 'collectibles'
-  | 'art'
-  | 'electronics'
-  | 'books'
-  | 'games'
-  | 'toys'
-  | 'tools'
-  | 'luxury'
-  | 'other'
 
 // ─── Row types (what comes back from Supabase queries) ────────
 
@@ -50,7 +32,7 @@ export interface Location {
   default_split_store: number
   default_split_consignor: number
   agreement_days: number
-  grace_period_days: number
+  grace_days: number
   markdown_enabled: boolean
   created_at: string
 }
@@ -75,11 +57,12 @@ export interface Consignor {
   intake_date: string
   expiry_date: string
   grace_end_date: string
-  split_pct_store: number
-  split_pct_consignor: number
+  split_store: number
+  split_consignor: number
   notes: string | null
   status: ConsignorStatus
   created_at: string
+  created_by: string | null
 }
 
 export interface Item {
@@ -88,7 +71,7 @@ export interface Item {
   location_id: string
   consignor_id: string
   name: string
-  category: ItemCategory
+  category: string
   condition: ItemCondition
   description: string | null
   photo_url: string | null
@@ -98,14 +81,15 @@ export interface Item {
   ai_reasoning: string | null
   status: ItemStatus
   intake_date: string
-  priced_date: string | null
+  priced_at: string | null
   sold_date: string | null
   sold_price: number | null
-  donated_date: string | null
+  donated_at: string | null
   current_markdown_pct: number
   effective_price: number | null
   created_at: string
   updated_at: string
+  created_by: string | null
 }
 
 export interface PriceHistory {
@@ -146,6 +130,17 @@ export interface Markdown {
   triggered_by: MarkdownTrigger
 }
 
+export interface Invitation {
+  id: string
+  account_id: string
+  email: string
+  role: string
+  token: string
+  accepted_at: string | null
+  expires_at: string
+  created_at: string
+}
+
 // ─── Database type for Supabase client generics ───────────────
 
 export interface Database {
@@ -159,6 +154,7 @@ export interface Database {
       price_history: { Row: PriceHistory; Insert: Partial<PriceHistory>; Update: Partial<PriceHistory> }
       agreements: { Row: Agreement; Insert: Partial<Agreement>; Update: Partial<Agreement> }
       markdowns: { Row: Markdown; Insert: Partial<Markdown>; Update: Partial<Markdown> }
+      invitations: { Row: Invitation; Insert: Partial<Invitation>; Update: Partial<Invitation> }
     }
   }
 }
