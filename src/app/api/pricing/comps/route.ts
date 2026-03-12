@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ comps, source: 'ebay' })
   } catch (err) {
-    console.error('Comp lookup failed:', err)
-    return NextResponse.json({ comps: [], source: 'error' })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Comp lookup failed:', message)
+    return NextResponse.json({ comps: [], source: 'error', detail: message })
   }
 }

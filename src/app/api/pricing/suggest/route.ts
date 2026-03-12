@@ -5,8 +5,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getCategoryConfig } from '@/lib/pricing/categories'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 
-const anthropic = new Anthropic()
-
 export interface PriceSuggestion {
   price: number
   low: number
@@ -60,7 +58,16 @@ Important:
 - The reasoning should be concise and helpful for the store owner
 - If comps suggest a wide range, lean toward the middle-low end for faster turnover`
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { error: 'ANTHROPIC_API_KEY is not set in environment variables' },
+      { status: 500 }
+    )
+  }
+
   try {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 300,
@@ -68,23 +75,36 @@ Important:
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    const parsed = JSON.parse(text) as PriceSuggestion
 
-    // Validate the response
+    let parsed: PriceSuggestion
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      console.error('Failed to parse AI response:', text)
+      return NextResponse.json(
+        { error: 'AI returned invalid JSON: ' + text.substring(0, 200) },
+        { status: 500 }
+      )
+    }
+
     if (
       typeof parsed.price !== 'number' ||
       typeof parsed.low !== 'number' ||
       typeof parsed.high !== 'number' ||
       typeof parsed.reasoning !== 'string'
     ) {
-      throw new Error('Invalid response shape')
+      return NextResponse.json(
+        { error: 'AI returned unexpected shape: ' + JSON.stringify(parsed).substring(0, 200) },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ suggestion: parsed })
   } catch (err) {
-    console.error('AI pricing failed:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('AI pricing failed:', message)
     return NextResponse.json(
-      { error: 'AI pricing failed. Please try again.' },
+      { error: 'AI pricing failed: ' + message },
       { status: 500 }
     )
   }
