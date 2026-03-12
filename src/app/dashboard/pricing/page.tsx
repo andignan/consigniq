@@ -107,14 +107,19 @@ export default function PriceLookupPage() {
     setStage(fetchedComps.length > 0 ? 'comps-ready' : 'comps-ready')
   }
 
-  async function runFullPricing() {
+  async function runFullPricing(existingComps?: CompResult[]) {
     if (!name.trim()) return
     setError(null)
     setSuggestion(null)
-    setComps([])
 
-    const fetchedComps = await fetchComps()
-    setComps(fetchedComps)
+    let fetchedComps: CompResult[]
+    if (existingComps) {
+      fetchedComps = existingComps
+    } else {
+      setComps([])
+      fetchedComps = await fetchComps()
+      setComps(fetchedComps)
+    }
 
     setStage('pricing')
     try {
@@ -287,7 +292,7 @@ export default function PriceLookupPage() {
             )}
           </button>
           <button
-            onClick={runFullPricing}
+            onClick={() => runFullPricing()}
             disabled={!name.trim() || isRunning}
             className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
@@ -354,7 +359,7 @@ export default function PriceLookupPage() {
               </div>
 
               <button
-                onClick={runFullPricing}
+                onClick={() => runFullPricing()}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -409,6 +414,17 @@ export default function PriceLookupPage() {
               <p className="text-sm text-gray-400">No eBay comparable sales found for this item.</p>
             </div>
           )}
+
+          {/* Escalate to AI pricing from comps-only */}
+          {stage === 'comps-ready' && !suggestion && (
+            <button
+              onClick={() => runFullPricing(comps)}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              Get AI Suggestion
+            </button>
+          )}
         </div>
       )}
 
@@ -421,7 +437,7 @@ export default function PriceLookupPage() {
           </div>
           <p className="text-sm text-red-600 mb-3">{error}</p>
           <button
-            onClick={runFullPricing}
+            onClick={() => runFullPricing()}
             className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />

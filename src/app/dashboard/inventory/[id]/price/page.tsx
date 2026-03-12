@@ -201,15 +201,20 @@ export default function PricingPage() {
     setStage('comps-ready')
   }
 
-  async function runFullPricing() {
+  async function runFullPricing(existingComps?: CompResult[]) {
     if (!item) return
     setError(null)
     setSuggestion(null)
-    setComps([])
-    setManualPrice('')
 
-    const fetchedComps = await fetchComps()
-    setComps(fetchedComps)
+    let fetchedComps: CompResult[]
+    if (existingComps) {
+      fetchedComps = existingComps
+    } else {
+      setComps([])
+      setManualPrice('')
+      fetchedComps = await fetchComps()
+      setComps(fetchedComps)
+    }
 
     setStage('pricing')
     try {
@@ -536,7 +541,7 @@ export default function PricingPage() {
             eBay Comps Only
           </button>
           <button
-            onClick={runFullPricing}
+            onClick={() => runFullPricing()}
             className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm text-sm"
           >
             <Sparkles className="w-4 h-4" />
@@ -643,6 +648,17 @@ export default function PricingPage() {
             </div>
           )}
 
+          {/* Escalate to AI pricing from comps-only */}
+          {stage === 'comps-ready' && !suggestion && (
+            <button
+              onClick={() => runFullPricing(comps)}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              Get AI Suggestion
+            </button>
+          )}
+
           {/* Manual price + Apply */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="border border-gray-200 rounded-xl p-4 mb-4">
@@ -683,7 +699,7 @@ export default function PricingPage() {
                 {canApply ? `Apply Price — $${finalPrice.toFixed(2)}` : 'Enter a price to apply'}
               </button>
               <button
-                onClick={suggestion ? runFullPricing : runCompsOnly}
+                onClick={() => suggestion ? runFullPricing() : runCompsOnly()}
                 className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition-colors text-sm"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -703,7 +719,7 @@ export default function PricingPage() {
           </div>
           <p className="text-sm text-red-600 mb-3">{error}</p>
           <button
-            onClick={runFullPricing}
+            onClick={() => runFullPricing()}
             className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
