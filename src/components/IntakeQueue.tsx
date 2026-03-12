@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import {
-  Plus, Trash2, Check, ChevronDown, Loader2, Package, ArrowRight
+  Plus, Trash2, Check, ChevronDown, Loader2, Package, ArrowRight, Camera,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 
@@ -350,17 +350,49 @@ function IntakeRow({
   onNameKeyDown,
   onDescKeyDown,
 }: IntakeRowProps) {
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [identifying, setIdentifying] = useState(false)
+
+  async function handlePhoto(file: File) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) return
+
+    setIdentifying(true)
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      if (!res.ok) return
+      const { result } = await res.json()
+      if (result.name) onChange(draft.id, 'name', result.name)
+      if (result.category && ITEM_CATEGORIES.includes(result.category)) {
+        onChange(draft.id, 'category', result.category)
+      }
+      if (result.condition && ['excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
+        onChange(draft.id, 'condition', result.condition)
+      }
+      if (result.description) onChange(draft.id, 'description', result.description)
+    } catch {
+      // Identification failed silently — manager can still type manually
+    } finally {
+      setIdentifying(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+
+  const isDisabled = draft.saved || draft.saving || identifying
+
   return (
     <div
       className={`p-4 transition-colors ${
-        draft.saving ? 'bg-indigo-50' : draft.saved ? 'bg-emerald-50' : 'bg-white hover:bg-gray-50/50'
+        draft.saving ? 'bg-indigo-50' : draft.saved ? 'bg-emerald-50' : identifying ? 'bg-violet-50' : 'bg-white hover:bg-gray-50/50'
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Row number */}
+        {/* Row number / status */}
         <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-medium flex items-center justify-center shrink-0 mt-2.5">
-          {draft.saving ? (
-            <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
+          {draft.saving || identifying ? (
+            <Loader2 className={`w-3 h-3 animate-spin ${identifying ? 'text-violet-500' : 'text-indigo-500'}`} />
           ) : draft.saved ? (
             <Check className="w-3 h-3 text-emerald-600" />
           ) : (
@@ -378,8 +410,8 @@ function IntakeRow({
               value={draft.name}
               onChange={e => onChange(draft.id, 'name', e.target.value)}
               onKeyDown={onNameKeyDown}
-              placeholder="Item name"
-              disabled={draft.saved || draft.saving}
+              placeholder={identifying ? 'Identifying item...' : 'Item name'}
+              disabled={isDisabled}
               className="item-name-input flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
             />
 
@@ -388,7 +420,7 @@ function IntakeRow({
                 id={`category-${draft.id}`}
                 value={draft.category}
                 onChange={e => onChange(draft.id, 'category', e.target.value)}
-                disabled={draft.saved || draft.saving}
+                disabled={isDisabled}
                 className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
               >
                 {ITEM_CATEGORIES.map(cat => (
@@ -403,7 +435,7 @@ function IntakeRow({
                 id={`condition-${draft.id}`}
                 value={draft.condition}
                 onChange={e => onChange(draft.id, 'condition', e.target.value as ItemCondition)}
-                disabled={draft.saved || draft.saving}
+                disabled={isDisabled}
                 className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
               >
                 {(Object.entries(CONDITION_LABELS) as [ItemCondition, string][]).map(([val, label]) => (
@@ -419,23 +451,44 @@ function IntakeRow({
             value={draft.description}
             onChange={e => onChange(draft.id, 'description', e.target.value)}
             onKeyDown={onDescKeyDown}
-            placeholder="Notes / description (brand, size, color, markings, damage...)"
-            disabled={draft.saved || draft.saving}
+            placeholder={identifying ? 'Identifying...' : 'Notes / description (brand, size, color, markings, damage...)'}
+            disabled={isDisabled}
             rows={2}
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
           />
         </div>
 
-        {/* Remove */}
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={draft.saved || draft.saving}
-          className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-30 mt-2.5"
-          title="Remove row"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {/* Photo + Remove buttons */}
+        <div className="flex flex-col gap-1.5 mt-2.5">
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) handlePhoto(file)
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={isDisabled}
+            className="text-gray-300 hover:text-indigo-500 transition-colors disabled:opacity-30"
+            title="Upload photo to auto-identify"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={draft.saved || draft.saving}
+            className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-30"
+            title="Remove row"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
