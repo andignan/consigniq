@@ -285,7 +285,7 @@ export function NewConsignorForm({
         )}
       </button>
       <p className="text-xs text-center text-gray-400">
-        You'll be taken straight to item intake after creating the consignor.
+        You&apos;ll be taken straight to item intake after creating the consignor.
       </p>
     </form>
   )

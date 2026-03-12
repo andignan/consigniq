@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Plus, Tag, Phone, Mail, FileText,
-  Clock, Package, AlertTriangle, Trash2, DollarSign
+  Package, AlertTriangle, Trash2
 } from 'lucide-react'
 import { getLifecycleStatus, COLOR_CLASSES, CONDITION_LABELS, type Item } from '@/types'
 
@@ -207,7 +207,7 @@ export default async function ConsignorDetailPage({
         ) : (
           <div className="divide-y divide-gray-50">
             {items.map(item => (
-              <ItemRow key={item.id} item={item} consignorId={params.id} />
+              <ItemRow key={item.id} item={item} />
             ))}
           </div>
         )}
@@ -239,7 +239,7 @@ function StatBox({
   )
 }
 
-function ItemRow({ item, consignorId }: { item: Item; consignorId: string }) {
+function ItemRow({ item }: { item: Item }) {
   const isPending = item.status === 'pending'
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors">

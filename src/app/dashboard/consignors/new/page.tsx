@@ -37,7 +37,7 @@ export default async function NewConsignorPage({
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">New Consignor</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Fill in the consignor's info, then you'll be taken straight to item intake.
+          Fill in the consignor&apos;s info, then you&apos;ll be taken straight to item intake.
         </p>
       </div>
 

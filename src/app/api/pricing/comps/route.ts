@@ -33,10 +33,11 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams({
       engine: 'ebay',
       _nkw: searchQuery,
-      LH_Complete: '1', // completed listings
-      LH_Sold: '1',     // sold only
+      LH_ItemCondition: '3000',  // used items only
       api_key: serpApiKey,
     })
+    // tbs filter for sold/completed listings
+    params.set('tbs', 'LH_Complete:1,LH_Sold:1')
 
     const res = await fetch(`https://serpapi.com/search.json?${params}`)
     if (!res.ok) {

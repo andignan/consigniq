@@ -1,15 +1,16 @@
 // app/dashboard/pricing/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Sparkles, Loader2, DollarSign, ExternalLink, RefreshCw, AlertCircle,
+  Camera, X,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type ItemCondition } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
-type Stage = 'idle' | 'fetching-comps' | 'pricing' | 'ready' | 'error'
+type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'ready' | 'error'
 
 export default function PriceLookupPage() {
   // Form
@@ -18,11 +19,69 @@ export default function PriceLookupPage() {
   const [condition, setCondition] = useState<ItemCondition>('good')
   const [description, setDescription] = useState('')
 
+  // Photo
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null)
+  const [photoMediaType, setPhotoMediaType] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Results
   const [comps, setComps] = useState<CompResult[]>([])
   const [suggestion, setSuggestion] = useState<PriceSuggestion | null>(null)
   const [stage, setStage] = useState<Stage>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  async function handlePhoto(file: File) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setError('Only JPG, PNG, and WebP images are supported')
+      return
+    }
+
+    // Show preview
+    const reader = new FileReader()
+    reader.onload = () => setPhotoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+
+    // Store base64 for pricing call
+    const bytes = await file.arrayBuffer()
+    const base64 = Buffer.from(bytes).toString('base64')
+    setPhotoBase64(base64)
+    setPhotoMediaType(file.type)
+
+    // Call identify API
+    setStage('identifying')
+    setError(null)
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Identification failed')
+      }
+      const { result } = await res.json()
+      setName(result.name)
+      if (ITEM_CATEGORIES.includes(result.category)) {
+        setCategory(result.category)
+      }
+      if (['excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
+        setCondition(result.condition as ItemCondition)
+      }
+      setDescription(result.description)
+      setStage('idle')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Photo identification failed')
+      setStage('idle')
+    }
+  }
+
+  function clearPhoto() {
+    setPhotoPreview(null)
+    setPhotoBase64(null)
+    setPhotoMediaType(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   async function runPricing() {
     if (!name.trim()) return
@@ -58,7 +117,10 @@ export default function PriceLookupPage() {
       const suggestRes = await fetch('/api/pricing/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category, condition, description, comps: fetchedComps }),
+        body: JSON.stringify({
+          name, category, condition, description, comps: fetchedComps,
+          ...(photoBase64 && photoMediaType ? { photoBase64, photoMediaType } : {}),
+        }),
       })
 
       if (!suggestRes.ok) {
@@ -84,9 +146,10 @@ export default function PriceLookupPage() {
     setSuggestion(null)
     setStage('idle')
     setError(null)
+    clearPhoto()
   }
 
-  const isRunning = stage === 'fetching-comps' || stage === 'pricing'
+  const isRunning = stage === 'identifying' || stage === 'fetching-comps' || stage === 'pricing'
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -96,6 +159,52 @@ export default function PriceLookupPage() {
         <p className="text-sm text-gray-400">
           Quick pricing tool — nothing saved to the database
         </p>
+      </div>
+
+      {/* Photo Upload */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0]
+            if (file) handlePhoto(file)
+          }}
+        />
+        {photoPreview ? (
+          <div className="relative">
+            <img
+              src={photoPreview}
+              alt="Item photo"
+              className="w-full h-48 object-contain rounded-xl bg-gray-50"
+            />
+            <button
+              onClick={clearPhoto}
+              className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+            {stage === 'identifying' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
+                <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Identifying item...
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isRunning}
+            className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+          >
+            <Camera className="w-5 h-5" />
+            Upload a photo to auto-identify
+          </button>
+        )}
       </div>
 
       {/* Form */}
@@ -186,7 +295,7 @@ export default function PriceLookupPage() {
       </div>
 
       {/* Progress bar */}
-      {isRunning && (
+      {(stage === 'fetching-comps' || stage === 'pricing') && (
         <div className="flex gap-2 mb-4">
           <div className={`h-1.5 rounded-full flex-1 transition-colors ${
             stage === 'fetching-comps' ? 'bg-indigo-500 animate-pulse' : 'bg-indigo-500'

@@ -1,7 +1,7 @@
 'use client'
 // src/components/layout/Sidebar.tsx
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/types/database'
 
@@ -47,6 +47,16 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: 'Pending Items',
+    href: '/dashboard/inventory?status=pending',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     label: 'Reports',
     href: '/dashboard/reports',
     icon: (
@@ -64,7 +74,9 @@ interface SidebarProps {
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
+  const fullPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -88,8 +100,11 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map(item => {
-          const active = pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href))
+          const hasQuery = item.href.includes('?')
+          const active = hasQuery
+            ? fullPath === item.href
+            : pathname === item.href ||
+              (item.href !== '/dashboard' && pathname.startsWith(item.href))
 
           return (
             <Link

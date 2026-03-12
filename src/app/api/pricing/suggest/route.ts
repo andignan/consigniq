@@ -13,12 +13,14 @@ export interface PriceSuggestion {
 }
 
 export async function POST(request: NextRequest) {
-  const { name, category, condition, description, comps } = await request.json() as {
+  const { name, category, condition, description, comps, photoBase64, photoMediaType } = await request.json() as {
     name: string
     category: string
     condition: string
     description?: string
     comps: CompResult[]
+    photoBase64?: string
+    photoMediaType?: string
   }
 
   if (!name || !category || !condition) {
@@ -68,10 +70,25 @@ Important:
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+    const userContent: Anthropic.MessageCreateParams['messages'][0]['content'] =
+      photoBase64 && photoMediaType
+        ? [
+            {
+              type: 'image' as const,
+              source: {
+                type: 'base64' as const,
+                media_type: photoMediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+                data: photoBase64,
+              },
+            },
+            { type: 'text' as const, text: prompt },
+          ]
+        : prompt
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content: userContent }],
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''

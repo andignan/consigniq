@@ -84,7 +84,7 @@ export function IntakeQueue({
   }
 
   // Enter key on name field: move to category select
-  function handleNameKeyDown(e: React.KeyboardEvent, rowId: string, rowIndex: number) {
+  function handleNameKeyDown(e: React.KeyboardEvent, rowId: string) {
     if (e.key === 'Enter') {
       e.preventDefault()
       const categoryEl = document.getElementById(`category-${rowId}`)
@@ -263,7 +263,7 @@ export function IntakeQueue({
               firstInputRef={index === 0 ? firstInputRef : undefined}
               onChange={updateDraft}
               onRemove={() => removeRow(draft.id)}
-              onNameKeyDown={(e) => handleNameKeyDown(e, draft.id, index)}
+              onNameKeyDown={(e) => handleNameKeyDown(e, draft.id)}
               onDescKeyDown={(e) => handleDescKeyDown(e, draft.id, index)}
             />
           ))}
