@@ -1,5 +1,6 @@
 'use client'
 // src/components/layout/Sidebar.tsx
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -77,6 +78,12 @@ export default function Sidebar({ user }: SidebarProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const fullPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname, searchParams])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -85,8 +92,8 @@ export default function Sidebar({ user }: SidebarProps) {
     router.refresh()
   }
 
-  return (
-    <aside className="w-60 bg-stone-900 flex flex-col h-full shrink-0">
+  const sidebarContent = (
+    <>
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-800">
         <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
@@ -142,6 +149,48 @@ export default function Sidebar({ user }: SidebarProps) {
           Sign out
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile: header bar + overlay (hidden on md+) */}
+      <div className="block md:hidden">
+        {/* Fixed header bar with hamburger */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-stone-900 border-b border-stone-800 px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="text-white p-1"
+            aria-label="Open menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
+        </div>
+
+        {/* Sidebar overlay */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setMobileOpen(false)}
+            />
+            {/* Sidebar panel */}
+            <aside className="relative w-60 bg-stone-900 flex flex-col h-full">
+              {sidebarContent}
+            </aside>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: always-visible sidebar (hidden below md) */}
+      <aside className="hidden md:flex w-60 bg-stone-900 flex-col h-full shrink-0">
+        {sidebarContent}
+      </aside>
+    </>
   )
 }
