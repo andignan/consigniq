@@ -101,8 +101,8 @@ export interface PriceHistory {
   name: string
   description: string | null
   condition: string | null
-  priced_at: number
-  sold_at: number | null
+  priced_at: string
+  sold_at: string | null
   days_to_sell: number | null
   sold: boolean
   created_at: string

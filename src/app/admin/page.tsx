@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Building2, MapPin, Users, Package, UserCheck } from 'lucide-react'
+import { Loader2, Building2, MapPin, Users, Package, UserCheck, Globe } from 'lucide-react'
 
 interface Stats {
   accounts: { total: number; byTier: { starter: number; standard: number; pro: number }; byStatus: { active: number; suspended: number; cancelled: number } }
@@ -11,15 +11,27 @@ interface Stats {
   consignors: { total: number; byStatus: { active: number; expired: number; grace: number; closed: number } }
 }
 
+interface NetworkStats {
+  total_records: number
+  sold_items: number
+  top_categories: Array<{ category: string; count: number }>
+  avg_days_to_sell: number | null
+}
+
 export default function AdminOverview() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [networkStats, setNetworkStats] = useState<NetworkStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/admin/stats', { credentials: 'include' })
-        if (res.ok) setStats(await res.json())
+        const [statsRes, networkRes] = await Promise.all([
+          fetch('/api/admin/stats', { credentials: 'include' }),
+          fetch('/api/admin/network-stats', { credentials: 'include' }),
+        ])
+        if (statsRes.ok) setStats(await statsRes.json())
+        if (networkRes.ok) setNetworkStats(await networkRes.json())
       } catch {
         // handled by null stats
       } finally {
@@ -97,6 +109,51 @@ export default function AdminOverview() {
           </div>
         </div>
       </div>
+
+      {/* Network Pricing Stats */}
+      {networkStats && (
+        <div className="mt-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="w-5 h-5 text-blue-500" />
+              <h2 className="text-sm font-semibold text-gray-900">Network Pricing Intelligence</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <p className="text-xs text-gray-500">Total Records</p>
+                <p className="text-xl font-bold text-gray-900">{networkStats.total_records.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Sold Items</p>
+                <p className="text-xl font-bold text-gray-900">{networkStats.sold_items.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Sell-Through</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {networkStats.total_records > 0 ? Math.round((networkStats.sold_items / networkStats.total_records) * 100) : 0}%
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Avg Days to Sell</p>
+                <p className="text-xl font-bold text-gray-900">{networkStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
+              </div>
+            </div>
+            {networkStats.top_categories.length > 0 && (
+              <>
+                <h3 className="text-xs font-medium text-gray-500 mb-2">Top Categories</h3>
+                <div className="space-y-2">
+                  {networkStats.top_categories.map(cat => (
+                    <div key={cat.category} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">{cat.category}</span>
+                      <span className="text-sm font-medium text-gray-900">{cat.count.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

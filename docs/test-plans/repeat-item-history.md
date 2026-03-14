@@ -35,6 +35,17 @@ Price history recording on item sale, "Priced Before" panel on inventory pricing
 - [ ] Panel shows at most 5 items in the UI (even if API returns more)
 - [ ] Price history write is non-blocking — if insert fails, sold update still succeeds
 
+## Column Type Constraint
+`price_history.priced_at` and `sold_at` are `timestamptz` columns (NOT numeric). Migration `20260314050000` converted these from the original numeric type. The items route writes ISO timestamp strings (e.g., `"2026-03-01T14:30:00.000Z"` for `priced_at`, `"2026-03-12"` for `sold_at`), which PostgreSQL accepts as valid `timestamptz` input.
+
+### Manual Verification
+1. Mark a priced item as sold in the UI
+2. Open Supabase Dashboard → Table Editor → `price_history`
+3. Find the new row by `item_id`
+4. Verify `priced_at` is a valid timestamp (e.g., `2026-03-01 14:30:00+00`)
+5. Verify `sold_at` is a valid timestamp (e.g., `2026-03-12 00:00:00+00`)
+6. Verify neither field contains a raw number
+
 ## Role Enforcement
 - [ ] Both owner and staff can see "Priced Before" panel when pricing items
 - [ ] Price history is scoped by `account_id` — cannot see other accounts' history
@@ -58,5 +69,5 @@ Price history recording on item sale, "Priced Before" panel on inventory pricing
 - [ ] Scrolling works properly with panel above photo upload
 
 ## Current Status
-- **Automated**: 8 API tests for `/api/price-history` + 1 price_history write test in items
-- **Manual**: Full UI workflow verification required with sold item history
+- **Automated**: 8 API tests for `/api/price-history` + 4 price_history write tests in items (incl. timestamp type regression test)
+- **Manual**: Full UI workflow verification required with sold item history + column type verification in Supabase

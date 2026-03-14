@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (116 tests across unit + API)
+- `npm test` — Jest test suite (158 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -54,6 +54,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
+- `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
 
 ### UserContext
 
@@ -136,6 +137,7 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - Inline editing of item details (inventory pricing only)
 - Manual price override with apply
 - "Priced Before" panel (inventory pricing only) — shows similar previously-sold items from `price_history` with avg sold price and avg days to sell
+- "Market Intelligence" panel (inventory pricing only, Pro tier) — cross-account pricing data from the entire ConsignIQ network with avg/median/range/days stats and optional AI insight text. Three-level matching: exact → fuzzy → category fallback. Shows UpgradePrompt for non-Pro tiers.
 
 ### Reports (`/dashboard/reports`)
 Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 13 sections:
@@ -170,7 +172,7 @@ Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. 
 
 ### Admin (`/admin`) — Superadmin Only
 Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
-- **Overview** (`/admin`): Cross-account stats — accounts by tier/status, total locations/users/items/consignors with breakdowns
+- **Overview** (`/admin`): Cross-account stats — accounts by tier/status, total locations/users/items/consignors with breakdowns. Network Pricing Intelligence card: total records, sold items, sell-through %, avg days to sell, top 5 categories.
 - **Accounts** (`/admin/accounts`): Filterable table (tier, status) of all accounts with location/user counts. Click row for detail.
 - **Account Detail** (`/admin/accounts/[id]`): Tier change dropdown, status toggle, locations list, users list with roles, item counts by status
 
@@ -196,7 +198,7 @@ Always audit actual column names before writing queries. Key fields:
 - Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
-- Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id`, `name`, `priced_at`, `sold`, `sold_at`, `sold_price` (added Phase 5)
+- Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price` (added Phase 5). Note: `priced_at` and `sold_at` were originally numeric columns; migration `20260314050000` converts them to `timestamptz` to match what the items route writes (ISO strings).
 
 ### Never hardcode location_id
 Client components: use `useLocation().activeLocationId` from LocationContext (not `useUser().location_id`).
@@ -209,7 +211,12 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6. Test suite: **143 tests, all passing**.
+Full test baseline established for Phases 1–6. Test suite: **158 tests, all passing**.
+
+### Test Count History
+- **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
+- **Phase 6 additions** (+40): feature-gates 14, billing 8, billing-webhook 5, cross-account-pricing 9, admin-network-stats 4 = 156
+- **Timestamp regression** (+2): items.test.ts +1 (priced_at/sold_at ISO string regression), cross-account-pricing.test.ts +1 (view shape validation) = 158
 
 ### Test Structure
 ```
@@ -221,7 +228,7 @@ __tests__/
 │   └── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
-│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes
+│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes, timestamp type regression
 │   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys
 │   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
@@ -231,7 +238,9 @@ __tests__/
 │   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
 │   ├── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
 │   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe session
-│   └── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
+│   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
+│   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
+│   └── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
 ```
 
 ### Playwright E2E Tests
@@ -247,7 +256,7 @@ e2e/
 **Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 20 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing.
+Located at `/docs/test-plans/`. 21 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing.
 
 ## Phase Status
 
@@ -269,5 +278,7 @@ Located at `/docs/test-plans/`. 20 test plans covering: authentication, consigno
 ### Phase 6 — In Progress
 - **Done**: Stripe Billing & Tier Enforcement — subscription checkout, portal, webhook, tier-based feature gating, AI pricing usage tracking (50/mo starter limit), UpgradePrompt component, billing UI in Settings
 - Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`
-- Test suite: **143 Jest tests passing**, 5 Playwright E2E specs, 20 manual test plans
-- Next up: Cross-Customer Pricing Intelligence
+- **Done**: Cross-Customer Pricing Intelligence — `/api/pricing/cross-account` (Pro-only, three-level matching: exact → fuzzy → category fallback, Claude insight text), Market Intelligence panel on pricing page, admin Network Pricing Intelligence card, `/api/admin/network-stats`, seed script at `scripts/seed-cross-account-data.ts`
+- Migration: `20260314040000_create_cross_account_pricing_view.sql`
+- Bugfix: `price_history.priced_at` and `sold_at` converted from numeric to `timestamptz` (migration `20260314050000`), regression tests added
+- Test suite: **158 Jest tests passing**, 5 Playwright E2E specs, 21 manual test plans

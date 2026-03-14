@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
   ExternalLink, AlertCircle, RefreshCw, Search, Camera, X, Pencil,
-  History, TrendingUp, Printer,
+  History, TrendingUp, Printer, Globe,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import Tooltip from '@/components/Tooltip'
@@ -17,6 +17,7 @@ import { canUseFeature } from '@/lib/feature-gates'
 import type { Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
+import type { CrossAccountStats } from '@/app/api/pricing/cross-account/route'
 
 type Stage = 'loading' | 'loaded' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'applying' | 'done' | 'error'
 
@@ -129,6 +130,10 @@ export default function PricingPage() {
   const [priceHistory, setPriceHistory] = useState<PriceHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
+  // Cross-account market intelligence (Pro only)
+  const [marketStats, setMarketStats] = useState<CrossAccountStats | null>(null)
+  const [marketLoading, setMarketLoading] = useState(false)
+
   useEffect(() => {
     if (!item) return
     async function fetchHistory() {
@@ -153,6 +158,31 @@ export default function PricingPage() {
     }
     fetchHistory()
   }, [item?.id, item?.category, item?.name])
+
+  // Fetch cross-account market intelligence (Pro only)
+  useEffect(() => {
+    if (!item || !canUseFeature(accountTier, 'cross_customer_pricing')) return
+    async function fetchMarketIntel() {
+      setMarketLoading(true)
+      try {
+        const params = new URLSearchParams({
+          category: item!.category,
+          name: item!.name,
+          condition: item!.condition,
+        })
+        const res = await fetch(`/api/pricing/cross-account?${params}`, { credentials: 'include' })
+        if (res.ok) {
+          const { stats } = await res.json()
+          setMarketStats(stats ?? null)
+        }
+      } catch {
+        // Non-critical
+      } finally {
+        setMarketLoading(false)
+      }
+    }
+    fetchMarketIntel()
+  }, [item?.id, item?.category, item?.name, item?.condition, accountTier])
 
   // Photo
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -642,6 +672,57 @@ export default function PricingPage() {
               </div>
             )
           })()}
+        </div>
+      ) : null}
+
+      {/* Market Intelligence — cross-account pricing (Pro only) */}
+      {!canUseFeature(accountTier, 'cross_customer_pricing') ? (
+        <div className="mb-4">
+          <UpgradePrompt feature="cross_customer_pricing" description="See how similar items are priced across the entire ConsignIQ network." />
+        </div>
+      ) : marketLoading ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading market intelligence...
+          </div>
+        </div>
+      ) : marketStats ? (
+        <div className="bg-blue-50 rounded-2xl border border-blue-100 shadow-sm p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-semibold text-blue-900">
+              Market Intelligence
+              <span className="text-xs font-normal text-blue-600 ml-2">
+                {marketStats.match_level === 'exact' ? 'Exact match' :
+                 marketStats.match_level === 'fuzzy' ? 'Similar items' : 'Category average'}
+                {' · '}{marketStats.sample_count} sample{marketStats.sample_count !== 1 ? 's' : ''}
+              </span>
+            </h2>
+          </div>
+
+          {marketStats.insight_text && (
+            <p className="text-sm text-blue-800 mb-3 leading-relaxed">{marketStats.insight_text}</p>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white/70 rounded-xl p-2.5 text-center">
+              <p className="text-xs text-blue-600 mb-0.5">Avg Price</p>
+              <p className="text-sm font-bold text-gray-900">${marketStats.avg_sold_price.toFixed(2)}</p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-2.5 text-center">
+              <p className="text-xs text-blue-600 mb-0.5">Median</p>
+              <p className="text-sm font-bold text-gray-900">${marketStats.median_sold_price.toFixed(2)}</p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-2.5 text-center">
+              <p className="text-xs text-blue-600 mb-0.5">Range</p>
+              <p className="text-sm font-bold text-gray-900">${marketStats.min_sold_price.toFixed(2)} – ${marketStats.max_sold_price.toFixed(2)}</p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-2.5 text-center">
+              <p className="text-xs text-blue-600 mb-0.5">Avg Days</p>
+              <p className="text-sm font-bold text-gray-900">{marketStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
+            </div>
+          </div>
         </div>
       ) : null}
 

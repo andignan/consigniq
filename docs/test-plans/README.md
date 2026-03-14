@@ -26,10 +26,11 @@ Test baseline established for Phases 1–5. Each test plan covers happy paths, e
 | [AI Report Prompts](./ai-report-prompts.md) | `ai-report-prompts.md` | NL prompt bar, SQL generation, validation, execution | API route tests |
 | [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route + Playwright E2E |
 | [Stripe Billing](./stripe-billing.md) | `stripe-billing.md` | Checkout, portal, webhook, tier gates, usage tracking | API + unit tests |
+| [Cross-Customer Pricing](./cross-customer-pricing.md) | `cross-customer-pricing.md` | Cross-account pricing intelligence, market panel, admin network stats | API route tests |
 
 ## Automated Test Suite
 
-### Jest Tests (143 tests)
+### Jest Tests (158 tests)
 ```
 __tests__/
 ├── unit/
@@ -49,7 +50,9 @@ __tests__/
 │   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping
 │   ├── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF
 │   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe
-│   └── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates
+│   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates
+│   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
+│   └── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
 └── components/                — (placeholder for future component tests)
 ```
 
@@ -76,7 +79,7 @@ npm run test:e2e:ui   # Playwright with interactive UI
 ## Current Status
 
 - **Unit tests**: Passing — lifecycle, categories, help knowledge base
-- **API tests**: Passing — consignors, items, pricing, settings, locations, price-history, admin, help, reports-query, labels
+- **API tests**: Passing — consignors, items, pricing, settings, locations, price-history, admin, help, reports-query, labels, cross-account-pricing, admin-network-stats
 - **E2E tests**: Configured — 5 Playwright specs (auth, navigation, data-isolation, help-widget, labels)
 - **Component tests**: Not yet implemented (would require more extensive mocking of Next.js rendering)
 
@@ -87,3 +90,4 @@ npm run test:e2e:ui   # Playwright with interactive UI
 - Markdown automation (auto-applying markdowns) is not yet implemented; only the toggle and display exist
 - All API tests mock the Supabase client to test route handler logic in isolation
 - E2E tests will not run in CI without additional setup (test database seeding, environment variables)
+- **Timestamp bugfix**: `price_history.priced_at` and `sold_at` were originally numeric columns but the items route wrote ISO strings. Migration `20260314050000` converts them to `timestamptz`. Regression test added in `items.test.ts`.

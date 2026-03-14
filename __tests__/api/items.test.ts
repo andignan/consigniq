@@ -299,6 +299,66 @@ describe('PATCH /api/items', () => {
     expect(priceHistoryCalls).toHaveLength(0)
   })
 
+  it('writes priced_at and sold_at as ISO timestamp strings in price_history (regression: numeric→timestamptz)', async () => {
+    // Regression test: price_history.priced_at and sold_at were originally numeric columns.
+    // Migration 20260314050000 converted them to timestamptz. The items route must write
+    // ISO timestamp strings (not numbers) so PostgreSQL can parse them into timestamptz.
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 'item-ts',
+              account_id: 'acc-1',
+              location_id: 'loc-1',
+              name: 'Timestamp Test',
+              category: 'Furniture',
+              condition: 'good',
+              description: null,
+              price: 75,
+              sold_price: 70,
+              priced_at: '2026-03-01T14:30:00.000Z',
+              sold_date: '2026-03-12',
+              status: 'sold',
+            },
+            error: null,
+          }),
+        }),
+      }),
+    })
+
+    mockInsert.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      }),
+    })
+
+    const req = makeRequest('http://localhost:3000/api/items', {
+      method: 'PATCH',
+      body: JSON.stringify({ id: 'item-ts', status: 'sold', sold_price: 70 }),
+    })
+    await PATCH(req)
+
+    // Verify priced_at is an ISO string (not a number)
+    const insertCall = mockInsert.mock.calls.find(
+      (call: unknown[]) => {
+        const arg = call[0] as Record<string, unknown>
+        return arg && arg.item_id === 'item-ts'
+      }
+    )
+    expect(insertCall).toBeTruthy()
+    const record = insertCall![0] as Record<string, unknown>
+    expect(typeof record.priced_at).toBe('string')
+    expect(typeof record.sold_at).toBe('string')
+    // priced_at should be an ISO timestamp string
+    expect(record.priced_at).toBe('2026-03-01T14:30:00.000Z')
+    // sold_at should be a date string (from items.sold_date)
+    expect(record.sold_at).toBe('2026-03-12')
+    // Both must be parseable as valid dates
+    expect(new Date(record.priced_at as string).getTime()).not.toBeNaN()
+    expect(new Date(record.sold_at as string).getTime()).not.toBeNaN()
+  })
+
   it('auto-sets priced_at and status when price is set', async () => {
     const req = makeRequest('http://localhost:3000/api/items', {
       method: 'PATCH',
