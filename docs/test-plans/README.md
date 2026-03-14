@@ -21,6 +21,7 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | None (client component) |
 | [Multi-Location](./multi-location.md) | `multi-location.md` | Location switcher, cross-location dashboard, location management | API route tests |
 | [Repeat Item History](./repeat-item-history.md) | `repeat-item-history.md` | Price history recording, "Priced Before" panel, similar items API | API route tests |
+| [Admin Page](./admin-page.md) | `admin-page.md` | Superadmin dashboard, account management, tier/status changes | API route tests |
 
 ## Automated Test Suite
 
@@ -36,7 +37,8 @@ __tests__/
 │   ├── pricing.test.ts        — /api/pricing/comps, /identify, /suggest validation
 │   ├── settings.test.ts       — /api/settings/location, /account, /invite role enforcement
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
-│   └── price-history.test.ts  — GET /api/price-history, auth, validation, search
+│   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
+│   └── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 └── components/                — (placeholder for future component tests)
 ```
 

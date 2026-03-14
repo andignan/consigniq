@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (71 tests across unit + API)
+- `npm test` — Jest test suite (86 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 
 ## Tech Stack
@@ -38,6 +38,8 @@ Two Supabase client factories, both reading from env vars:
 - `/api/locations` — GET (list all account locations), POST (create new location, owner only)
 - `/api/items` supports query params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`. Also supports `POST` (create), `PATCH` (update with auto-timestamps for sold/donated/priced). PATCH with `status: 'sold'` also writes a `price_history` record automatically.
 - `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
+- `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
+- `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (starter/standard/pro) or status (active/suspended/cancelled). Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -69,7 +71,15 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 
 - Auth: Supabase email/password auth. Login at `/auth/login`.
 - Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side, redirects to login if unauthenticated, loads user profile with joined account/location data, loads all account locations, wraps children in `<Suspense>`, `<UserProvider>`, and `<LocationProvider>`.
-- Middleware (`middleware.ts`) protects both `/dashboard/:path*` (redirect to login) and `/api/:path*` (return 401 JSON). `/api/auth/*` is excluded from protection.
+- Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*` is excluded from protection.
+
+### Superadmin Access
+
+- The `is_superadmin` boolean on the `users` table gates access to `/admin` routes
+- Admin layout (`src/app/admin/layout.tsx`) checks `is_superadmin` server-side; non-superadmins redirect to `/dashboard`
+- Admin API routes (`/api/admin/stats`, `/api/admin/accounts`) also check `is_superadmin` and return 403 for non-superadmins
+- All admin queries are cross-account (no `account_id` scoping) — superadmin sees all data
+- Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar
 
 ### Multi-tenancy Model
 
@@ -132,6 +142,12 @@ API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET
 ### Sidebar (`/dashboard` layout)
 Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Pending Items, Reports, Settings. Location switcher dropdown below brand (owners can switch locations, staff sees static location name). Mobile header shows active location name.
 
+### Admin (`/admin`) — Superadmin Only
+Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
+- **Overview** (`/admin`): Cross-account stats — accounts by tier/status, total locations/users/items/consignors with breakdowns
+- **Accounts** (`/admin/accounts`): Filterable table (tier, status) of all accounts with location/user counts. Click row for detail.
+- **Account Detail** (`/admin/accounts/[id]`): Tier change dropdown, status toggle, locations list, users list with roles, item counts by status
+
 ## Critical Patterns
 
 ### fetch() calls must include `credentials: 'include'`
@@ -144,7 +160,7 @@ Always audit actual column names before writing queries. Key fields:
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
 - Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`
-- Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`
+- Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id`, `name`, `priced_at`, `sold`, `sold_at`, `sold_price` (added Phase 5)
 
@@ -159,7 +175,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **71 tests, all passing**.
+Full test baseline established for Phases 1–5. Test suite: **86 tests, all passing**.
 
 ### Test Structure
 ```
@@ -173,11 +189,12 @@ __tests__/
 │   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys
 │   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
-│   └── price-history.test.ts  — GET /api/price-history, auth, validation, search
+│   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
+│   └── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 15 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history.
+Located at `/docs/test-plans/`. 16 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page.
 
 ## Phase Status
 
@@ -186,6 +203,7 @@ Phase 5 is in progress. Completed so far:
 - Settings page at `/dashboard/settings` with Location Settings, Locations, and Account Settings tabs
 - Multi-location support: LocationContext, sidebar location switcher, owner cross-location dashboard, location management in settings, `/api/locations` route
 - Repeat Item History: price_history auto-written on sold, `/api/price-history` endpoint, "Priced Before" panel on inventory pricing page
-- Full test baseline established (71 tests passing, 15 manual test plans)
+- Admin Page: superadmin-only `/admin` route with overview stats, accounts list, account detail with tier/status management
+- Full test baseline established (86 tests passing, 16 manual test plans)
 - Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Next up: Admin Page
+- Next up: Help System
