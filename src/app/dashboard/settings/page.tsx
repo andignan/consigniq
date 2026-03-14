@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
+import Tooltip from '@/components/Tooltip'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -363,7 +364,10 @@ export default function SettingsPage() {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Consignment Terms</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Default Store Split %</label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
+                    Default Store Split %
+                    <Tooltip content="The percentage of each sold item's price that the store keeps. The rest goes to the consignor." />
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -379,7 +383,10 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Default Consignor Split %</label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
+                    Default Consignor Split %
+                    <Tooltip content="The percentage of each sold item's price paid to the consignor. Combined with store split, must total 100%." />
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -406,7 +413,10 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Agreement Duration (days)</label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
+                    Agreement Duration (days)
+                    <Tooltip content="How many days a consignor's items stay on the floor before the agreement expires. Default is 60 days." />
+                  </label>
                   <input
                     type="number"
                     min={1}
@@ -418,7 +428,10 @@ export default function SettingsPage() {
                   <p className="text-[11px] text-gray-400 mt-1">Number of days items stay on the floor before expiry</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Grace Period (days)</label>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
+                    Grace Period (days)
+                    <Tooltip content="Extra days after the agreement expires for the consignor to pick up unsold items before they become donation-eligible." />
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -437,7 +450,10 @@ export default function SettingsPage() {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Markdown Schedule</h2>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-700">Automatic markdowns</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm text-gray-700">Automatic markdowns</p>
+                    <Tooltip content="When enabled, items automatically get price reductions: 25% off at day 31 and 50% off at day 46 to help move aging inventory." />
+                  </div>
                   <p className="text-xs text-gray-400">Enable scheduled price reductions for aging inventory</p>
                 </div>
                 <button

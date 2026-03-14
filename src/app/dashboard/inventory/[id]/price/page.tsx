@@ -10,6 +10,7 @@ import {
   History, TrendingUp,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
+import Tooltip from '@/components/Tooltip'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
@@ -691,8 +692,9 @@ export default function PricingPage() {
                     {suggestion.price.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-gray-400 inline-flex items-center gap-1">
                   Range: ${suggestion.low.toFixed(2)} – ${suggestion.high.toFixed(2)}
+                  <Tooltip content="The low-high range reflects fair market value based on eBay comps and category pricing. Price closer to the low end for faster turnover." />
                 </span>
               </div>
 

@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (86 tests across unit + API)
+- `npm test` — Jest test suite (96 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 
 ## Tech Stack
@@ -40,6 +40,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
 - `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
 - `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (starter/standard/pro) or status (active/suspended/cancelled). Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
+- `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -148,6 +149,14 @@ Platform administration for `admin@getconsigniq.com`. Separate layout with own s
 - **Accounts** (`/admin/accounts`): Filterable table (tier, status) of all accounts with location/user counts. Click row for detail.
 - **Account Detail** (`/admin/accounts/[id]`): Tier change dropdown, status toggle, locations list, users list with roles, item counts by status
 
+### Help System (Three Layers)
+
+**Layer 1 — Tooltips**: Reusable `Tooltip` component (`src/components/Tooltip.tsx`) with `?` icon that shows content on hover/click. Used on settings fields (split %, agreement days, grace days, markdown toggle), pricing page (AI range), and consignor card (donate badge). Usage: `<Tooltip content="Explanation text" />`.
+
+**Layer 2 — Floating Help Widget**: `HelpWidget` component (`src/components/HelpWidget.tsx`) renders a persistent `?` button on all `/dashboard` pages (excluded from `/admin`). Opens a panel with search box and 9 quick links across 3 sections (Getting Started, Pricing Help, Account & Settings). Quick links expand/collapse inline answers. Mobile: full-screen panel.
+
+**Layer 3 — AI Help Search**: When user types in the widget search box, calls `/api/help/search` which sends the question to Claude with the help knowledge base (`src/lib/help-knowledge-base.ts`) as system context. Response shown in the widget with "Powered by AI" label. System prompt scopes answers to ConsignIQ only.
+
 ## Critical Patterns
 
 ### fetch() calls must include `credentials: 'include'`
@@ -175,14 +184,15 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **86 tests, all passing**.
+Full test baseline established for Phases 1–5. Test suite: **96 tests, all passing**.
 
 ### Test Structure
 ```
 __tests__/
 ├── unit/
 │   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
-│   └── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
+│   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
+│   └── help-components.test.ts — Knowledge base content and topic coverage
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
 │   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes
@@ -190,11 +200,12 @@ __tests__/
 │   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
 │   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
-│   └── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
+│   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
+│   └── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 16 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page.
+Located at `/docs/test-plans/`. 17 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system.
 
 ## Phase Status
 
@@ -204,6 +215,7 @@ Phase 5 is in progress. Completed so far:
 - Multi-location support: LocationContext, sidebar location switcher, owner cross-location dashboard, location management in settings, `/api/locations` route
 - Repeat Item History: price_history auto-written on sold, `/api/price-history` endpoint, "Priced Before" panel on inventory pricing page
 - Admin Page: superadmin-only `/admin` route with overview stats, accounts list, account detail with tier/status management
-- Full test baseline established (86 tests passing, 16 manual test plans)
+- Help System: three-layer help (tooltips, floating widget, AI search), `/api/help/search` endpoint, knowledge base
+- Full test baseline established (96 tests passing, 17 manual test plans)
 - Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Next up: Help System
+- Next up: AI Report Prompts

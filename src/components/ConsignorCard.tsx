@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Phone, Mail, Package, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react'
 import { getLifecycleStatus, COLOR_CLASSES, type Consignor } from '@/types'
+import Tooltip from '@/components/Tooltip'
 
 interface ConsignorCardProps {
   consignor: Consignor & { item_count?: number; pending_count?: number }
@@ -34,6 +35,7 @@ export function ConsignorCard({ consignor }: ConsignorCardProps) {
                 <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                   <Trash2 className="w-3 h-3" />
                   Donate
+                  <Tooltip content="This consignor's agreement and grace period have both ended. Their unsold items can now be marked for donation." />
                 </span>
               )}
               {lifecycle.isGrace && !lifecycle.isDonationEligible && (
