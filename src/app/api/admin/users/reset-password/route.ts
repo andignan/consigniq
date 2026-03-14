@@ -39,11 +39,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Failed to generate reset link: ${linkError?.message || 'unknown error'}` }, { status: 500 })
   }
 
+  // Rewrite redirect_to in the action link to ensure it points to /auth/setup-password
+  let resetLink = linkData.properties.action_link
+  try {
+    const linkUrl = new URL(resetLink)
+    linkUrl.searchParams.set('redirect_to', `${appUrl}/auth/setup-password`)
+    resetLink = linkUrl.toString()
+  } catch {
+    // If URL parsing fails, use as-is
+  }
+
   // Send branded reset email via Resend
   try {
     const emailContent = buildPasswordResetEmail({
       fullName: user.full_name || user.email,
-      resetLink: linkData.properties.action_link,
+      resetLink,
     })
     await sendEmail({ to: user.email, ...emailContent })
   } catch (err) {

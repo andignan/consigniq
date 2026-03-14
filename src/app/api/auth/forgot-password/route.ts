@@ -31,9 +31,18 @@ export async function POST(request: NextRequest) {
       })
 
       if (!linkError && linkData?.properties?.action_link) {
+        // Rewrite redirect_to to ensure it points to /auth/setup-password
+        let resetLink = linkData.properties.action_link
+        try {
+          const linkUrl = new URL(resetLink)
+          linkUrl.searchParams.set('redirect_to', `${appUrl}/auth/setup-password`)
+          resetLink = linkUrl.toString()
+        } catch {
+          // Use as-is
+        }
         const emailContent = buildPasswordResetEmail({
           fullName: user.full_name || user.email,
-          resetLink: linkData.properties.action_link,
+          resetLink,
         })
         await sendEmail({ to: user.email, ...emailContent })
       }

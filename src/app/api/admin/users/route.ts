@@ -172,11 +172,21 @@ export async function POST(request: NextRequest) {
     if (linkError) {
       inviteError = `Failed to generate invite link: ${linkError.message}`
     } else if (linkData?.properties?.action_link) {
+      // Rewrite the redirect_to in the action link to ensure it points to /auth/setup-password
+      // Supabase may ignore the redirectTo option if the URL isn't in the Redirect URLs allowlist
+      let setupLink = linkData.properties.action_link
+      try {
+        const linkUrl = new URL(setupLink)
+        linkUrl.searchParams.set('redirect_to', `${appUrl}/auth/setup-password`)
+        setupLink = linkUrl.toString()
+      } catch {
+        // If URL parsing fails, use the link as-is
+      }
       const emailContent = buildInviteEmail({
         fullName: full_name,
         accountName: account_name,
         tier,
-        setupLink: linkData.properties.action_link,
+        setupLink,
       })
       await sendEmail({ to: email, ...emailContent })
     }
