@@ -1,9 +1,10 @@
 'use client'
 // src/components/layout/Sidebar.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLocation } from '@/contexts/LocationContext'
 import type { User } from '@/types/database'
 
 const NAV_ITEMS = [
@@ -91,11 +92,32 @@ export default function Sidebar({ user }: SidebarProps) {
   const router = useRouter()
   const fullPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const {
+    activeLocationName,
+    locations,
+    isAllLocations,
+    canSwitchLocations,
+    setActiveLocation,
+  } = useLocation()
 
   // Close sidebar on route change
   useEffect(() => {
     setMobileOpen(false)
   }, [pathname, searchParams])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setLocationDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -104,17 +126,110 @@ export default function Sidebar({ user }: SidebarProps) {
     router.refresh()
   }
 
+  function handleLocationSwitch(locationId: string) {
+    setActiveLocation(locationId)
+    setLocationDropdownOpen(false)
+  }
+
+  const locationSwitcher = (
+    <div className="px-5 py-3 border-b border-stone-800" ref={dropdownRef}>
+      {canSwitchLocations ? (
+        <div className="relative">
+          <button
+            onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <svg className="w-4 h-4 text-stone-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm text-white font-medium truncate">
+                {activeLocationName || 'Select Location'}
+              </span>
+            </div>
+            <svg className={`w-4 h-4 text-stone-400 shrink-0 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {locationDropdownOpen && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-stone-800 rounded-lg shadow-lg border border-stone-700 overflow-hidden z-50">
+              {/* All Locations option for owners */}
+              <button
+                onClick={() => handleLocationSwitch('all')}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                  isAllLocations
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'text-stone-300 hover:bg-stone-700 hover:text-white'
+                }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                All Locations
+                {isAllLocations && (
+                  <svg className="w-4 h-4 ml-auto text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+              <div className="border-t border-stone-700" />
+              {locations.map(loc => (
+                <button
+                  key={loc.id}
+                  onClick={() => handleLocationSwitch(loc.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                    !isAllLocations && activeLocationName === loc.name
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'text-stone-300 hover:bg-stone-700 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="truncate">{loc.name}</span>
+                  {!isAllLocations && activeLocationName === loc.name && (
+                    <svg className="w-4 h-4 ml-auto text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 px-3 py-2">
+          <svg className="w-4 h-4 text-stone-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-sm text-stone-400 truncate">
+            {activeLocationName || 'No location assigned'}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+
   const sidebarContent = (
     <>
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-800">
         <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
-        {user?.locations && (
-          <p className="text-stone-400 text-xs mt-0.5 truncate">
-            {user.locations.name}
-          </p>
-        )}
       </div>
+
+      {/* Location Switcher */}
+      {locationSwitcher}
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -181,6 +296,9 @@ export default function Sidebar({ user }: SidebarProps) {
             </svg>
           </button>
           <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
+          {activeLocationName && (
+            <span className="text-stone-400 text-xs truncate ml-auto">{activeLocationName}</span>
+          )}
         </div>
 
         {/* Sidebar overlay */}

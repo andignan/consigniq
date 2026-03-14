@@ -11,6 +11,7 @@ import {
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
 import { useUser } from '@/contexts/UserContext'
+import { useLocation } from '@/contexts/LocationContext'
 
 interface ConsignorOption {
   id: string
@@ -46,6 +47,7 @@ export default function InventoryPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const user = useUser()
+  const { activeLocationId } = useLocation()
 
   const [items, setItems] = useState<ItemWithConsignor[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,8 +76,9 @@ export default function InventoryPage() {
 
   // ─── Fetch consignors for filter dropdown ────────────────
   useEffect(() => {
-    if (!user?.location_id) return
-    fetch(`/api/consignors?location_id=${user.location_id}`, { credentials: 'include' })
+    const locId = activeLocationId ?? user?.location_id
+    if (!locId) return
+    fetch(`/api/consignors?location_id=${locId}`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { consignors: [] })
       .then(({ consignors: data }) => {
         const sorted = (data ?? [])
@@ -84,13 +87,14 @@ export default function InventoryPage() {
         setConsignors(sorted)
       })
       .catch(() => setConsignors([]))
-  }, [user?.location_id])
+  }, [activeLocationId, user?.location_id])
 
   // ─── Fetch items ──────────────────────────────────────────
   const fetchItems = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
-    if (user?.location_id) params.set('location_id', user.location_id)
+    const locId = activeLocationId ?? user?.location_id
+    if (locId) params.set('location_id', locId)
     if (statusFilter !== 'all') params.set('status', statusFilter)
     if (categoryFilter) params.set('category', categoryFilter)
     if (consignorFilter) params.set('consignor_id', consignorFilter)
@@ -106,7 +110,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, categoryFilter, consignorFilter, searchQuery, user?.location_id])
+  }, [statusFilter, categoryFilter, consignorFilter, searchQuery, activeLocationId, user?.location_id])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 

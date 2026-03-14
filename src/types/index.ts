@@ -153,9 +153,10 @@ export function getLifecycleStatus(
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const intake = new Date(intakeDateStr)
-  const expiry = new Date(expiryDateStr)
-  const graceEnd = new Date(graceEndStr)
+  // Parse as local dates (append T00:00:00 so Date() uses local timezone, not UTC)
+  const intake = new Date(intakeDateStr + 'T00:00:00')
+  const expiry = new Date(expiryDateStr + 'T00:00:00')
+  const graceEnd = new Date(graceEndStr + 'T00:00:00')
 
   const msPerDay = 1000 * 60 * 60 * 24
   const daysElapsed = Math.floor((today.getTime() - intake.getTime()) / msPerDay)

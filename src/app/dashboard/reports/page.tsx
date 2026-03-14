@@ -8,6 +8,7 @@ import {
   FileText, Percent,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
+import { useLocation } from '@/contexts/LocationContext'
 import { createClient } from '@/lib/supabase/client'
 import { getLifecycleStatus, COLOR_CLASSES, CONDITION_LABELS } from '@/types'
 
@@ -215,42 +216,22 @@ function sortRows<T>(rows: T[], key: string, dir: SortDir): T[] {
 // ─── Main ─────────────────────────────────────────────────────
 export default function ReportsPage() {
   const user = useUser()
+  const { activeLocationId, isAllLocations, locations, canSwitchLocations, setActiveLocation } = useLocation()
   const supabase = useMemo(() => createClient(), [])
 
   const [period, setPeriod] = useState<Period>('30d')
-  const [locationFilter, setLocationFilter] = useState<string>('all')
-  const [locations, setLocations] = useState<LocationRow[]>([])
   const [loading, setLoading] = useState(true)
 
   const [items, setItems] = useState<ItemRow[]>([])
   const [consignors, setConsignors] = useState<ConsignorRow[]>([])
   const [markdowns, setMarkdowns] = useState<MarkdownRow[]>([])
 
-  // Load locations for owner role
-  useEffect(() => {
-    if (!user || user.role !== 'owner') return
-    supabase
-      .from('locations')
-      .select('id, name')
-      .eq('account_id', user.account_id)
-      .then(({ data }) => setLocations(data ?? []))
-  }, [user, supabase])
-
-  // Staff users default to their own location
-  useEffect(() => {
-    if (user?.role === 'staff' && user.location_id) {
-      setLocationFilter(user.location_id)
-    }
-  }, [user])
-
   // Fetch all data
   const fetchData = useCallback(async () => {
     if (!user) return
     setLoading(true)
 
-    const effectiveLocation = user.role === 'staff'
-      ? user.location_id
-      : locationFilter === 'all' ? null : locationFilter
+    const effectiveLocation = isAllLocations ? null : (activeLocationId ?? user.location_id)
 
     let itemsQuery = supabase
       .from('items')
@@ -285,7 +266,7 @@ export default function ReportsPage() {
     setConsignors((consignorsRes.data as ConsignorRow[] | null) ?? [])
     setMarkdowns((markdownsRes.data as MarkdownRow[] | null) ?? [])
     setLoading(false)
-  }, [user, locationFilter, supabase])
+  }, [user, activeLocationId, isAllLocations, supabase])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -920,12 +901,12 @@ export default function ReportsPage() {
       </div>
 
       {/* Location toggle (owner only) */}
-      {user.role === 'owner' && locations.length > 1 && (
+      {canSwitchLocations && (
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="w-4 h-4 text-gray-400" />
           <select
-            value={locationFilter}
-            onChange={e => setLocationFilter(e.target.value)}
+            value={isAllLocations ? 'all' : (activeLocationId ?? '')}
+            onChange={e => setActiveLocation(e.target.value)}
             className="appearance-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="all">All Locations</option>

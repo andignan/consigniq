@@ -3,9 +3,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Loader2, Save, MapPin, Building2, Mail, Shield,
-  ChevronDown, X, Plus, ExternalLink, AlertCircle,
+  ChevronDown, X, Plus, ExternalLink, AlertCircle, Pencil,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
+import { useLocation } from '@/contexts/LocationContext'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -58,10 +59,11 @@ const TIER_COLORS: Record<string, string> = {
 // ─── Main ─────────────────────────────────────────────────────
 export default function SettingsPage() {
   const user = useUser()
+  const { activeLocationId, locations: allLocations, setActiveLocation } = useLocation()
   const isOwner = user?.role === 'owner'
 
-  // Tab state (owner only sees both tabs)
-  const [activeTab, setActiveTab] = useState<'location' | 'account'>('location')
+  // Tab state (owner sees 3 tabs, staff sees 1)
+  const [activeTab, setActiveTab] = useState<'location' | 'account' | 'locations'>('location')
 
   // Location settings
   const [location, setLocation] = useState<LocationSettings | null>(null)
@@ -100,13 +102,15 @@ export default function SettingsPage() {
   }, [location, locationDraft])
 
   // ─── Fetch location settings ──────────────────────────────
+  const effectiveLocationId = activeLocationId ?? user?.location_id
   useEffect(() => {
-    if (!user?.location_id) {
+    if (!effectiveLocationId) {
       setLocationLoading(false)
       return
     }
     setLocationLoading(true)
-    fetch(`/api/settings/location?location_id=${user.location_id}`, { credentials: 'include' })
+    setLocationError('')
+    fetch(`/api/settings/location?location_id=${effectiveLocationId}`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : Promise.reject('Failed to load'))
       .then(({ location: loc }) => {
         setLocation(loc)
@@ -114,7 +118,7 @@ export default function SettingsPage() {
       })
       .catch(() => setLocationError('Failed to load location settings'))
       .finally(() => setLocationLoading(false))
-  }, [user?.location_id])
+  }, [effectiveLocationId])
 
   // ─── Fetch account settings (owner only) ──────────────────
   useEffect(() => {
@@ -251,6 +255,21 @@ export default function SettingsPage() {
             Location Settings
           </span>
         </button>
+        {isOwner && (
+          <button
+            onClick={() => setActiveTab('locations')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'locations'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              Locations
+            </span>
+          </button>
+        )}
         {isOwner && (
           <button
             onClick={() => setActiveTab('account')}
@@ -608,6 +627,18 @@ export default function SettingsPage() {
         )
       )}
 
+      {/* ═══ Locations Tab (Owner only) ═══ */}
+      {activeTab === 'locations' && isOwner && (
+        <LocationsTab
+          locations={allLocations}
+          activeLocationId={activeLocationId ?? user?.location_id ?? null}
+          onLocationSelect={(id) => {
+            setActiveLocation(id)
+            setActiveTab('location')
+          }}
+        />
+      )}
+
       {/* ═══ Invite Modal ═══ */}
       {inviteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -674,6 +705,303 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Locations Management Tab ─────────────────────────────
+function LocationsTab({
+  locations,
+  activeLocationId,
+  onLocationSelect,
+}: {
+  locations: { id: string; name: string }[]
+  activeLocationId: string | null
+  onLocationSelect: (id: string) => void
+}) {
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newAddress, setNewAddress] = useState('')
+  const [newCity, setNewCity] = useState('')
+  const [newState, setNewState] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+  const [newSplitStore, setNewSplitStore] = useState(60)
+  const [newSplitConsignor, setNewSplitConsignor] = useState(40)
+  const [newAgreementDays, setNewAgreementDays] = useState(60)
+  const [newGraceDays, setNewGraceDays] = useState(3)
+  const [newMarkdownEnabled, setNewMarkdownEnabled] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [allLocations, setAllLocations] = useState(locations)
+
+  const newSplitValid = newSplitStore + newSplitConsignor === 100
+
+  async function createLocation() {
+    if (!newName.trim() || !newSplitValid) return
+    setSaving(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newName.trim(),
+          address: newAddress || null,
+          city: newCity || null,
+          state: newState || null,
+          phone: newPhone || null,
+          default_split_store: newSplitStore,
+          default_split_consignor: newSplitConsignor,
+          agreement_days: newAgreementDays,
+          grace_days: newGraceDays,
+          markdown_enabled: newMarkdownEnabled,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create')
+      }
+      const { location } = await res.json()
+      setAllLocations(prev => [...prev, { id: location.id, name: location.name }])
+      setShowNewForm(false)
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create location')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function resetForm() {
+    setNewName('')
+    setNewAddress('')
+    setNewCity('')
+    setNewState('')
+    setNewPhone('')
+    setNewSplitStore(60)
+    setNewSplitConsignor(40)
+    setNewAgreementDays(60)
+    setNewGraceDays(3)
+    setNewMarkdownEnabled(false)
+    setError('')
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Locations list */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">All Locations</h2>
+          <button
+            onClick={() => setShowNewForm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Location
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {allLocations.map(loc => (
+            <div
+              key={loc.id}
+              className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-colors ${
+                loc.id === activeLocationId
+                  ? 'border-indigo-200 bg-indigo-50'
+                  : 'border-gray-100 hover:border-gray-200 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MapPin className={`w-4 h-4 ${loc.id === activeLocationId ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <span className="text-sm font-medium text-gray-900">{loc.name}</span>
+                {loc.id === activeLocationId && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">Active</span>
+                )}
+              </div>
+              <button
+                onClick={() => onLocationSelect(loc.id)}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* New Location Form */}
+      {showNewForm && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">New Location</h2>
+            <button onClick={() => { setShowNewForm(false); resetForm() }} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Location Name *</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Downtown Store"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+              <input
+                type="text"
+                value={newPhone}
+                onChange={e => setNewPhone(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="(555) 123-4567"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Address</label>
+              <input
+                type="text"
+                value={newAddress}
+                onChange={e => setNewAddress(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="123 Main St"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">City</label>
+              <input
+                type="text"
+                value={newCity}
+                onChange={e => setNewCity(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">State</label>
+              <input
+                type="text"
+                value={newState}
+                onChange={e => setNewState(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                maxLength={2}
+                placeholder="IL"
+              />
+            </div>
+          </div>
+
+          {/* Consignment Terms */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Consignment Terms</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Store Split %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={newSplitStore}
+                  onChange={e => {
+                    const val = parseInt(e.target.value) || 0
+                    setNewSplitStore(val)
+                    setNewSplitConsignor(100 - val)
+                  }}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Consignor Split %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={newSplitConsignor}
+                  onChange={e => {
+                    const val = parseInt(e.target.value) || 0
+                    setNewSplitConsignor(val)
+                    setNewSplitStore(100 - val)
+                  }}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            <div className={`mt-2 text-xs font-medium ${newSplitValid ? 'text-emerald-600' : 'text-red-500'}`}>
+              {newSplitValid
+                ? `Store ${newSplitStore}% + Consignor ${newSplitConsignor}% = 100%`
+                : `Splits must add to 100% (currently ${newSplitStore + newSplitConsignor}%)`}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Agreement Days</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={newAgreementDays}
+                  onChange={e => setNewAgreementDays(parseInt(e.target.value) || 60)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Grace Days</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newGraceDays}
+                  onChange={e => setNewGraceDays(parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-4">
+              <div>
+                <p className="text-sm text-gray-700">Automatic Markdowns</p>
+                <p className="text-xs text-gray-400">Enable scheduled price reductions</p>
+              </div>
+              <button
+                onClick={() => setNewMarkdownEnabled(!newMarkdownEnabled)}
+                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                  newMarkdownEnabled ? 'bg-indigo-500' : 'bg-gray-300'
+                }`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  newMarkdownEnabled ? 'translate-x-5' : ''
+                }`} />
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-1.5 mt-4 text-sm text-red-500">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-5">
+            <button
+              onClick={() => { setShowNewForm(false); resetForm() }}
+              className="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={createLocation}
+              disabled={saving || !newName.trim() || !newSplitValid}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {saving ? 'Creating...' : 'Create Location'}
+            </button>
           </div>
         </div>
       )}

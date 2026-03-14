@@ -7,13 +7,18 @@ import { getLifecycleStatus } from '@/types'
 import { Suspense } from 'react'
 
 // Alerts banner shown at top of consignors page
-async function LifecycleAlerts({ locationId }: { locationId: string }) {
+async function LifecycleAlerts({ locationId, accountId }: { locationId: string; accountId?: string }) {
   const supabase = createServerClient()
-  const { data: consignors } = await supabase
+  let query = supabase
     .from('consignors')
     .select('id, name, expiry_date, grace_end_date, intake_date')
-    .eq('location_id', locationId)
     .eq('status', 'active')
+  if (locationId) {
+    query = query.eq('location_id', locationId)
+  } else if (accountId) {
+    query = query.eq('account_id', accountId)
+  }
+  const { data: consignors } = await query
 
   if (!consignors?.length) return null
 
@@ -70,17 +75,22 @@ async function LifecycleAlerts({ locationId }: { locationId: string }) {
   )
 }
 
-async function ConsignorList({ locationId }: { locationId: string }) {
+async function ConsignorList({ locationId, accountId }: { locationId: string; accountId?: string }) {
   const supabase = createServerClient()
 
-  const { data: consignors, error } = await supabase
+  let query = supabase
     .from('consignors')
     .select(`
       *,
       items:items(count)
     `)
-    .eq('location_id', locationId)
     .order('created_at', { ascending: false })
+  if (locationId) {
+    query = query.eq('location_id', locationId)
+  } else if (accountId) {
+    query = query.eq('account_id', accountId)
+  }
+  const { data: consignors, error } = await query
 
   if (error) {
     return <p className="text-sm text-red-600">Failed to load consignors: {error.message}</p>
@@ -125,8 +135,24 @@ export default async function ConsignorsPage({
 }: {
   searchParams: { location_id?: string }
 }) {
-  // In production, location_id comes from the user's session/context
+  const supabase = createServerClient()
   const locationId = searchParams.location_id ?? process.env.DEFAULT_LOCATION_ID ?? ''
+
+  // Get account_id for cross-location queries when no location_id
+  let accountId: string | undefined
+  if (!searchParams.location_id) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('account_id, role')
+        .eq('id', user.id)
+        .single()
+      if (profile?.role === 'owner') {
+        accountId = profile.account_id
+      }
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -146,7 +172,7 @@ export default async function ConsignorsPage({
       </div>
 
       {/* Lifecycle alerts */}
-      <LifecycleAlerts locationId={locationId} />
+      <LifecycleAlerts locationId={locationId} accountId={accountId} />
 
       {/* Search (v1.5 — client-side filter) */}
       <div className="relative mb-4">
@@ -166,7 +192,7 @@ export default async function ConsignorsPage({
           </div>
         }
       >
-        <ConsignorList locationId={locationId} />
+        <ConsignorList locationId={locationId} accountId={accountId} />
       </Suspense>
     </div>
   )

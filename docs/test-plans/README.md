@@ -19,6 +19,7 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Dashboard Home](./dashboard-home.md) | `dashboard-home.md` | Stats cards, lifecycle alerts, quick actions | None (server component) |
 | [Multi-Tenancy](./multi-tenancy.md) | `multi-tenancy.md` | Account/location scoping, RLS, data isolation | Indirect (API auth tests) |
 | [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | None (client component) |
+| [Multi-Location](./multi-location.md) | `multi-location.md` | Location switcher, cross-location dashboard, location management | API route tests |
 
 ## Automated Test Suite
 
@@ -32,7 +33,8 @@ __tests__/
 │   ├── consignors.test.ts     — GET/POST /api/consignors, validation, auth
 │   ├── items.test.ts          — GET/POST/PATCH /api/items, filters, auto-timestamps
 │   ├── pricing.test.ts        — /api/pricing/comps, /identify, /suggest validation
-│   └── settings.test.ts       — /api/settings/location, /account, /invite role enforcement
+│   ├── settings.test.ts       — /api/settings/location, /account, /invite role enforcement
+│   └── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
 └── components/                — (placeholder for future component tests)
 ```
 
