@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (58 tests across unit + API)
+- `npm test` — Jest test suite (71 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 
 ## Tech Stack
@@ -36,7 +36,8 @@ Two Supabase client factories, both reading from env vars:
 
 - **API routes** (`src/app/api/`) — RESTful endpoints for consignors, items, pricing (comps, suggest, identify), locations, settings. Use the server Supabase client, validate required fields, and attach `created_by` from the authenticated user.
 - `/api/locations` — GET (list all account locations), POST (create new location, owner only)
-- `/api/items` supports query params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`. Also supports `POST` (create), `PATCH` (update with auto-timestamps for sold/donated/priced).
+- `/api/items` supports query params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`. Also supports `POST` (create), `PATCH` (update with auto-timestamps for sold/donated/priced). PATCH with `status: 'sold'` also writes a `price_history` record automatically.
+- `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -100,6 +101,7 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - "Get AI Suggestion" escalation after comps-only
 - Inline editing of item details (inventory pricing only)
 - Manual price override with apply
+- "Priced Before" panel (inventory pricing only) — shows similar previously-sold items from `price_history` with avg sold price and avg days to sell
 
 ### Reports (`/dashboard/reports`)
 Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 13 sections:
@@ -157,7 +159,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **58 tests, all passing**.
+Full test baseline established for Phases 1–5. Test suite: **71 tests, all passing**.
 
 ### Test Structure
 ```
@@ -167,14 +169,15 @@ __tests__/
 │   └── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
-│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps
+│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes
 │   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys
 │   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
-│   └── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
+│   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
+│   └── price-history.test.ts  — GET /api/price-history, auth, validation, search
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 14 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support.
+Located at `/docs/test-plans/`. 15 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history.
 
 ## Phase Status
 
@@ -182,6 +185,7 @@ Phase 5 is in progress. Completed so far:
 - `sold_price` column added to `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql` — must be run via Supabase Dashboard SQL Editor)
 - Settings page at `/dashboard/settings` with Location Settings, Locations, and Account Settings tabs
 - Multi-location support: LocationContext, sidebar location switcher, owner cross-location dashboard, location management in settings, `/api/locations` route
-- Full test baseline established (58 tests passing, 14 manual test plans)
+- Repeat Item History: price_history auto-written on sold, `/api/price-history` endpoint, "Priced Before" panel on inventory pricing page
+- Full test baseline established (71 tests passing, 15 manual test plans)
 - Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Next up: Repeat Item History
+- Next up: Admin Page

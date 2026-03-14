@@ -7,6 +7,7 @@ import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
   ExternalLink, AlertCircle, RefreshCw, Search, Camera, X, Pencil,
+  History, TrendingUp,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import type { CompResult } from '@/app/api/pricing/comps/route'
@@ -78,6 +79,44 @@ export default function PricingPage() {
       setEditSaving(false)
     }
   }
+
+  // Price history (similar sold items)
+  interface PriceHistoryItem {
+    id: string
+    name: string
+    category: string
+    condition: string
+    sold_price: number | null
+    sold_at: string | null
+    days_to_sell: number | null
+  }
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  useEffect(() => {
+    if (!item) return
+    async function fetchHistory() {
+      setHistoryLoading(true)
+      try {
+        const params = new URLSearchParams({
+          category: item!.category,
+          name: item!.name,
+          exclude_item_id: item!.id,
+          limit: '10',
+        })
+        const res = await fetch(`/api/price-history?${params}`, { credentials: 'include' })
+        if (res.ok) {
+          const { history } = await res.json()
+          setPriceHistory(history ?? [])
+        }
+      } catch {
+        // Non-critical — silently fail
+      } finally {
+        setHistoryLoading(false)
+      }
+    }
+    fetchHistory()
+  }, [item?.id, item?.category, item?.name])
 
   // Photo
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -478,6 +517,71 @@ export default function PricingPage() {
 
       {/* Everything below is hidden during edit mode */}
       {!editing && <>
+
+      {/* Priced Before — similar sold items from price_history */}
+      {historyLoading ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Checking price history...
+          </div>
+        </div>
+      ) : priceHistory.length > 0 ? (
+        <div className="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <History className="w-4 h-4 text-amber-600" />
+            <h2 className="text-sm font-semibold text-amber-900">
+              Priced Before — {priceHistory.length} similar item{priceHistory.length !== 1 ? 's' : ''} sold
+            </h2>
+          </div>
+          <div className="space-y-2">
+            {priceHistory.slice(0, 5).map(h => (
+              <div
+                key={h.id}
+                className="flex items-center justify-between p-2.5 bg-white/70 rounded-xl"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-800 truncate">{h.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-500">{h.condition}</span>
+                    {h.days_to_sell != null && (
+                      <span className="text-xs text-gray-400">
+                        {h.days_to_sell}d to sell
+                      </span>
+                    )}
+                    {h.sold_at && (
+                      <span className="text-xs text-gray-400">
+                        {new Date(h.sold_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {h.sold_price != null && (
+                  <span className="text-sm font-semibold text-emerald-700 ml-3">
+                    ${h.sold_price.toFixed(2)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          {(() => {
+            const prices = priceHistory.filter(h => h.sold_price != null).map(h => h.sold_price!)
+            if (prices.length === 0) return null
+            const avg = prices.reduce((a, b) => a + b, 0) / prices.length
+            const days = priceHistory.filter(h => h.days_to_sell != null).map(h => h.days_to_sell!)
+            const avgDays = days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : null
+            return (
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-amber-200/60">
+                <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-xs font-medium text-amber-800">
+                  Avg sold: ${avg.toFixed(2)}
+                  {avgDays != null && ` · Avg ${avgDays}d to sell`}
+                </span>
+              </div>
+            )
+          })()}
+        </div>
+      ) : null}
 
       {/* Photo Upload */}
       {(stage === 'loaded' || stage === 'identifying') && (

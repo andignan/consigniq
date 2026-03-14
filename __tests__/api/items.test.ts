@@ -188,6 +188,117 @@ describe('PATCH /api/items', () => {
     )
   })
 
+  it('writes price_history when item is marked sold', async () => {
+    // Make the update return a full item with fields needed for price_history
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 'item-1',
+              account_id: 'acc-1',
+              location_id: 'loc-1',
+              name: 'Oak Table',
+              category: 'Furniture',
+              condition: 'good',
+              description: 'Solid oak',
+              price: 100,
+              sold_price: 90,
+              priced_at: '2026-03-01T00:00:00Z',
+              sold_date: '2026-03-10',
+              status: 'sold',
+            },
+            error: null,
+          }),
+        }),
+      }),
+    })
+
+    // Mock the price_history insert
+    mockInsert.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      }),
+    })
+
+    const req = makeRequest('http://localhost:3000/api/items', {
+      method: 'PATCH',
+      body: JSON.stringify({ id: 'item-1', status: 'sold', sold_price: 90 }),
+    })
+    await PATCH(req)
+
+    // Verify price_history insert was called
+    expect(mockFrom).toHaveBeenCalledWith('price_history')
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account_id: 'acc-1',
+        item_id: 'item-1',
+        category: 'Furniture',
+        name: 'Oak Table',
+        sold: true,
+      })
+    )
+  })
+
+  it('calculates days_to_sell correctly in price_history', async () => {
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: 'item-2',
+              account_id: 'acc-1',
+              location_id: 'loc-1',
+              name: 'Chair',
+              category: 'Furniture',
+              condition: 'good',
+              description: null,
+              price: 50,
+              sold_price: 45,
+              priced_at: '2026-03-01T00:00:00Z',
+              sold_date: '2026-03-11',
+              status: 'sold',
+            },
+            error: null,
+          }),
+        }),
+      }),
+    })
+
+    mockInsert.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      }),
+    })
+
+    const req = makeRequest('http://localhost:3000/api/items', {
+      method: 'PATCH',
+      body: JSON.stringify({ id: 'item-2', status: 'sold', sold_price: 45 }),
+    })
+    await PATCH(req)
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        days_to_sell: 10, // March 1 to March 11
+        sold_price: 45,
+      })
+    )
+  })
+
+  it('does not write price_history when status is not sold', async () => {
+    const req = makeRequest('http://localhost:3000/api/items', {
+      method: 'PATCH',
+      body: JSON.stringify({ id: 'item-1', status: 'donated' }),
+    })
+    await PATCH(req)
+
+    // price_history should NOT be called
+    const priceHistoryCalls = mockFrom.mock.calls.filter(
+      (call: string[]) => call[0] === 'price_history'
+    )
+    expect(priceHistoryCalls).toHaveLength(0)
+  })
+
   it('auto-sets priced_at and status when price is set', async () => {
     const req = makeRequest('http://localhost:3000/api/items', {
       method: 'PATCH',

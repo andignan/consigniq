@@ -108,5 +108,34 @@ export async function PATCH(request: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Write price_history record when item is marked sold
+  if (updates.status === 'sold' && data) {
+    const item = data as Record<string, unknown>
+    const pricedAt = item.priced_at as string | null
+    const soldDate = item.sold_date as string | null
+    let daysToSell: number | null = null
+    if (pricedAt && soldDate) {
+      const priced = new Date(pricedAt)
+      const sold = new Date(soldDate + 'T00:00:00')
+      daysToSell = Math.max(0, Math.floor((sold.getTime() - priced.getTime()) / (1000 * 60 * 60 * 24)))
+    }
+
+    await supabase.from('price_history').insert({
+      account_id: item.account_id,
+      location_id: item.location_id,
+      item_id: item.id,
+      category: item.category,
+      name: item.name,
+      description: item.description ?? null,
+      condition: item.condition,
+      priced_at: item.priced_at ?? null,
+      sold_at: item.sold_date ?? null,
+      sold_price: updates.sold_price ?? item.sold_price ?? item.price ?? null,
+      days_to_sell: daysToSell,
+      sold: true,
+    })
+  }
+
   return NextResponse.json({ item: data })
 }

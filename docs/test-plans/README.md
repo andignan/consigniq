@@ -20,6 +20,7 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Multi-Tenancy](./multi-tenancy.md) | `multi-tenancy.md` | Account/location scoping, RLS, data isolation | Indirect (API auth tests) |
 | [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | None (client component) |
 | [Multi-Location](./multi-location.md) | `multi-location.md` | Location switcher, cross-location dashboard, location management | API route tests |
+| [Repeat Item History](./repeat-item-history.md) | `repeat-item-history.md` | Price history recording, "Priced Before" panel, similar items API | API route tests |
 
 ## Automated Test Suite
 
@@ -34,7 +35,8 @@ __tests__/
 │   ├── items.test.ts          — GET/POST/PATCH /api/items, filters, auto-timestamps
 │   ├── pricing.test.ts        — /api/pricing/comps, /identify, /suggest validation
 │   ├── settings.test.ts       — /api/settings/location, /account, /invite role enforcement
-│   └── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
+│   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
+│   └── price-history.test.ts  — GET /api/price-history, auth, validation, search
 └── components/                — (placeholder for future component tests)
 ```
 
