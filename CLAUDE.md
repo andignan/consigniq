@@ -275,10 +275,14 @@ Located at `/docs/test-plans/`. 21 test plans covering: authentication, consigno
 - Timezone bugfix: `getLifecycleStatus()` parses date strings as local time (appends `T00:00:00`)
 - Test suite: **116 Jest tests passing**, 5 Playwright E2E specs, 19 manual test plans
 
-### Phase 6 — In Progress
-- **Done**: Stripe Billing & Tier Enforcement — subscription checkout, portal, webhook, tier-based feature gating, AI pricing usage tracking (50/mo starter limit), UpgradePrompt component, billing UI in Settings
-- Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`
-- **Done**: Cross-Customer Pricing Intelligence — `/api/pricing/cross-account` (Pro-only, three-level matching: exact → fuzzy → category fallback, Claude insight text), Market Intelligence panel on pricing page, admin Network Pricing Intelligence card, `/api/admin/network-stats`, seed script at `scripts/seed-cross-account-data.ts`
-- Migration: `20260314040000_create_cross_account_pricing_view.sql`
+**Phase 6 — COMPLETE.** All planned features implemented, tested, and documented.
+
+### Phase 6 Feature List (Done)
+- Stripe Billing & Tier Enforcement — subscription checkout, portal, webhook, tier-based feature gating, AI pricing usage tracking (50/mo starter limit), UpgradePrompt component, billing UI in Settings
+- Cross-Customer Pricing Intelligence — `/api/pricing/cross-account` (Pro-only, three-level matching: exact → fuzzy → category fallback, Claude insight text), Market Intelligence panel on pricing page, admin Network Pricing Intelligence card, `/api/admin/network-stats`, seed script at `scripts/seed-cross-account-data.ts`
 - Bugfix: `price_history.priced_at` and `sold_at` converted from numeric to `timestamptz` (migration `20260314050000`), regression tests added
+- Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`, `20260314040000_create_cross_account_pricing_view.sql`, `20260314050000_fix_price_history_timestamp_columns.sql`
 - Test suite: **158 Jest tests passing**, 5 Playwright E2E specs, 21 manual test plans
+
+### Deferred to Phase 7+
+- **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

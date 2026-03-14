@@ -1,6 +1,6 @@
 # ConsignIQ Test Plans
 
-Test baseline established for Phases 1–5. Each test plan covers happy paths, edge cases, role enforcement, mobile layout, and current automation status.
+Test baseline established for Phases 1–6. Each test plan covers happy paths, edge cases, role enforcement, mobile layout, and current automation status.
 
 ## Test Plans
 
@@ -86,6 +86,7 @@ npm run test:e2e:ui   # Playwright with interactive UI
 ## Notes
 
 - Agreement Emails feature is not yet implemented (type exists but no code)
+- Community Pricing Feed is deferred to Phase 7+ — feature gate exists in `tier-limits.ts` (`community_pricing_feed`, Pro tier) but no API, UI, or implementation
 - Reports page is purely client-side computation — testing requires component rendering tests or E2E
 - Markdown automation (auto-applying markdowns) is not yet implemented; only the toggle and display exist
 - All API tests mock the Supabase client to test route handler logic in isolation
