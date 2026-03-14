@@ -434,5 +434,12 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Password reset email template**: `buildPasswordResetEmail()` in `src/lib/email-templates.ts` — ConsignIQ-branded HTML with "Reset Password" CTA button, 24-hour expiry note.
 - Test suite: **260 Jest tests passing**, 26 manual test plans
 
+### Solo Pricer UX Fixes (Done)
+- **Welcome message on setup-password**: Shows "Welcome, [first name]!" above the password form, pulled from `user_metadata.full_name` once session is established from hash token.
+- **Password show/hide toggle**: Eye/eye-off icon toggle on all password fields — `/auth/setup-password` (both fields) and `/auth/login` (password field). Toggles between `type="password"` and `type="text"`.
+- **Dashboard quick actions for solo**: Server component (`/dashboard/page.tsx`) now fetches account tier via `accounts(tier)` join. Solo users see "Price an Item" + "My Inventory" quick actions; consignor-related actions ("Add New Consignor", "View All Consignors") and lifecycle alerts are hidden. Header button changes from "New Consignor" to "Price an Item".
+- **Sidebar role label**: Solo tier users show "Solo Pricer" instead of "Owner" in the sidebar user section.
+- Test suite: **260 Jest tests passing**
+
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

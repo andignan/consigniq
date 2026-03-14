@@ -108,15 +108,19 @@ export default async function DashboardPage({
   const { data: { user: authUser } } = await supabase.auth.getUser()
   let accountId = ''
   let userRole = 'staff'
+  let accountTier = 'starter'
   if (authUser) {
     const { data: profile } = await supabase
       .from('users')
-      .select('account_id, role')
+      .select('account_id, role, accounts(tier)')
       .eq('id', authUser.id)
       .single()
     accountId = profile?.account_id ?? ''
     userRole = profile?.role ?? 'staff'
+    accountTier = (profile?.accounts as { tier?: string } | null)?.tier ?? 'starter'
   }
+
+  const isSolo = accountTier === 'solo'
 
   const locationId = searchParams.location_id ?? process.env.DEFAULT_LOCATION_ID ?? ''
   const isAllLocations = !searchParams.location_id && userRole === 'owner'
@@ -333,17 +337,28 @@ export default async function DashboardPage({
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <Link
-          href="/dashboard/consignors/new"
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          New Consignor
-        </Link>
+        {!isSolo && (
+          <Link
+            href="/dashboard/consignors/new"
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            New Consignor
+          </Link>
+        )}
+        {isSolo && (
+          <Link
+            href="/dashboard/pricing"
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+          >
+            <Package className="w-4 h-4" />
+            Price an Item
+          </Link>
+        )}
       </div>
 
       {/* Alerts */}
-      {(inGrace.length > 0 || donationEligible.length > 0 || expiringSoon.length > 0) && (
+      {!isSolo && (inGrace.length > 0 || donationEligible.length > 0 || expiringSoon.length > 0) && (
         <div className="space-y-2 mb-6">
           {donationEligible.length > 0 && (
             <Link href="/dashboard/consignors?filter=donation" className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-3 text-sm transition-colors">
@@ -415,9 +430,18 @@ export default async function DashboardPage({
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h2>
         <div className="space-y-1">
-          <QuickLink href="/dashboard/consignors/new" label="Add New Consignor" icon={Users} />
-          <QuickLink href="/dashboard/inventory?status=pending" label={`Price Pending Items (${pendingItems})`} icon={Package} highlight={pendingItems > 0} />
-          <QuickLink href="/dashboard/consignors" label="View All Consignors" icon={ArrowRight} />
+          {isSolo ? (
+            <>
+              <QuickLink href="/dashboard/pricing" label="Price an Item" icon={Package} highlight />
+              <QuickLink href="/dashboard/inventory" label="My Inventory" icon={ArrowRight} />
+            </>
+          ) : (
+            <>
+              <QuickLink href="/dashboard/consignors/new" label="Add New Consignor" icon={Users} />
+              <QuickLink href="/dashboard/inventory?status=pending" label={`Price Pending Items (${pendingItems})`} icon={Package} highlight={pendingItems > 0} />
+              <QuickLink href="/dashboard/consignors" label="View All Consignors" icon={ArrowRight} />
+            </>
+          )}
         </div>
       </div>
     </div>
