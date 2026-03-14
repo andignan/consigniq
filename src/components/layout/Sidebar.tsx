@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLocation } from '@/contexts/LocationContext'
+import { useUser } from '@/contexts/UserContext'
 import type { User } from '@/types/database'
 
 const NAV_ITEMS = [
@@ -49,22 +50,22 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: 'Pending Items',
-    href: '/dashboard/inventory?status=pending',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
     label: 'Reports',
     href: '/dashboard/reports',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
           d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Payouts',
+    href: '/dashboard/payouts',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
@@ -93,15 +94,19 @@ export default function Sidebar({ user }: SidebarProps) {
   const fullPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
+  const [expiringCount, setExpiringCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const {
+    activeLocationId,
     activeLocationName,
     locations,
     isAllLocations,
     canSwitchLocations,
     setActiveLocation,
   } = useLocation()
+
+  const { user: contextUser } = useUser()
 
   // Close sidebar on route change
   useEffect(() => {
@@ -118,6 +123,45 @@ export default function Sidebar({ user }: SidebarProps) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Fetch expiring consignor count (expiring within 7 days or in grace)
+  useEffect(() => {
+    async function fetchExpiringCount() {
+      if (!contextUser?.account_id) return
+      const locationParam = activeLocationId ? `&location_id=${activeLocationId}` : ''
+      // We don't have a dedicated endpoint, so fetch consignors and filter client-side
+      if (!activeLocationId && !isAllLocations) return
+      const locId = activeLocationId || (locations.length > 0 ? locations[0].id : null)
+      if (!locId && !isAllLocations) return
+
+      try {
+        // Fetch from all locations if owner viewing all, otherwise specific location
+        const fetchLocations = isAllLocations ? locations.map(l => l.id) : [locId!]
+        let total = 0
+        for (const lid of fetchLocations) {
+          const res = await fetch(`/api/consignors?location_id=${lid}`, { credentials: 'include' })
+          if (!res.ok) continue
+          const data = await res.json()
+          const consignors = data.consignors || []
+          const now = new Date()
+          now.setHours(0, 0, 0, 0)
+          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+          total += consignors.filter((c: { status: string; expiry_date: string; grace_end_date: string }) => {
+            if (c.status === 'closed') return false
+            const expiry = new Date(c.expiry_date + 'T00:00:00')
+            const graceEnd = new Date(c.grace_end_date + 'T00:00:00')
+            const isExpiringSoon = expiry.getTime() - now.getTime() <= sevenDaysMs && expiry.getTime() >= now.getTime()
+            const isInGrace = now > expiry && now <= graceEnd
+            return isExpiringSoon || isInGrace
+          }).length
+        }
+        setExpiringCount(total)
+      } catch {
+        // Silently fail — badge is informational
+      }
+    }
+    fetchExpiringCount()
+  }, [contextUser?.account_id, activeLocationId, isAllLocations, locations])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -252,6 +296,11 @@ export default function Sidebar({ user }: SidebarProps) {
             >
               {item.icon}
               {item.label}
+              {item.label === 'Consignors' && expiringCount > 0 && (
+                <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                  {expiringCount}
+                </span>
+              )}
             </Link>
           )
         })}

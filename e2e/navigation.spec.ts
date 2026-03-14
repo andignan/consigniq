@@ -15,8 +15,8 @@ test.describe('Sidebar Navigation', () => {
       'Consignors',
       'Inventory',
       'Price Lookup',
-      'Pending Items',
       'Reports',
+      'Payouts',
       'Settings',
     ]
 

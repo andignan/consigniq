@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (158 tests across unit + API)
+- `npm test` — Jest test suite (170 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -55,6 +55,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
 - `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
+- `/api/payouts` — GET consignor payout data (sold items grouped by consignor with split calculations). Supports `location_id`, `status` (`unpaid`/`paid`/`all`) filters. PATCH marks items as paid (takes `item_ids[]`, optional `payout_note`).
 
 ### UserContext
 
@@ -167,8 +168,11 @@ Three-tab settings page with role-based access:
 
 API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET + PATCH), `/api/settings/invite` (POST), `/api/locations` (GET + POST). All enforce role checks — owner for edits, staff gets read-only location settings.
 
+### Payouts (`/dashboard/payouts`)
+Client component. Shows consignors with sold items, split calculations (store/consignor shares), Mark as Paid functionality, filter tabs (Unpaid/Paid/All), CSV export. Summary cards: Total Owed, Total Paid Out, Consignors with Balance. Expandable consignor rows with item checkboxes for bulk "Mark as Paid" with optional payout note.
+
 ### Sidebar (`/dashboard` layout)
-Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Pending Items, Reports, Settings. Location switcher dropdown below brand (owners can switch locations, staff sees static location name). Mobile header shows active location name.
+Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Reports, Payouts, Settings. Consignors nav item shows amber badge with count of consignors expiring within 7 days or in grace period (scoped by active location). Location switcher dropdown below brand (owners can switch locations, staff sees static location name). Mobile header shows active location name.
 
 ### Admin (`/admin`) — Superadmin Only
 Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
@@ -192,7 +196,7 @@ All client-side `fetch()` calls to `/api/` routes MUST include `credentials: 'in
 ### Supabase schema column names
 Always audit actual column names before writing queries. Key fields:
 - Consignors: `split_store`, `split_consignor` (integers, not `split_pct_*`)
-- Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`
+- Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
 - Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`
@@ -211,12 +215,13 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6. Test suite: **158 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **170 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
 - **Phase 6 additions** (+40): feature-gates 14, billing 8, billing-webhook 5, cross-account-pricing 9, admin-network-stats 4 = 156
 - **Timestamp regression** (+2): items.test.ts +1 (priced_at/sold_at ISO string regression), cross-account-pricing.test.ts +1 (view shape validation) = 158
+- **Sidebar improvements** (+12): payouts.test.ts 12 (GET auth/404/empty/splits/location filter/unpaid filter/paid filter, PATCH auth/400 missing/400 empty/mark with note/mark without note) = 170
 
 ### Test Structure
 ```
@@ -240,7 +245,8 @@ __tests__/
 │   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe session
 │   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
 │   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
-│   └── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
+│   ├── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
+│   └── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
 ```
 
 ### Playwright E2E Tests
@@ -256,7 +262,7 @@ e2e/
 **Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 21 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing.
+Located at `/docs/test-plans/`. 22 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
 
 ## Phase Status
 
@@ -283,6 +289,15 @@ Located at `/docs/test-plans/`. 21 test plans covering: authentication, consigno
 - Bugfix: `price_history.priced_at` and `sold_at` converted from numeric to `timestamptz` (migration `20260314050000`), regression tests added
 - Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`, `20260314040000_create_cross_account_pricing_view.sql`, `20260314050000_fix_price_history_timestamp_columns.sql`
 - Test suite: **158 Jest tests passing**, 5 Playwright E2E specs, 21 manual test plans
+
+### Sidebar Navigation Improvements (Done)
+- Removed "Pending Items" from sidebar (already a filter tab in Inventory)
+- Added "Payouts" page (`/dashboard/payouts`) between Reports and Settings
+- Payouts API (`/api/payouts`) — GET payout list with split calculations, PATCH mark as paid
+- Expiring consignor badge on Consignors nav item (amber, count of consignors expiring ≤7 days or in grace)
+- Migration `20260314060000_add_payout_fields.sql` — adds `paid_at` (timestamptz) and `payout_note` (text) to items table
+- Updated E2E navigation spec (replaced Pending Items with Payouts)
+- Test suite: **170 Jest tests passing**, 5 Playwright E2E specs, 22 manual test plans
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

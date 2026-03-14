@@ -27,10 +27,11 @@ Test baseline established for Phases 1–6. Each test plan covers happy paths, e
 | [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route + Playwright E2E |
 | [Stripe Billing](./stripe-billing.md) | `stripe-billing.md` | Checkout, portal, webhook, tier gates, usage tracking | API + unit tests |
 | [Cross-Customer Pricing](./cross-customer-pricing.md) | `cross-customer-pricing.md` | Cross-account pricing intelligence, market panel, admin network stats | API route tests |
+| [Payouts](./payouts.md) | `payouts.md` | Payout tracking, split calculations, mark as paid, CSV export, sidebar badge | API route tests |
 
 ## Automated Test Suite
 
-### Jest Tests (158 tests)
+### Jest Tests (170 tests)
 ```
 __tests__/
 ├── unit/
@@ -52,7 +53,8 @@ __tests__/
 │   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe
 │   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates
 │   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
-│   └── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
+│   ├── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
+│   └── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
 └── components/                — (placeholder for future component tests)
 ```
 
@@ -60,7 +62,7 @@ __tests__/
 ```
 e2e/
 ├── auth.spec.ts           — Login page render, invalid credentials, valid login redirect
-├── navigation.spec.ts     — 7 sidebar nav items, active state, mobile hamburger
+├── navigation.spec.ts     — 7 sidebar nav items (incl. Payouts, no Pending Items), active state, mobile hamburger
 ├── data-isolation.spec.ts — /admin redirects non-superadmin, unauthenticated access blocked
 ├── help-widget.spec.ts    — Widget visible on /dashboard, opens on click, absent on /admin
 └── labels.spec.ts         — Checkboxes on inventory, bulk action bar, print button on priced
@@ -79,7 +81,7 @@ npm run test:e2e:ui   # Playwright with interactive UI
 ## Current Status
 
 - **Unit tests**: Passing — lifecycle, categories, help knowledge base
-- **API tests**: Passing — consignors, items, pricing, settings, locations, price-history, admin, help, reports-query, labels, cross-account-pricing, admin-network-stats
+- **API tests**: Passing — consignors, items, pricing, settings, locations, price-history, admin, help, reports-query, labels, cross-account-pricing, admin-network-stats, payouts
 - **E2E tests**: Configured — 5 Playwright specs (auth, navigation, data-isolation, help-widget, labels)
 - **Component tests**: Not yet implemented (would require more extensive mocking of Next.js rendering)
 
