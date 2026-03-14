@@ -227,6 +227,10 @@ export default function PriceLookupPage() {
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !isRunning && runFullPricing()}
+              onBlur={e => {
+                const v = e.target.value.trim()
+                if (v) setName(v.replace(/\b\w/g, c => c.toUpperCase()))
+              }}
               placeholder="e.g. Waterford Crystal Lismore Vase"
               disabled={isRunning}
               className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"

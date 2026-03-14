@@ -497,6 +497,10 @@ export default function PricingPage() {
                 type="text"
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
+                onBlur={e => {
+                  const v = e.target.value.trim()
+                  if (v) setEditName(v.replace(/\b\w/g, c => c.toUpperCase()))
+                }}
                 disabled={editSaving}
                 className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
               />

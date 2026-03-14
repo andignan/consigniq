@@ -63,6 +63,59 @@ describe('POST /api/pricing/comps', () => {
     expect(body.comps).toEqual([])
     expect(body.source).toBe('none')
   })
+
+  it('includes sold listing and pre-owned condition params in SerpApi request', async () => {
+    process.env.SERPAPI_KEY = 'test-serpapi-key'
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ organic_results: [] }), { status: 200 })
+    )
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/comps'), {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Oak Table', category: 'Furniture' }),
+    })
+    await POST(req)
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const calledUrl = fetchSpy.mock.calls[0][0] as string
+    const url = new URL(calledUrl)
+    expect(url.searchParams.get('LH_Sold')).toBe('1')
+    expect(url.searchParams.get('LH_Complete')).toBe('1')
+    expect(url.searchParams.get('LH_ItemCondition')).toBe('3000')
+    expect(url.searchParams.get('engine')).toBe('ebay')
+
+    fetchSpy.mockRestore()
+  })
+
+  it('filters out new-condition items from results', async () => {
+    process.env.SERPAPI_KEY = 'test-serpapi-key'
+    const mockResults = {
+      organic_results: [
+        { title: 'Used Oak Table', price: { raw: '$50.00' }, link: 'http://ebay.com/1', condition: 'Pre-Owned' },
+        { title: 'New Oak Table', price: { raw: '$120.00' }, link: 'http://ebay.com/2', condition: 'Brand New' },
+        { title: 'Another Table', price: { raw: '$65.00' }, link: 'http://ebay.com/3', condition: 'New with tags' },
+        { title: 'Good Table', price: { raw: '$45.00' }, link: 'http://ebay.com/4', condition: 'Used' },
+        { title: 'Refurb Table', price: { raw: '$80.00' }, link: 'http://ebay.com/5', condition: 'New other' },
+      ],
+    }
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(mockResults), { status: 200 })
+    )
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/comps'), {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Oak Table', category: 'Furniture' }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // Only Pre-Owned and Used should remain
+    expect(body.comps).toHaveLength(2)
+    expect(body.comps[0].title).toBe('Used Oak Table')
+    expect(body.comps[1].title).toBe('Good Table')
+
+    fetchSpy.mockRestore()
+  })
 })
 
 describe('POST /api/pricing/identify', () => {

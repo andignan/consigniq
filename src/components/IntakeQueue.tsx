@@ -472,6 +472,10 @@ function IntakeRow({
               value={draft.name}
               onChange={e => onChange(draft.id, 'name', e.target.value)}
               onKeyDown={onNameKeyDown}
+              onBlur={e => {
+                const v = e.target.value.trim()
+                if (v) onChange(draft.id, 'name', v.replace(/\b\w/g, c => c.toUpperCase()))
+              }}
               placeholder={identifying ? 'Identifying item...' : 'Item name'}
               disabled={isDisabled}
               className="item-name-input flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"

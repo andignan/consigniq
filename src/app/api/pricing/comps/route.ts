@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       _nkw: searchQuery,
       LH_Sold: '1',
       LH_Complete: '1',
+      LH_ItemCondition: '3000',
       api_key: serpApiKey,
     })
 
@@ -64,8 +65,16 @@ export async function POST(request: NextRequest) {
       if (data.search_information) console.log('[comps] search_information:', JSON.stringify(data.search_information))
     }
 
+    // Exclude new-condition items that may slip through despite LH_ItemCondition filter
+    const NEW_CONDITIONS = ['brand new', 'new', 'new with tags', 'new without tags', 'new with defects', 'new other']
+
     const comps: CompResult[] = results
-      .filter((r: { price?: { raw?: string } }) => r.price?.raw)
+      .filter((r: { price?: { raw?: string }; condition?: string }) => {
+        if (!r.price?.raw) return false
+        // Exclude new-condition listings
+        if (r.condition && NEW_CONDITIONS.includes(r.condition.toLowerCase())) return false
+        return true
+      })
       .slice(0, 8)
       .map((r: { title: string; price?: { raw?: string }; link: string; condition?: string; thumbnail?: string }) => ({
         title: r.title as string,

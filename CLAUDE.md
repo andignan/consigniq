@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (170 tests across unit + API)
+- `npm test` — Jest test suite (180 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -24,7 +24,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - **Tailwind CSS 3** for styling (responsive: `md:` breakpoint for desktop)
 - **lucide-react** for icons
 - **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing and photo identification (vision)
-- **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`)
+- **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`, `LH_ItemCondition=3000` for pre-owned only)
 - **pdf-lib** for PDF label generation (no browser dependency)
 - **Stripe** (`stripe`) for subscription billing and payment processing
 - Path alias: `@/*` maps to `./src/*`
@@ -51,7 +51,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/billing/checkout` — POST creates Stripe Checkout session for subscription. Takes `{ tier: 'standard' | 'pro' }`. Creates Stripe customer if needed. Owner only. Returns `{ url }` to redirect.
 - `/api/billing/portal` — POST creates Stripe Customer Portal session. Requires existing stripe_customer_id. Owner only. Returns `{ url }`.
 - `/api/billing/webhook` — POST Stripe webhook handler. Excluded from auth middleware. Handles: `checkout.session.completed` (update tier), `customer.subscription.updated` (sync tier), `customer.subscription.deleted` (downgrade to starter), `invoice.payment_failed` (log warning only).
-- `/api/pricing/comps` — SerpApi eBay sold comp lookup
+- `/api/pricing/comps` — SerpApi eBay sold comp lookup. Filters: sold listings only (`LH_Sold=1`, `LH_Complete=1`), pre-owned condition only (`LH_ItemCondition=3000`). Also client-side filters out any remaining new-condition results (Brand New, New with tags, etc.).
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
 - `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
@@ -137,6 +137,7 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - "Get AI Suggestion" escalation after comps-only
 - Inline editing of item details (inventory pricing only)
 - Manual price override with apply
+- Item name auto-capitalize on blur (first letter of each word capitalized when user leaves the field)
 - "Priced Before" panel (inventory pricing only) — shows similar previously-sold items from `price_history` with avg sold price and avg days to sell
 - "Market Intelligence" panel (inventory pricing only, Pro tier) — cross-account pricing data from the entire ConsignIQ network with avg/median/range/days stats and optional AI insight text. Three-level matching: exact → fuzzy → category fallback. Shows UpgradePrompt for non-Pro tiers.
 
@@ -215,13 +216,14 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **170 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **180 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
 - **Phase 6 additions** (+40): feature-gates 14, billing 8, billing-webhook 5, cross-account-pricing 9, admin-network-stats 4 = 156
 - **Timestamp regression** (+2): items.test.ts +1 (priced_at/sold_at ISO string regression), cross-account-pricing.test.ts +1 (view shape validation) = 158
 - **Sidebar improvements** (+12): payouts.test.ts 12 (GET auth/404/empty/splits/location filter/unpaid filter/paid filter, PATCH auth/400 missing/400 empty/mark with note/mark without note) = 170
+- **eBay comps fix + auto-capitalize** (+10): pricing.test.ts +2 (SerpApi params, new-condition filtering), auto-capitalize.test.ts 8 (word capitalization, edge cases) = 180
 
 ### Test Structure
 ```
@@ -230,11 +232,12 @@ __tests__/
 │   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
 │   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
 │   ├── help-components.test.ts — Knowledge base content and topic coverage
-│   └── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping
+│   ├── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping
+│   └── auto-capitalize.test.ts — Item name auto-capitalize on blur behavior
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
 │   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes, timestamp type regression
-│   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys
+│   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys, sold/pre-owned filters, new-condition exclusion
 │   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
 │   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
