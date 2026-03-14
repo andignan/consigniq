@@ -6,11 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, Filter, Download, Package, Loader2, X,
-  Tag, DollarSign, Gift, Pencil, Sparkles,
+  Tag, DollarSign, Gift, Pencil, Sparkles, Users,
 } from 'lucide-react'
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
 import { useUser } from '@/contexts/UserContext'
+
+interface ConsignorOption {
+  id: string
+  name: string
+}
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
@@ -48,6 +53,8 @@ export default function InventoryPage() {
     (searchParams.get('status') as ItemStatus) || 'all'
   )
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '')
+  const [consignorFilter, setConsignorFilter] = useState(searchParams.get('consignor_id') || '')
+  const [consignors, setConsignors] = useState<ConsignorOption[]>([])
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>()
 
@@ -65,6 +72,20 @@ export default function InventoryPage() {
   // Sell form state
   const [soldPrice, setSoldPrice] = useState('')
 
+  // ─── Fetch consignors for filter dropdown ────────────────
+  useEffect(() => {
+    if (!user?.location_id) return
+    fetch(`/api/consignors?location_id=${user.location_id}`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : { consignors: [] })
+      .then(({ consignors: data }) => {
+        const sorted = (data ?? [])
+          .map((c: ConsignorOption) => ({ id: c.id, name: c.name }))
+          .sort((a: ConsignorOption, b: ConsignorOption) => a.name.localeCompare(b.name))
+        setConsignors(sorted)
+      })
+      .catch(() => setConsignors([]))
+  }, [user?.location_id])
+
   // ─── Fetch items ──────────────────────────────────────────
   const fetchItems = useCallback(async () => {
     setLoading(true)
@@ -72,6 +93,7 @@ export default function InventoryPage() {
     if (user?.location_id) params.set('location_id', user.location_id)
     if (statusFilter !== 'all') params.set('status', statusFilter)
     if (categoryFilter) params.set('category', categoryFilter)
+    if (consignorFilter) params.set('consignor_id', consignorFilter)
     if (searchQuery) params.set('search', searchQuery)
 
     try {
@@ -84,7 +106,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, categoryFilter, searchQuery, user?.location_id])
+  }, [statusFilter, categoryFilter, consignorFilter, searchQuery, user?.location_id])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -93,10 +115,11 @@ export default function InventoryPage() {
     const params = new URLSearchParams()
     if (statusFilter !== 'all') params.set('status', statusFilter)
     if (categoryFilter) params.set('category', categoryFilter)
+    if (consignorFilter) params.set('consignor_id', consignorFilter)
     if (searchQuery) params.set('search', searchQuery)
     const qs = params.toString()
     router.replace('/dashboard/inventory' + (qs ? '?' + qs : ''), { scroll: false })
-  }, [statusFilter, categoryFilter, searchQuery, router])
+  }, [statusFilter, categoryFilter, consignorFilter, searchQuery, router])
 
   // Debounced search
   function handleSearch(value: string) {
@@ -229,7 +252,12 @@ export default function InventoryPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `inventory-${statusFilter}-${new Date().toISOString().split('T')[0]}.csv`
+    const consignorSlug = consignorFilter
+      ? (consignors.find(c => c.id === consignorFilter)?.name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '') || 'consignor'
+      : ''
+    const parts = ['inventory', statusFilter, consignorSlug, categoryFilter.toLowerCase().replace(/[^a-z0-9]+/g, '')]
+      .filter(Boolean)
+    a.download = `${parts.join('-')}-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -292,6 +320,20 @@ export default function InventoryPage() {
               <X className="w-4 h-4" />
             </button>
           )}
+        </div>
+
+        <div className="relative">
+          <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
+          <select
+            value={consignorFilter}
+            onChange={e => setConsignorFilter(e.target.value)}
+            className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">All Consignors</option>
+            {consignors.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="relative">
