@@ -11,21 +11,61 @@ export default function SetupPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
+  const [expired, setExpired] = useState(false)
 
-  // On mount, let Supabase process the token from the URL hash
   useEffect(() => {
-    const supabase = createClient()
-    // Supabase auto-detects the access_token/refresh_token from the URL hash
-    // and establishes a session. We wait for the auth state to settle.
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'TOKEN_REFRESHED') {
-        setReady(true)
+    let timeout: ReturnType<typeof setTimeout>
+
+    async function establishSession() {
+      const supabase = createClient()
+
+      // 1. Parse tokens from URL hash (Supabase implicit/invite flow)
+      const hash = window.location.hash.substring(1)
+      if (hash) {
+        const params = new URLSearchParams(hash)
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          if (!sessionError) {
+            // Clear the hash from the URL for cleanliness
+            window.history.replaceState(null, '', window.location.pathname)
+            setReady(true)
+            return
+          }
+        }
       }
-    })
-    // Also check if already signed in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
+
+      // 2. Check if already signed in (e.g. user navigated here manually)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setReady(true)
+        return
+      }
+
+      // 3. Listen for auth state changes as fallback
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'TOKEN_REFRESHED') {
+          setReady(true)
+        }
+      })
+
+      // 4. Timeout after 10 seconds
+      timeout = setTimeout(() => {
+        subscription.unsubscribe()
+        setExpired(true)
+      }, 10000)
+    }
+
+    establishSession()
+
+    return () => {
+      if (timeout) clearTimeout(timeout)
+    }
   }, [])
 
   async function handleSubmit() {
@@ -67,7 +107,14 @@ export default function SetupPasswordPage() {
           <h2 className="text-lg font-semibold text-stone-900 mb-2">Set Your Password</h2>
           <p className="text-sm text-stone-500 mb-6">Create a password to access your account.</p>
 
-          {!ready && (
+          {expired && !ready && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+              <p className="text-sm text-red-700 font-medium">This link has expired or is invalid.</p>
+              <p className="text-xs text-red-600 mt-1">Please request a new invite from your administrator.</p>
+            </div>
+          )}
+
+          {!ready && !expired && (
             <p className="text-sm text-stone-400 mb-4">Verifying your invite link...</p>
           )}
 
