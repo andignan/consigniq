@@ -158,12 +158,12 @@ __tests__/
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. Covers: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page.
+Located at `/docs/test-plans/`. 13 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation.
 
 ## Phase Status
 
 Phase 5 is in progress. Completed so far:
 - `sold_price` column added to `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql` — must be run via Supabase Dashboard SQL Editor)
 - Settings page at `/dashboard/settings` with Location Settings and Account Settings sections
-- Full test baseline established (50 tests passing, 10 manual test plans)
+- Full test baseline established (50 tests passing, 13 manual test plans)
 - Next up: Multi-Location Support

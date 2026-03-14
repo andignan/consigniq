@@ -16,6 +16,9 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Reporting & Export](./reporting-export.md) | `reporting-export.md` | 13 report sections, time filters, 11 CSV exports | None (client-side) |
 | [Agreement Emails](./agreement-emails.md) | `agreement-emails.md` | Agreement PDF + email delivery | N/A (not implemented) |
 | [Settings Page](./settings-page.md) | `settings-page.md` | Location/account settings, team mgmt, invites | API role tests |
+| [Dashboard Home](./dashboard-home.md) | `dashboard-home.md` | Stats cards, lifecycle alerts, quick actions | None (server component) |
+| [Multi-Tenancy](./multi-tenancy.md) | `multi-tenancy.md` | Account/location scoping, RLS, data isolation | Indirect (API auth tests) |
+| [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | None (client component) |
 
 ## Automated Test Suite
 
