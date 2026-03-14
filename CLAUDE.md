@@ -11,7 +11,8 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- No test framework is configured yet
+- `npm test` — Jest test suite (50 tests across unit + API)
+- `npm run test:watch` — Jest in watch mode
 
 ## Tech Stack
 
@@ -106,8 +107,15 @@ Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role locat
 
 Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period. Items query includes `ai_reasoning`, `current_markdown_pct`, `low_price`, `high_price`. Consignor join includes `intake_date`, `expiry_date`, `grace_end_date`.
 
+### Settings (`/dashboard/settings`)
+Two-tab settings page with role-based access:
+- **Location Settings** (visible to owner + staff, only owner can edit): location name/address/city/state/phone, default split % (store + consignor, must add to 100 with live validation), agreement_days, grace_days, markdown_enabled toggle with hardcoded schedule display (Day 31 → 25% off, Day 46 → 50% off)
+- **Account Settings** (owner only): account name (editable), tier badge (read-only), Manage Billing link (placeholder `/api/billing/portal`), team member list, invite user modal (email + role → writes to invitations table)
+
+API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET + PATCH), `/api/settings/invite` (POST). All enforce role checks — owner for edits, staff gets read-only location settings.
+
 ### Sidebar (`/dashboard` layout)
-Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset.
+Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Pending Items, Reports, Settings.
 
 ## Critical Patterns
 
@@ -119,6 +127,11 @@ Always audit actual column names before writing queries. Key fields:
 - Consignors: `split_store`, `split_consignor` (integers, not `split_pct_*`)
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
+- Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
+- Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`
+- Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`
+- Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
+- Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id`, `name`, `priced_at`, `sold`, `sold_at`, `sold_price` (added Phase 5)
 
 ### Never hardcode location_id
 Always pull location from the user's session profile via UserContext (`useUser()`) or from the server-side profile query.
@@ -126,3 +139,31 @@ Always pull location from the user's session profile via UserContext (`useUser()
 ## Environment Variables
 
 See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email).
+
+## Testing
+
+Full test baseline established for Phases 1–4. Test suite: **50 tests, all passing**.
+
+### Test Structure
+```
+__tests__/
+├── unit/
+│   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
+│   └── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
+├── api/
+│   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
+│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps
+│   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys
+│   └── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
+```
+
+### Manual Test Plans
+Located at `/docs/test-plans/`. Covers: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page.
+
+## Phase Status
+
+Phase 5 is in progress. Completed so far:
+- `sold_price` column added to `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql` — must be run via Supabase Dashboard SQL Editor)
+- Settings page at `/dashboard/settings` with Location Settings and Account Settings sections
+- Full test baseline established (50 tests passing, 10 manual test plans)
+- Next up: Multi-Location Support
