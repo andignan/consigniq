@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (192 tests across unit + API)
+- `npm test` — Jest test suite (203 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -27,6 +27,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`, `LH_ItemCondition=3000` for pre-owned only)
 - **pdf-lib** for PDF label generation (no browser dependency)
 - **Stripe** (`stripe`) for subscription billing and payment processing
+- **Resend** (`resend`) for transactional email (agreement emails, expiry notifications)
 - Path alias: `@/*` maps to `./src/*`
 
 ## Architecture
@@ -57,6 +58,8 @@ Three Supabase client factories:
 - `/api/pricing/identify` — Claude vision item identification from photos
 - `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
 - `/api/payouts` — GET consignor payout data (sold items grouped by consignor with split calculations). Supports `location_id`, `status` (`unpaid`/`paid`/`all`) filters. PATCH marks items as paid (takes `item_ids[]`, optional `payout_note`).
+- `/api/agreements/send` — POST sends consignment agreement email. Takes `{ consignor_id }`. Fetches consignor + items + location, creates `agreements` record, sends email via Resend, updates `email_sent_at`. Returns 400 if no email on consignor.
+- `/api/agreements/notify-expiring` — POST finds consignors with `expiry_date` = today + 3 days, skips already-notified ones, sends reminder emails. Designed for cron job invocation. Returns `{ sent, skipped, errors? }`.
 - `/api/auth/check-superadmin` — GET returns `{ is_superadmin: boolean }`. Uses service role to bypass RLS. Called by login page to determine redirect destination. Excluded from middleware auth protection (under `/api/auth/*`).
 
 ### UserContext
@@ -120,6 +123,14 @@ Data is scoped by `account_id` and `location_id`. Staff users are locked to thei
 
 Core domain concept: consignors go through intake_date -> expiry_date -> grace_end_date. The `getLifecycleStatus()` function in `src/types/index.ts` computes lifecycle state (days remaining, color coding, grace/donation eligibility) used throughout the UI.
 
+### Email Infrastructure
+
+- `src/lib/email.ts` — `sendEmail({ to, subject, text, html })` wrapper around Resend SDK. From address: `ConsignIQ <${RESEND_FROM_EMAIL}>` (defaults to `noreply@consigniq.com`).
+- `src/lib/email-templates.ts` — `buildAgreementEmail()` and `buildExpiryReminderEmail()`. Both return `{ subject, text, html }` (dual plain-text + HTML). Agreement email includes: store header, consignor greeting, agreement details (dates, splits), items table (name/category/condition — NO prices ever shown to consignor), "How It Works" section, pickup instructions, contact info. Expiry reminder includes: store name, expiry date, grace end date, store phone.
+- `src/components/AgreementButton.tsx` — client component with "Send Agreement"/"Resend Agreement" button, confirmation modal, success/error handling, last-sent date display.
+- `src/components/IntakeAgreementPrompt.tsx` — client component showing amber prompt "Ready to send the agreement email?" with Send/Skip buttons after intake completion.
+- Agreements table: `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`.
+
 ### Category-Aware Pricing
 
 12 item categories defined in `src/lib/pricing/categories.ts`, each with `searchTerms()`, `priceGuidance`, and `typicalMargin`. Used by both the eBay comps search and AI pricing prompt.
@@ -130,7 +141,7 @@ Core domain concept: consignors go through intake_date -> expiry_date -> grace_e
 Server component. Shows stats (active consignors, pending items, inventory value, sold count), lifecycle alerts (expiring, grace, donation-eligible), quick actions.
 
 ### Consignors (`/dashboard/consignors`)
-List, detail, and new consignor form. Intake form (`/dashboard/consignors/[id]/intake`) with multi-item queue and photo-based AI identification per row.
+List, detail, and new consignor form. Detail page shows lifecycle progress bar, item stats, agreement button (Send/Resend with last-sent date), and post-intake agreement prompt. Intake form (`/dashboard/consignors/[id]/intake`) with multi-item queue and photo-based AI identification per row.
 
 ### Inventory (`/dashboard/inventory`)
 Client component with status tabs, search, category filter, consignor filter dropdown, edit/sell/donate modals, CSV export. Filters persist in URL params. Checkboxes on each item for bulk selection; bulk action bar with label size picker and "Print Labels" button. Individual "Print" button on priced items.
@@ -210,6 +221,7 @@ Always audit actual column names before writing queries. Key fields:
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price` (added Phase 5). Note: `priced_at` and `sold_at` were originally numeric columns; migration `20260314050000` converts them to `timestamptz` to match what the items route writes (ISO strings).
+- Agreements: `id`, `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`
 
 ### Never hardcode location_id
 Client components: use `useLocation().activeLocationId` from LocationContext (not `useUser().location_id`).
@@ -222,7 +234,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **192 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails. Test suite: **203 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
@@ -231,6 +243,7 @@ Full test baseline established for Phases 1–6 + sidebar improvements. Test sui
 - **Sidebar improvements** (+12): payouts.test.ts 12 (GET auth/404/empty/splits/location filter/unpaid filter/paid filter, PATCH auth/400 missing/400 empty/mark with note/mark without note) = 170
 - **eBay comps fix + auto-capitalize** (+10): pricing.test.ts +2 (SerpApi params, new-condition filtering), auto-capitalize.test.ts 8 (word capitalization, edge cases) = 180
 - **Description hints** (+12): description-hints.test.ts 12 (per-category hints, threshold, no-hint categories) = 192
+- **Agreement emails** (+11): agreements.test.ts 11 (send auth/validation/creation/email-sent-at, agreement template content/missing phone, expiry reminder template, notify-expiring auth/empty/query) = 203
 
 ### Test Structure
 ```
@@ -257,7 +270,8 @@ __tests__/
 │   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
 │   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
 │   ├── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
-│   └── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
+│   ├── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
+│   └── agreements.test.ts      — POST /api/agreements/send + notify-expiring, auth, validation, email templates
 ```
 
 ### Playwright E2E Tests
@@ -273,7 +287,7 @@ e2e/
 **Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 22 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
+Located at `/docs/test-plans/`. 22 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails, settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
 
 ## Phase Status
 
@@ -327,6 +341,17 @@ Located at `/docs/test-plans/`. 22 test plans covering: authentication, consigno
 - Updated admin test mocks to use `@/lib/supabase/admin` mock
 - **Critical lesson**: every Supabase Auth user that logs in MUST have a corresponding row in the `users` table — auth alone is not enough. The `users` table row provides `account_id`, `role`, `is_superadmin`, and `full_name`.
 - Test suite: **192 Jest tests passing**
+
+### Agreement Emails (Done)
+- Email sending infrastructure: `src/lib/email.ts` (Resend wrapper), `src/lib/email-templates.ts` (agreement + expiry reminder templates with dual plain-text/HTML)
+- `/api/agreements/send` — creates agreement record, sends email with store info, dates, splits, item list (no prices), pickup instructions
+- `/api/agreements/notify-expiring` — finds consignors expiring in 3 days, sends reminders, skips already-notified, designed for cron
+- `AgreementButton` component — Send/Resend Agreement with confirmation modal, last-sent date
+- `IntakeAgreementPrompt` component — post-intake amber prompt with Send/Skip buttons
+- Consignor detail page updated with agreement button in actions bar and intake prompt
+- Full manual test plan at `docs/test-plans/agreement-emails.md`
+- Env vars: `RESEND_API_KEY` (required), `RESEND_FROM_EMAIL` (optional, defaults to `noreply@consigniq.com`)
+- Test suite: **203 Jest tests passing**
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

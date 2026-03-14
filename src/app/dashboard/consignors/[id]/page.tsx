@@ -7,6 +7,8 @@ import {
   Package, AlertTriangle, Trash2
 } from 'lucide-react'
 import { getLifecycleStatus, COLOR_CLASSES, CONDITION_LABELS, type Item } from '@/types'
+import AgreementButton from '@/components/AgreementButton'
+import IntakeAgreementPrompt from '@/components/IntakeAgreementPrompt'
 
 // ============================================================
 // Item status badge
@@ -39,15 +41,17 @@ export default async function ConsignorDetailPage({
 }) {
   const supabase = createServerClient()
 
-  const [consignorRes, itemsRes] = await Promise.all([
+  const [consignorRes, itemsRes, agreementsRes] = await Promise.all([
     supabase.from('consignors').select('*').eq('id', params.id).single(),
     supabase.from('items').select('*').eq('consignor_id', params.id).order('created_at', { ascending: true }),
+    supabase.from('agreements').select('email_sent_at').eq('consignor_id', params.id).not('email_sent_at', 'is', null).order('email_sent_at', { ascending: false }).limit(1),
   ])
 
   if (consignorRes.error || !consignorRes.data) notFound()
 
   const consignor = consignorRes.data
   const items: Item[] = itemsRes.data ?? []
+  const lastAgreementSentAt = agreementsRes.data?.[0]?.email_sent_at ?? null
 
   const lifecycle = getLifecycleStatus(
     consignor.intake_date,
@@ -77,13 +81,20 @@ export default async function ConsignorDetailPage({
 
       {/* Intake success banner */}
       {searchParams.intake === 'done' && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4 text-sm text-emerald-700 flex items-center gap-2">
-          <Package className="w-4 h-4 shrink-0" />
-          {searchParams.count} item{Number(searchParams.count) !== 1 ? 's' : ''} logged successfully.
-          <Link href={`/dashboard/consignors/${params.id}/intake`} className="ml-auto font-medium underline">
-            Add more
-          </Link>
-        </div>
+        <>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4 text-sm text-emerald-700 flex items-center gap-2">
+            <Package className="w-4 h-4 shrink-0" />
+            {searchParams.count} item{Number(searchParams.count) !== 1 ? 's' : ''} logged successfully.
+            <Link href={`/dashboard/consignors/${params.id}/intake`} className="ml-auto font-medium underline">
+              Add more
+            </Link>
+          </div>
+          <IntakeAgreementPrompt
+            consignorId={consignor.id}
+            consignorName={consignor.name}
+            consignorEmail={consignor.email}
+          />
+        </>
       )}
 
       {/* Header card */}
@@ -166,7 +177,7 @@ export default async function ConsignorDetailPage({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Link
           href={`/dashboard/consignors/${params.id}/intake`}
           className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
@@ -174,6 +185,13 @@ export default async function ConsignorDetailPage({
           <Plus className="w-4 h-4" />
           Add Items
         </Link>
+        <AgreementButton
+          consignorId={consignor.id}
+          consignorName={consignor.name}
+          consignorEmail={consignor.email}
+          itemCount={items.length}
+          lastSentAt={lastAgreementSentAt}
+        />
         <div className="flex-1" />
         <div className="text-xs text-gray-400 flex items-center">
           {consignor.split_store}/{consignor.split_consignor} split
