@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import AdminSidebar from './AdminSidebar'
 
 export default async function AdminLayout({
@@ -7,12 +8,16 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
+  // Use service role client to bypass RLS — superadmin may not have
+  // an account_id that satisfies RLS policies on the users table
+  const adminClient = createAdminClient()
+
+  const { data: profile } = await adminClient
     .from('users')
     .select('id, email, full_name, is_superadmin')
     .eq('id', user.id)
@@ -22,7 +27,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex h-screen bg-stone-50 overflow-hidden">
-      <AdminSidebar email={profile.email} />
+      <AdminSidebar email={profile.full_name?.trim() || profile.email} />
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         {children}
       </main>

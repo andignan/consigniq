@@ -1,28 +1,14 @@
 // app/api/admin/accounts/route.ts
-import { createServerClient } from '@/lib/supabase/server'
+import { checkSuperadmin, createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-async function checkSuperadmin(supabase: ReturnType<typeof createServerClient>) {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return { authorized: false as const, status: 401 }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('is_superadmin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
-  return { authorized: true as const }
-}
-
 export async function GET(request: NextRequest) {
-  const supabase = createServerClient()
-  const auth = await checkSuperadmin(supabase)
+  const auth = await checkSuperadmin()
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
   }
 
+  const supabase = createAdminClient()
   const { searchParams } = new URL(request.url)
   const tier = searchParams.get('tier')
   const status = searchParams.get('status')
@@ -97,11 +83,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = createServerClient()
-  const auth = await checkSuperadmin(supabase)
+  const auth = await checkSuperadmin()
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
   }
+
+  const supabase = createAdminClient()
 
   const body = await request.json()
   const { id, ...updates } = body

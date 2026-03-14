@@ -22,7 +22,18 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      // Check if superadmin to redirect to /admin (uses service role to bypass RLS)
+      let destination = '/dashboard'
+      try {
+        const res = await fetch('/api/auth/check-superadmin', { credentials: 'include' })
+        if (res.ok) {
+          const { is_superadmin } = await res.json()
+          if (is_superadmin) destination = '/admin'
+        }
+      } catch {
+        // Non-critical — default to /dashboard
+      }
+      router.push(destination)
       router.refresh()
     }
   }

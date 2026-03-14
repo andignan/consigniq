@@ -19,6 +19,27 @@ jest.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
+jest.mock('@/lib/supabase/admin', () => ({
+  checkSuperadmin: async () => {
+    const { createServerClient } = require('@/lib/supabase/server')
+    const supabase = createServerClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) return { authorized: false as const, status: 401 }
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('is_superadmin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id }
+  },
+  createAdminClient: () => ({
+    from: mockFrom,
+  }),
+}))
+
 import { GET } from '@/app/api/admin/network-stats/route'
 
 beforeEach(() => {

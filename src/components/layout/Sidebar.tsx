@@ -309,7 +309,7 @@ export default function Sidebar({ user }: SidebarProps) {
       <div className="px-3 py-4 border-t border-stone-800">
         <div className="px-3 py-2 mb-1">
           <p className="text-stone-300 text-sm font-medium truncate">
-            {user?.full_name || user?.email}
+            {user?.full_name?.trim() || user?.email || 'Unknown'}
           </p>
           <p className="text-stone-500 text-xs capitalize">{user?.role}</p>
         </div>

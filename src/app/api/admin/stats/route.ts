@@ -1,25 +1,17 @@
 // app/api/admin/stats/route.ts
-import { createServerClient } from '@/lib/supabase/server'
+import { checkSuperadmin, createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const supabase = createServerClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await checkSuperadmin()
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
   }
 
-  // Check superadmin
-  const { data: profile } = await supabase
-    .from('users')
-    .select('is_superadmin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_superadmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const supabase = createAdminClient()
 
   // Fetch all counts cross-account
   const [accountsRes, locationsRes, usersRes, itemsRes, consignorsRes] = await Promise.all([
