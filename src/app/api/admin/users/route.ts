@@ -133,9 +133,11 @@ export async function POST(request: NextRequest) {
   }
 
   // 4. Create users table row
+  // Use upsert because Supabase may have a trigger on auth.users that auto-creates
+  // a partial row in public.users — upsert ensures we set all required fields regardless.
   const { data: user, error: userError } = await supabase
     .from('users')
-    .insert({
+    .upsert({
       id: authData.user.id,
       email,
       full_name,
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
       location_id: location.id,
       role: 'owner',
       is_superadmin: false,
-    })
+    }, { onConflict: 'id' })
     .select()
     .single()
 

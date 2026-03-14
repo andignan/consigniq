@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
   const [formName, setFormName] = useState('')
   const [formAccountName, setFormAccountName] = useState('')
   const [formTier, setFormTier] = useState('starter')
-  const [formAccountType, setFormAccountType] = useState('trial')
+  const [formAccountType, setFormAccountType] = useState('paid')
   const [formComplimentaryTier, setFormComplimentaryTier] = useState('starter')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
         setFormName('')
         setFormAccountName('')
         setFormTier('starter')
-        setFormAccountType('trial')
+        setFormAccountType('paid')
         setFormComplimentaryTier('starter')
         loadUsers()
         setTimeout(() => {
@@ -161,7 +161,7 @@ export default function AdminUsersPage() {
     setFormName('')
     setFormAccountName('')
     setFormTier('starter')
-    setFormAccountType('trial')
+    setFormAccountType('paid')
     setFormComplimentaryTier('starter')
     setFormError('')
     setFormSuccess('')
@@ -328,6 +328,7 @@ export default function AdminUsersPage() {
                     onChange={e => setFormAccountType(e.target.value)}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
+                    <option value="paid">Paid</option>
                     <option value="trial">Trial</option>
                     <option value="complimentary">Complimentary</option>
                   </select>

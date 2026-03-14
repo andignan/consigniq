@@ -140,7 +140,7 @@ describe('POST /api/admin/users', () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === 'accounts') return { insert: accountInsertMock }
       if (table === 'locations') return { insert: locationInsertMock }
-      if (table === 'users') return { insert: usersInsertMock }
+      if (table === 'users') return { upsert: usersInsertMock }
       return {}
     })
 
@@ -198,7 +198,7 @@ describe('POST /api/admin/users', () => {
     mockSupabaseFrom.mockImplementation((table: string) => {
       if (table === 'accounts') return { insert: accountInsertMock }
       if (table === 'locations') return { insert: locationInsertMock }
-      if (table === 'users') return { insert: usersInsertMock }
+      if (table === 'users') return { upsert: usersInsertMock }
       return {}
     })
 

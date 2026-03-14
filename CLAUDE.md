@@ -47,7 +47,7 @@ Three Supabase client factories:
 - `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
 - `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
 - `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (solo/starter/standard/pro), status (active/suspended/cancelled/inactive), account_type, is_complimentary, complimentary_tier, extend_trial. Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
-- `/api/admin/users` — GET list all users across accounts with account join. Supports `?search=`, `?account_type=`, `?tier=` filters. POST creates a new user with account, location, auth user, and users table row. Superadmin only.
+- `/api/admin/users` — GET list all users across accounts with account join. Supports `?search=`, `?account_type=`, `?tier=` filters. POST creates a new user with account, location, auth user, and users table row (uses upsert to handle Supabase auth trigger creating a partial row). Superadmin only.
 - `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
 - `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
 - `/api/labels/generate` — POST PDF label generation. Takes `{ item_ids: string[], size: '2x1' | '4x2' }`. Fetches items with consignor/location joins, scoped by account_id. Returns PDF blob. Labels include item name (2-line max), category, condition, price (with strikethrough for markdowns), consignor (first name + last initial), location, short item ID, ConsignIQ branding.
@@ -228,7 +228,7 @@ Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. 
 ### Admin (`/admin`) — Superadmin Only
 Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
 - **Overview** (`/admin`): Cross-account stats — accounts by tier/status, total locations/users/items/consignors with breakdowns. Network Pricing Intelligence card: total records, sold items, sell-through %, avg days to sell, top 5 categories.
-- **Users** (`/admin/users`): Cross-account user management. Search by email/name, filter by account_type and tier. Add User modal creates account + location + auth user + users row. Account type badges (Paid/Trial/Complimentary) with days remaining for trials.
+- **Users** (`/admin/users`): Cross-account user management. Search by email/name, filter by account_type and tier. Add User modal creates account + location + auth user + users row with 3 account type options: Paid (immediate active access), Trial (30-day then locked), Complimentary (free forever). Account type badges (Paid/Trial/Complimentary) with days remaining for trials.
 - **Accounts** (`/admin/accounts`): Filterable table (tier, status) of all accounts with location/user counts. Click row for detail.
 - **Account Detail** (`/admin/accounts/[id]`): Tier change dropdown (incl. solo), status toggle (incl. inactive), account_type badge, trial_ends_at display. Action buttons: Extend Trial (+30d), Convert to Complimentary, Convert to Paid, Disable/Enable Account. Locations list, users list with roles, item counts by status.
 
@@ -413,6 +413,8 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 ### Admin UX Fixes (Done)
 - **Superadmin /dashboard redirect**: Dashboard layout now redirects superadmin users to `/admin` in all cases — whether RLS blocks the profile query or not. Previously only redirected when `!profile`, which missed the case where the superadmin had a users table row that RLS could return.
 - **Admin sidebar "Back to App" removed**: The "Back to App" link is removed from the admin sidebar since superadmins live in `/admin` only and navigating to `/dashboard` would just redirect them back.
+- **Admin Add User public.users fix**: POST `/api/admin/users` now uses `upsert` (with `onConflict: 'id'`) instead of `insert` for the public.users row. Root cause: Supabase has a trigger on `auth.users` that auto-creates a partial row in `public.users` when `auth.admin.createUser()` is called, causing a primary key conflict on the subsequent insert. Upsert ensures all fields (account_id, location_id, role, email, full_name) are set correctly regardless of whether the trigger fired.
+- **Add User modal "Paid" option**: The Account Type dropdown now includes Paid as a third option (default), in addition to Trial and Complimentary.
 - Test suite: **245 Jest tests passing**
 
 ### Deferred to Phase 7+
