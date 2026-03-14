@@ -162,9 +162,11 @@ export async function POST(request: NextRequest) {
   // 5. Generate invite link and send branded email via Resend
   let inviteError: string | undefined
   try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'invite',
       email,
+      options: { redirectTo: `${appUrl}/auth/setup-password` },
     })
 
     if (linkError) {

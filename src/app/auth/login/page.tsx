@@ -10,6 +10,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
 
   async function handleLogin() {
     setLoading(true)
@@ -88,7 +92,57 @@ export default function LoginPage() {
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
+
+            <button
+              type="button"
+              onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotSent(false) }}
+              className="w-full text-xs text-stone-500 hover:text-stone-700 transition-colors mt-1"
+            >
+              Forgot your password?
+            </button>
           </div>
+
+          {showForgot && (
+            <div className="mt-4 pt-4 border-t border-stone-200">
+              {forgotSent ? (
+                <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  Check your email for a reset link.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-stone-600">Enter your email to receive a password reset link.</p>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="you@yourshop.com"
+                    className="w-full px-3 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!forgotEmail) return
+                      setForgotLoading(true)
+                      try {
+                        await fetch('/api/auth/forgot-password', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: forgotEmail }),
+                        })
+                      } catch {
+                        // Always show success for security
+                      }
+                      setForgotLoading(false)
+                      setForgotSent(true)
+                    }}
+                    disabled={forgotLoading || !forgotEmail}
+                    className="w-full bg-stone-800 hover:bg-stone-900 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold py-2 rounded-lg transition-colors text-sm"
+                  >
+                    {forgotLoading ? 'Sending…' : 'Send Reset Link'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <p className="text-center text-xs text-stone-400 mt-6">

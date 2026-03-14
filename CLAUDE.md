@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (246 tests across unit + API)
+- `npm test` — Jest test suite (260 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -63,6 +63,8 @@ Three Supabase client factories:
 - `/api/agreements/send` — POST sends consignment agreement email. Takes `{ consignor_id }`. Fetches consignor + items + location, creates `agreements` record, sends email via Resend, updates `email_sent_at`. Returns 400 if no email on consignor.
 - `/api/agreements/notify-expiring` — POST finds consignors with `expiry_date` = today + 3 days, skips already-notified ones, sends reminder emails. Designed for cron job invocation. Returns `{ sent, skipped, errors? }`.
 - `/api/auth/check-superadmin` — GET returns `{ is_superadmin: boolean }`. Uses service role to bypass RLS. Called by login page to determine redirect destination. Excluded from middleware auth protection (under `/api/auth/*`).
+- `/api/auth/forgot-password` — POST public endpoint (no auth required, under `/api/auth/*`). Takes `{ email }`. Looks up user, generates recovery link via `auth.admin.generateLink({ type: 'recovery' })`, sends branded reset email via Resend. Always returns 200 to prevent user enumeration.
+- `/api/admin/users/reset-password` — POST superadmin-only. Takes `{ user_id }`. Generates recovery link and sends branded reset email to the user. Returns `{ sent: true }` on success.
 
 ### UserContext
 
@@ -89,7 +91,7 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 
 ### Auth & Middleware
 
-- Auth: Supabase email/password auth. Login at `/auth/login`.
+- Auth: Supabase email/password auth. Login at `/auth/login`. Password setup at `/auth/setup-password` (handles both invite and recovery links).
 - Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side, redirects to login if unauthenticated, loads user profile with joined account/location data, loads all account locations, wraps children in `<Suspense>`, `<UserProvider>`, and `<LocationProvider>`.
 - Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*`, `/api/billing/webhook`, and `/api/trial/*` are excluded from protection.
 - Post-login redirect: login page calls `/api/auth/check-superadmin` after successful auth — superadmins go to `/admin`, regular users go to `/dashboard`.
@@ -100,7 +102,7 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 - Admin layout (`src/app/admin/layout.tsx`) checks `is_superadmin` server-side using service role client (bypasses RLS); non-superadmins redirect to `/dashboard`
 - Admin API routes (`/api/admin/stats`, `/api/admin/accounts`, `/api/admin/network-stats`) use `checkSuperadmin()` from `@/lib/supabase/admin` and `createAdminClient()` for all queries — return 403 for non-superadmins
 - All admin queries are cross-account (no `account_id` scoping) — superadmin sees all data
-- Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar. No "Back to App" link — superadmins live in `/admin` only
+- Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar. No "Back to App" link — superadmins live in `/admin` only. Sign Out button at bottom uses same Supabase signOut() pattern as dashboard sidebar, redirects to `/auth/login`.
 - **Login redirect**: after successful login, `/api/auth/check-superadmin` is called (uses service role to bypass RLS). If `is_superadmin` is true, user is redirected to `/admin` instead of `/dashboard`
 - **Important**: all superadmin checks must use the service role client because the superadmin user may not have an `account_id` that satisfies RLS policies on the users table
 
@@ -268,7 +270,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails + solo tier + admin user management + invite emails. Test suite: **246 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails + solo tier + admin user management + invite emails + password flow. Test suite: **260 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
@@ -279,6 +281,7 @@ Full test baseline established for Phases 1–6 + sidebar improvements + agreeme
 - **Description hints** (+12): description-hints.test.ts 12 (per-category hints, threshold, no-hint categories) = 192
 - **Agreement emails** (+11): agreements.test.ts 11 (send auth/validation/creation/email-sent-at, agreement template content/missing phone, expiry reminder template, notify-expiring auth/empty/query) = 203
 - **Solo tier + admin users** (+43): feature-gates.test.ts +28 (solo feature blocking, account type helpers, lookup limits, complimentary bypass, trial active/expired), admin-users.test.ts 11 (GET auth/search/list, POST auth/validation/create/complimentary/invite-email/invite-warning), trial-check-expiry.test.ts 4 (auth/reminder/expired count) = 246
+- **Password flow** (+14): password-validation.test.ts 6 (min length, empty, mismatch, valid), password-flow.test.ts 8 (reset-password auth/validation/404/send, forgot-password missing/valid/no-enum) = 260
 
 ### Test Structure
 ```
@@ -289,7 +292,8 @@ __tests__/
 │   ├── help-components.test.ts — Knowledge base content and topic coverage
 │   ├── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping, isAccountActive(), getEffectiveTier(), canAccountUseFeature(), isLookupLimitReached()
 │   ├── auto-capitalize.test.ts — Item name auto-capitalize on blur behavior
-│   └── description-hints.test.ts — Category-specific description hints, threshold, coverage
+│   ├── description-hints.test.ts — Category-specific description hints, threshold, coverage
+│   └── password-validation.test.ts — Password setup form validation (min length, mismatch, valid)
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
 │   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes, timestamp type regression
@@ -308,7 +312,8 @@ __tests__/
 │   ├── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
 │   ├── agreements.test.ts      — POST /api/agreements/send + notify-expiring, auth, validation, email templates
 │   ├── admin-users.test.ts     — GET/POST /api/admin/users, superadmin enforcement, search, create account/user/location, invite email via Resend, invite failure warning
-│   └── trial-check-expiry.test.ts — POST /api/trial/check-expiry, auth, reminder emails, expired count
+│   ├── trial-check-expiry.test.ts — POST /api/trial/check-expiry, auth, reminder emails, expired count
+│   └── password-flow.test.ts    — POST /api/admin/users/reset-password (auth, validation, send), POST /api/auth/forgot-password (valid email, unknown email no-enum)
 ```
 
 ### Playwright E2E Tests
@@ -324,7 +329,7 @@ e2e/
 **Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 25 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails, settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
+Located at `/docs/test-plans/`. 26 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails, settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
 
 ## Phase Status
 
@@ -401,7 +406,7 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 - **Billing route updates**: `/api/billing/checkout` now supports 4 tiers + topup, `/api/billing/webhook` handles topup_50 and trial→paid conversion
 - **Usage enforcement update**: `/api/pricing/suggest` checks bonus lookups when monthly quota exhausted, increments `bonus_lookups_used` when monthly is spent
 - Migration: `20260314080000_solo_tier_and_account_types.sql` — adds account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used to accounts table
-- Test suite: **246 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
+- Test suite: **260 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
 - Stripe products created in **test mode** with the following price IDs (also set as Vercel env vars for all environments):
   - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` (Solo Pricer, $9/mo)
   - `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` (Starter, $49/mo)
@@ -417,7 +422,17 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 - **Add User modal "Paid" option**: The Account Type dropdown now includes Paid as a third option (default), in addition to Trial and Complimentary.
 - **Invite email via Resend**: Replaced Supabase's built-in invite flow (which doesn't route through custom SMTP/Resend) with a two-step approach: `auth.admin.createUser({ email_confirm: false })` to create the auth user without sending email, then `auth.admin.generateLink({ type: 'invite', email })` to generate a one-time setup link, then send a branded invite email via Resend with `buildInviteEmail()` template. Email includes user name, account name, tier, and setup link. Invite email is non-critical — if it fails, the user/account are still created and the response includes an `invite_warning` field.
 - `src/lib/email-templates.ts` — added `buildInviteEmail()` template (HTML + plain text) with ConsignIQ branding, account details, and setup CTA button.
-- Test suite: **246 Jest tests passing**
+- **Admin Sign Out button**: Added Sign Out to admin sidebar bottom. Uses `createClient()` + `supabase.auth.signOut()` + redirect to `/auth/login`, same pattern as dashboard sidebar.
+
+### Password Flow (Done)
+- **Setup password page** (`/auth/setup-password`): Handles both invite and recovery links. Detects Supabase session from URL hash token, shows "Set Your Password" form with password + confirm fields, validates min 8 chars and match, calls `supabase.auth.updateUser({ password })`, redirects to `/dashboard` on success. Branded ConsignIQ styling matching login page.
+- **Admin invite link redirect**: `generateLink()` in `/api/admin/users` POST now passes `options.redirectTo` pointing to `/auth/setup-password` so new users land on the password setup page.
+- **Admin reset password** (`/api/admin/users/reset-password`): POST superadmin-only. Takes `{ user_id }`, looks up user, generates recovery link via `auth.admin.generateLink({ type: 'recovery' })`, sends branded reset email via Resend with `buildPasswordResetEmail()` template.
+- **Account detail reset button**: `/admin/accounts/[id]` user list rows now have "Reset Password" button that calls the admin reset-password endpoint. Shows success/error message via existing saveMsg state.
+- **Forgot password on login**: Login page has "Forgot your password?" link that reveals inline email form. Submits to `/api/auth/forgot-password` (public, no auth). Always shows "Check your email for a reset link" regardless of whether email exists (prevents user enumeration).
+- **Forgot password API** (`/api/auth/forgot-password`): POST public endpoint under `/api/auth/*` (excluded from middleware auth). Looks up user, generates recovery link, sends email via Resend. Returns 200 for all inputs to prevent enumeration.
+- **Password reset email template**: `buildPasswordResetEmail()` in `src/lib/email-templates.ts` — ConsignIQ-branded HTML with "Reset Password" CTA button, 24-hour expiry note.
+- Test suite: **260 Jest tests passing**, 26 manual test plans
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

@@ -208,6 +208,7 @@ describe('POST /api/admin/users', () => {
     expect(mockSupabaseAuth.admin.generateLink).toHaveBeenCalledWith({
       type: 'invite',
       email: 'new@test.com',
+      options: { redirectTo: expect.stringContaining('/auth/setup-password') },
     })
     expect(mockSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({

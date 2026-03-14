@@ -1,9 +1,10 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState } from 'react'
-import { LayoutDashboard, Building2, Menu, X, Shield, Users as Users2 } from 'lucide-react'
+import { LayoutDashboard, Building2, LogOut, Menu, X, Shield, Users as Users2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
@@ -13,7 +14,15 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar({ email }: { email: string }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  async function handleSignOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+    router.refresh()
+  }
 
   const isActive = (href: string) => {
     if (href === '/admin') return pathname === '/admin'
@@ -48,6 +57,15 @@ export default function AdminSidebar({ email }: { email: string }) {
         ))}
       </nav>
 
+      <div className="p-3 border-t border-gray-100">
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign out
+        </button>
+      </div>
     </>
   )
 

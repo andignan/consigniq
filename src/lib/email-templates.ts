@@ -236,6 +236,67 @@ This is an automated message from ConsignIQ.
   return { subject, text, html }
 }
 
+interface PasswordResetEmailData {
+  fullName: string
+  resetLink: string
+}
+
+export function buildPasswordResetEmail(data: PasswordResetEmailData) {
+  const text = `Hi ${data.fullName},
+
+We received a request to reset your ConsignIQ password.
+
+Click the link below to set a new password:
+
+${data.resetLink}
+
+This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
+
+The ConsignIQ Team
+
+This is an automated message from ConsignIQ.
+`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
+    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  </div>
+
+  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Reset Your Password</h2>
+
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    Hi ${data.fullName},
+  </p>
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    We received a request to reset your ConsignIQ password. Click the button below to set a new password.
+  </p>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${data.resetLink}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+      Reset Password
+    </a>
+  </div>
+
+  <p style="font-size:13px;line-height:1.6;color:#6b7280;text-align:center;">
+    This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
+  </p>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">
+    This is an automated message from ConsignIQ.
+  </p>
+</body>
+</html>`
+
+  const subject = 'Reset your ConsignIQ password'
+
+  return { subject, text, html }
+}
+
 interface ExpiryReminderData {
   storeName: string
   storePhone: string | null

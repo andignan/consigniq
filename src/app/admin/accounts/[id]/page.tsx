@@ -403,11 +403,42 @@ export default function AccountDetailPage() {
                   <p className="text-sm font-medium text-gray-900">{u.full_name ?? u.email}</p>
                   <p className="text-xs text-gray-500">{u.email}</p>
                 </div>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  u.role === 'owner' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {u.role}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      setSaving(true)
+                      setSaveMsg('')
+                      try {
+                        const res = await fetch('/api/admin/users/reset-password', {
+                          method: 'POST',
+                          credentials: 'include',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ user_id: u.id }),
+                        })
+                        if (res.ok) {
+                          setSaveMsg(`Reset email sent to ${u.email}`)
+                        } else {
+                          const data = await res.json()
+                          setSaveMsg(data.error || 'Failed to send reset email')
+                        }
+                      } catch {
+                        setSaveMsg('Failed to send reset email')
+                      } finally {
+                        setSaving(false)
+                        setTimeout(() => setSaveMsg(''), 4000)
+                      }
+                    }}
+                    disabled={saving}
+                    className="text-xs font-medium px-2 py-1 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                  >
+                    Reset Password
+                  </button>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    u.role === 'owner' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {u.role}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
