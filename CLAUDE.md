@@ -89,14 +89,22 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - Manual price override with apply
 
 ### Reports (`/dashboard/reports`)
-Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 5 sections:
+Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 13 sections:
 1. **Store Performance** — revenue, store earnings, consignor payouts, items sold/donated + Payout Report & Item Detail CSV exports
 2. **Pricing Performance** — avg days to sell, avg sale price, sell-through rate, full price vs markdown breakdown
 3. **Inventory Snapshot** — active consignors, pending/priced counts, inventory value, expiring items + Donation Report CSV export
 4. **Activity Summary** — intake'd, priced, sold, donated, new consignors counts
-5. **Consignor Report** — searchable consignor dropdown, summary card with lifecycle status (uses `getLifecycleStatus`), item breakdown stats, full item detail table with status/asking/sold/days/consignor cut columns, and Consignor Payout Slip CSV export
+5. **Consignor Report** — searchable consignor dropdown, summary card with lifecycle status, item breakdown, full item table, Consignor Payout Slip CSV
+6. **Category Performance** — sortable table by category with items/sold/revenue/avg price/avg days/sell-through, CSV export
+7. **Aging Inventory** — active items oldest-first, color-coded expiry (red ≤0d, amber ≤14d, green >14d), CSV export, capped at 50 rows in UI
+8. **Consignor Performance Rankings** — sortable comparative table (items/sold/revenue/avg days/earned/sell-through), CSV export
+9. **Weekly Operations Summary** — fixed 7-day window, week-over-week comparison with % change arrows, no CSV
+10. **Markdown Effectiveness** — stat cards (markdown vs full-price sales/revenue/rate), breakdown table by markdown %, CSV export
+11. **Pricing Accuracy (AI vs Actual)** — stat cards (within/above/below AI range), detail table with variance %, CSV export. Requires `low_price`/`high_price` on items
+12. **Payout Reconciliation (All Time)** — all-time per-consignor ledger with total sold/share/paid(stubbed $0)/balance, totals footer, CSV export
+13. **Donation & Tax Report** — donated items grouped by consignor with FMV (original asking price), subtotals, CSV export
 
-Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period.
+Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period. Items query includes `ai_reasoning`, `current_markdown_pct`, `low_price`, `high_price`. Consignor join includes `intake_date`, `expiry_date`, `grace_end_date`.
 
 ### Sidebar (`/dashboard` layout)
 Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset.

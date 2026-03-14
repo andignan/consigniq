@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   DollarSign, TrendingUp, Package, Users, Clock,
   Gift, Download, Loader2, MapPin, Calendar, Tag, Search, ChevronDown,
-  Phone, Mail, User,
+  Phone, Mail, User, ArrowUpDown, AlertTriangle, Target,
+  FileText, Percent,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
@@ -43,6 +44,10 @@ interface ItemRow {
   intake_date: string
   location_id: string
   consignor_id: string
+  ai_reasoning: string | null
+  current_markdown_pct: number | null
+  low_price: number | null
+  high_price: number | null
   consignor: {
     id: string
     name: string
@@ -50,9 +55,14 @@ interface ItemRow {
     email: string | null
     split_store: number
     split_consignor: number
+    intake_date: string
     expiry_date: string
+    grace_end_date: string
   } | null
 }
+
+type SortDir = 'asc' | 'desc'
+type SortConfig = { key: string; dir: SortDir }
 
 interface MarkdownRow {
   id: string
@@ -166,6 +176,42 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+// ─── Sort helpers ────────────────────────────────────────────
+function toggleSort(current: SortConfig, key: string): SortConfig {
+  if (current.key === key) return { key, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+  return { key, dir: 'desc' }
+}
+
+function SortHeader({
+  label, sortKey, current, onSort, align = 'left',
+}: {
+  label: string; sortKey: string; current: SortConfig; onSort: (key: string) => void; align?: 'left' | 'right'
+}) {
+  return (
+    <th
+      className={`${align === 'right' ? 'text-right' : 'text-left'} px-4 py-3 cursor-pointer hover:text-gray-600 select-none`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`w-3 h-3 ${current.key === sortKey ? 'text-indigo-500' : 'text-gray-300'}`} />
+      </span>
+    </th>
+  )
+}
+
+function sortRows<T>(rows: T[], key: string, dir: SortDir): T[] {
+  return [...rows].sort((a, b) => {
+    const av = (a as Record<string, unknown>)[key]
+    const bv = (b as Record<string, unknown>)[key]
+    const an = typeof av === 'number' ? av : typeof av === 'string' ? av.toLowerCase() : 0
+    const bn = typeof bv === 'number' ? bv : typeof bv === 'string' ? bv.toLowerCase() : 0
+    if (an < bn) return dir === 'asc' ? -1 : 1
+    if (an > bn) return dir === 'asc' ? 1 : -1
+    return 0
+  })
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 export default function ReportsPage() {
   const user = useUser()
@@ -208,7 +254,7 @@ export default function ReportsPage() {
 
     let itemsQuery = supabase
       .from('items')
-      .select('id, name, category, condition, description, status, price, sold_price, sold_date, donated_at, priced_at, intake_date, location_id, consignor_id, consignor:consignors(id, name, phone, email, split_store, split_consignor, expiry_date)')
+      .select('id, name, category, condition, description, status, price, sold_price, sold_date, donated_at, priced_at, intake_date, location_id, consignor_id, ai_reasoning, current_markdown_pct, low_price, high_price, consignor:consignors(id, name, phone, email, split_store, split_consignor, intake_date, expiry_date, grace_end_date)')
     if (effectiveLocation) {
       itemsQuery = itemsQuery.eq('location_id', effectiveLocation)
     } else {
@@ -456,6 +502,10 @@ export default function ReportsPage() {
     downloadCsv(toCsvString([headers, ...rows]), `consigniq-donations-${dateSlug}.csv`)
   }
 
+  // ─── Sort states ──────────────────────────────────────────
+  const [catSort, setCatSort] = useState<SortConfig>({ key: 'revenue', dir: 'desc' })
+  const [rankSort, setRankSort] = useState<SortConfig>({ key: 'revenue', dir: 'desc' })
+
   // ─── Consignor Report ──────────────────────────────────────
   const [selectedConsignorId, setSelectedConsignorId] = useState<string>('')
   const [consignorSearch, setConsignorSearch] = useState('')
@@ -553,6 +603,301 @@ export default function ReportsPage() {
 
     const nameSlug = selectedConsignor.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
     downloadCsv(toCsvString([headers, ...rows]), `consigniq-consignor-${nameSlug}-${dateSlug}.csv`)
+  }
+
+  // ─── Section 6: Category Performance ─────────────────────────
+  const categoryStats = useMemo(() => {
+    const cats = new Map<string, { items: number; sold: number; revenue: number; daysSum: number; daysCount: number }>()
+    for (const i of items) {
+      const c = i.category || 'Uncategorized'
+      if (!cats.has(c)) cats.set(c, { items: 0, sold: 0, revenue: 0, daysSum: 0, daysCount: 0 })
+      cats.get(c)!.items++
+    }
+    for (const i of soldInPeriod) {
+      const c = i.category || 'Uncategorized'
+      if (!cats.has(c)) cats.set(c, { items: 0, sold: 0, revenue: 0, daysSum: 0, daysCount: 0 })
+      const e = cats.get(c)!
+      e.sold++
+      e.revenue += i.sold_price ?? 0
+      if (i.sold_date && i.intake_date) { e.daysSum += daysBetween(i.intake_date, i.sold_date); e.daysCount++ }
+    }
+    return Array.from(cats.entries()).map(([category, s]) => ({
+      category,
+      items: s.items,
+      sold: s.sold,
+      revenue: s.revenue,
+      avgPrice: s.sold > 0 ? s.revenue / s.sold : 0,
+      avgDays: s.daysCount > 0 ? Math.round(s.daysSum / s.daysCount) : 0,
+      sellThrough: s.items > 0 ? Math.round(s.sold / s.items * 100) : 0,
+    }))
+  }, [items, soldInPeriod])
+
+  const sortedCategoryStats = useMemo(() => sortRows(categoryStats, catSort.key, catSort.dir), [categoryStats, catSort])
+
+  function exportCategoryPerformance() {
+    const headers = ['Category', 'Total Items', 'Sold', 'Revenue', 'Avg Sale Price', 'Avg Days to Sell', 'Sell-Through %']
+    const rows = sortedCategoryStats.map(c => [
+      c.category, c.items.toString(), c.sold.toString(), c.revenue.toFixed(2),
+      c.avgPrice.toFixed(2), c.avgDays.toString(), c.sellThrough.toString(),
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-category-performance-${periodSlug}-${dateSlug}.csv`)
+  }
+
+  // ─── Section 7: Aging Inventory ─────────────────────────────
+  const agingItems = useMemo(() => {
+    const active = items.filter(i => i.status === 'pending' || i.status === 'priced')
+    return active
+      .map(i => {
+        const daysOnFloor = daysBetween(i.intake_date, new Date().toISOString().split('T')[0])
+        const expiryDate = i.consignor?.expiry_date
+        const daysUntilExpiry = expiryDate ? daysBetween(new Date().toISOString().split('T')[0], expiryDate) : null
+        return { ...i, daysOnFloor, daysUntilExpiry }
+      })
+      .sort((a, b) => a.daysOnFloor - b.daysOnFloor > 0 ? -1 : 1) // oldest first
+  }, [items])
+
+  function exportAgingInventory() {
+    const headers = ['Item Name', 'Category', 'Condition', 'Status', 'Intake Date', 'Days on Floor',
+      'Asking Price', 'Consignor', 'Expiry Date', 'Days Until Expiry']
+    const rows = agingItems.map(i => [
+      i.name, i.category, i.condition, i.status, i.intake_date, i.daysOnFloor.toString(),
+      (i.price ?? 0).toFixed(2), i.consignor?.name ?? 'Unknown',
+      i.consignor?.expiry_date ?? '', i.daysUntilExpiry?.toString() ?? '',
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-aging-inventory-${dateSlug}.csv`)
+  }
+
+  // ─── Section 8: Consignor Performance Rankings ──────────────
+  const consignorRankings = useMemo(() => {
+    const map = new Map<string, {
+      name: string; items: number; sold: number; revenue: number
+      daysSum: number; daysCount: number; consignorEarned: number
+    }>()
+    for (const i of items) {
+      const cId = i.consignor_id
+      if (!map.has(cId)) {
+        map.set(cId, { name: i.consignor?.name ?? 'Unknown', items: 0, sold: 0, revenue: 0, daysSum: 0, daysCount: 0, consignorEarned: 0 })
+      }
+      map.get(cId)!.items++
+    }
+    for (const i of soldInPeriod) {
+      const cId = i.consignor_id
+      if (!map.has(cId)) {
+        map.set(cId, { name: i.consignor?.name ?? 'Unknown', items: 0, sold: 0, revenue: 0, daysSum: 0, daysCount: 0, consignorEarned: 0 })
+      }
+      const e = map.get(cId)!
+      e.sold++
+      e.revenue += i.sold_price ?? 0
+      e.consignorEarned += (i.sold_price ?? 0) * (i.consignor?.split_consignor ?? 50) / 100
+      if (i.sold_date && i.intake_date) { e.daysSum += daysBetween(i.intake_date, i.sold_date); e.daysCount++ }
+    }
+    return Array.from(map.entries()).map(([id, s]) => ({
+      id,
+      name: s.name,
+      items: s.items,
+      sold: s.sold,
+      revenue: s.revenue,
+      avgDays: s.daysCount > 0 ? Math.round(s.daysSum / s.daysCount) : 0,
+      consignorEarned: s.consignorEarned,
+      sellThrough: s.items > 0 ? Math.round(s.sold / s.items * 100) : 0,
+    }))
+  }, [items, soldInPeriod])
+
+  const sortedRankings = useMemo(() => sortRows(consignorRankings, rankSort.key, rankSort.dir), [consignorRankings, rankSort])
+
+  function exportConsignorRankings() {
+    const headers = ['Consignor', 'Total Items', 'Sold', 'Revenue', 'Avg Days to Sell', 'Consignor Earned', 'Sell-Through %']
+    const rows = sortedRankings.map(c => [
+      c.name, c.items.toString(), c.sold.toString(), c.revenue.toFixed(2),
+      c.avgDays.toString(), c.consignorEarned.toFixed(2), c.sellThrough.toString(),
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-consignor-rankings-${periodSlug}-${dateSlug}.csv`)
+  }
+
+  // ─── Section 9: Weekly Operations Summary ───────────────────
+  const weeklyOps = useMemo(() => {
+    const now = new Date()
+    const thisWeekStart = new Date(now)
+    thisWeekStart.setDate(thisWeekStart.getDate() - 7)
+    thisWeekStart.setHours(0, 0, 0, 0)
+    const lastWeekStart = new Date(thisWeekStart)
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+
+    const inRange = (dateStr: string | null, from: Date, to: Date) => {
+      if (!dateStr) return false
+      const d = new Date(dateStr)
+      return d >= from && d <= to
+    }
+
+    const thisWeek = {
+      intaked: items.filter(i => inRange(i.intake_date, thisWeekStart, now)).length,
+      priced: items.filter(i => inRange(i.priced_at, thisWeekStart, now)).length,
+      sold: items.filter(i => i.status === 'sold' && inRange(i.sold_date, thisWeekStart, now)).length,
+      donated: items.filter(i => i.status === 'donated' && inRange(i.donated_at, thisWeekStart, now)).length,
+      revenue: items.filter(i => i.status === 'sold' && inRange(i.sold_date, thisWeekStart, now))
+        .reduce((s, i) => s + (i.sold_price ?? 0), 0),
+    }
+    const lastWeek = {
+      intaked: items.filter(i => inRange(i.intake_date, lastWeekStart, thisWeekStart)).length,
+      priced: items.filter(i => inRange(i.priced_at, lastWeekStart, thisWeekStart)).length,
+      sold: items.filter(i => i.status === 'sold' && inRange(i.sold_date, lastWeekStart, thisWeekStart)).length,
+      donated: items.filter(i => i.status === 'donated' && inRange(i.donated_at, lastWeekStart, thisWeekStart)).length,
+      revenue: items.filter(i => i.status === 'sold' && inRange(i.sold_date, lastWeekStart, thisWeekStart))
+        .reduce((s, i) => s + (i.sold_price ?? 0), 0),
+    }
+
+    return { thisWeek, lastWeek }
+  }, [items])
+
+  // ─── Section 10: Markdown Effectiveness ─────────────────────
+  const markdownStats = useMemo(() => {
+    const soldWithMarkdown = soldInPeriod.filter(i => markdownByItem.has(i.id))
+    const byLevel = new Map<number, { count: number; origSum: number; soldSum: number; daysSum: number; daysCount: number }>()
+
+    for (const i of soldWithMarkdown) {
+      const md = markdownByItem.get(i.id)!
+      const pct = md.markdown_pct
+      if (!byLevel.has(pct)) byLevel.set(pct, { count: 0, origSum: 0, soldSum: 0, daysSum: 0, daysCount: 0 })
+      const e = byLevel.get(pct)!
+      e.count++
+      e.origSum += md.original_price
+      e.soldSum += i.sold_price ?? 0
+      if (i.sold_date && i.intake_date) { e.daysSum += daysBetween(i.intake_date, i.sold_date); e.daysCount++ }
+    }
+
+    const totalSoldCount = soldInPeriod.length
+    const markdownCount = soldWithMarkdown.length
+    const markdownRevenue = soldWithMarkdown.reduce((s, i) => s + (i.sold_price ?? 0), 0)
+    const fullPriceRevenue = soldInPeriod.filter(i => !markdownByItem.has(i.id)).reduce((s, i) => s + (i.sold_price ?? 0), 0)
+
+    const levels = Array.from(byLevel.entries())
+      .map(([pct, s]) => ({
+        pct,
+        count: s.count,
+        avgOriginal: s.count > 0 ? s.origSum / s.count : 0,
+        avgSold: s.count > 0 ? s.soldSum / s.count : 0,
+        totalRevenue: s.soldSum,
+        avgDays: s.daysCount > 0 ? Math.round(s.daysSum / s.daysCount) : 0,
+      }))
+      .sort((a, b) => a.pct - b.pct)
+
+    return { markdownCount, totalSoldCount, markdownRevenue, fullPriceRevenue, levels }
+  }, [soldInPeriod, markdownByItem])
+
+  function exportMarkdownEffectiveness() {
+    const headers = ['Markdown %', 'Items Sold', 'Avg Original Price', 'Avg Sold Price', 'Total Revenue', 'Avg Days to Sell']
+    const rows = markdownStats.levels.map(l => [
+      `${l.pct}%`, l.count.toString(), l.avgOriginal.toFixed(2), l.avgSold.toFixed(2),
+      l.totalRevenue.toFixed(2), l.avgDays.toString(),
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-markdown-effectiveness-${periodSlug}-${dateSlug}.csv`)
+  }
+
+  // ─── Section 11: Pricing Accuracy ───────────────────────────
+  const pricingAccuracy = useMemo(() => {
+    const aiPriced = soldInPeriod.filter(i => i.low_price != null && i.high_price != null && i.sold_price != null)
+    let withinRange = 0
+    let aboveRange = 0
+    let belowRange = 0
+    let totalVariance = 0
+
+    const details = aiPriced.map(i => {
+      const low = i.low_price!
+      const high = i.high_price!
+      const sold = i.sold_price!
+      const midpoint = (low + high) / 2
+      const variance = ((sold - midpoint) / midpoint) * 100
+      totalVariance += Math.abs(variance)
+
+      let accuracy: 'within' | 'above' | 'below'
+      if (sold >= low && sold <= high) { accuracy = 'within'; withinRange++ }
+      else if (sold > high) { accuracy = 'above'; aboveRange++ }
+      else { accuracy = 'below'; belowRange++ }
+
+      return { ...i, low, high, sold, midpoint, variance, accuracy }
+    })
+
+    const total = aiPriced.length
+    const avgVariance = total > 0 ? totalVariance / total : 0
+
+    return { total, withinRange, aboveRange, belowRange, avgVariance, details }
+  }, [soldInPeriod])
+
+  function exportPricingAccuracy() {
+    const headers = ['Item Name', 'Category', 'AI Low', 'AI High', 'AI Midpoint', 'Sold Price', 'Variance %', 'Accuracy']
+    const rows = pricingAccuracy.details.map(d => [
+      d.name, d.category, d.low.toFixed(2), d.high.toFixed(2), d.midpoint.toFixed(2),
+      d.sold.toFixed(2), d.variance.toFixed(1), d.accuracy,
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-pricing-accuracy-${periodSlug}-${dateSlug}.csv`)
+  }
+
+  // ─── Section 12: Payout Reconciliation ──────────────────────
+  const payoutReconciliation = useMemo(() => {
+    // All-time — ignores period filter
+    const allSold = items.filter(i => i.status === 'sold')
+    const byConsignor = new Map<string, {
+      name: string; phone: string; email: string
+      totalSold: number; consignorShare: number; paidAmount: number
+    }>()
+
+    for (const i of allSold) {
+      const cId = i.consignor_id
+      if (!byConsignor.has(cId)) {
+        byConsignor.set(cId, {
+          name: i.consignor?.name ?? 'Unknown',
+          phone: i.consignor?.phone ?? '',
+          email: i.consignor?.email ?? '',
+          totalSold: 0, consignorShare: 0, paidAmount: 0,
+        })
+      }
+      const e = byConsignor.get(cId)!
+      e.totalSold += i.sold_price ?? 0
+      e.consignorShare += (i.sold_price ?? 0) * (i.consignor?.split_consignor ?? 50) / 100
+    }
+
+    return Array.from(byConsignor.entries()).map(([id, s]) => ({
+      id, ...s, balance: s.consignorShare - s.paidAmount,
+    })).sort((a, b) => b.balance - a.balance)
+  }, [items])
+
+  function exportPayoutReconciliation() {
+    const headers = ['Consignor', 'Phone', 'Email', 'Total Sold Value', 'Consignor Share', 'Paid', 'Balance Owed']
+    const rows = payoutReconciliation.map(c => [
+      c.name, c.phone, c.email, c.totalSold.toFixed(2),
+      c.consignorShare.toFixed(2), c.paidAmount.toFixed(2), c.balance.toFixed(2),
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-payout-reconciliation-${dateSlug}.csv`)
+  }
+
+  // ─── Section 13: Donation & Tax Report ──────────────────────
+  const donationTaxData = useMemo(() => {
+    const donated = donatedInPeriod
+    const byConsignor = new Map<string, { name: string; items: typeof donated; totalFMV: number }>()
+
+    for (const i of donated) {
+      const cId = i.consignor_id
+      if (!byConsignor.has(cId)) {
+        byConsignor.set(cId, { name: i.consignor?.name ?? 'Unknown', items: [], totalFMV: 0 })
+      }
+      const e = byConsignor.get(cId)!
+      e.items.push(i)
+      e.totalFMV += i.price ?? 0
+    }
+
+    const totalFMV = donated.reduce((s, i) => s + (i.price ?? 0), 0)
+    const groups = Array.from(byConsignor.values()).sort((a, b) => b.totalFMV - a.totalFMV)
+    return { totalItems: donated.length, totalFMV, groups }
+  }, [donatedInPeriod])
+
+  function exportDonationTax() {
+    const headers = ['Consignor', 'Item Name', 'Category', 'Condition', 'Original Asking Price (FMV)',
+      'Intake Date', 'Donation Date', 'Location']
+    const rows = donatedInPeriod.map(i => [
+      i.consignor?.name ?? 'Unknown', i.name, i.category, i.condition,
+      (i.price ?? 0).toFixed(2), i.intake_date, i.donated_at ?? '', getLocationName(i.location_id),
+    ])
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-donation-tax-${periodSlug}-${dateSlug}.csv`)
   }
 
   // ─── Render ─────────────────────────────────────────────────
@@ -1005,6 +1350,470 @@ export default function ReportsPage() {
                   </button>
                 </div>
               )
+            )}
+          </Section>
+
+          {/* ═══ Section 6: Category Performance ═══ */}
+          <Section title="Category Performance">
+            {sortedCategoryStats.length === 0 ? (
+              <p className="text-sm text-gray-400">No category data available.</p>
+            ) : (
+              <>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <SortHeader label="Category" sortKey="category" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} />
+                          <SortHeader label="Items" sortKey="items" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                          <SortHeader label="Sold" sortKey="sold" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                          <SortHeader label="Revenue" sortKey="revenue" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                          <SortHeader label="Avg Price" sortKey="avgPrice" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                          <SortHeader label="Avg Days" sortKey="avgDays" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                          <SortHeader label="Sell-Through" sortKey="sellThrough" current={catSort} onSort={k => setCatSort(toggleSort(catSort, k))} align="right" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {sortedCategoryStats.map(c => (
+                          <tr key={c.category} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">{c.category}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">{c.items}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">{c.sold}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${c.revenue.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">${c.avgPrice.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">{c.avgDays}</td>
+                            <td className="px-4 py-2.5 text-right">
+                              <span className={`text-xs font-semibold ${c.sellThrough >= 60 ? 'text-emerald-600' : c.sellThrough >= 30 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                {c.sellThrough}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportCategoryPerformance} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Category Performance CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 7: Aging Inventory ═══ */}
+          <Section title="Aging Inventory">
+            {agingItems.length === 0 ? (
+              <p className="text-sm text-gray-400">No active inventory items.</p>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 mb-3">{agingItems.length} active items, oldest first</p>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <th className="text-left px-4 py-3">Item Name</th>
+                          <th className="text-left px-4 py-3">Category</th>
+                          <th className="text-left px-4 py-3">Status</th>
+                          <th className="text-right px-4 py-3">Days on Floor</th>
+                          <th className="text-right px-4 py-3">Asking Price</th>
+                          <th className="text-left px-4 py-3">Consignor</th>
+                          <th className="text-right px-4 py-3">Expiry</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {agingItems.slice(0, 50).map(i => {
+                          const expiryColor = i.daysUntilExpiry == null ? 'text-gray-400'
+                            : i.daysUntilExpiry <= 0 ? 'text-red-600 font-semibold'
+                            : i.daysUntilExpiry <= 7 ? 'text-red-500'
+                            : i.daysUntilExpiry <= 14 ? 'text-amber-500'
+                            : 'text-emerald-600'
+                          return (
+                            <tr key={i.id} className="hover:bg-gray-50/50">
+                              <td className="px-4 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">{i.name}</td>
+                              <td className="px-4 py-2.5 text-gray-500">{i.category}</td>
+                              <td className="px-4 py-2.5">
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                  i.status === 'priced' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+                                }`}>{i.status}</span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-medium text-gray-900">{i.daysOnFloor}d</td>
+                              <td className="px-4 py-2.5 text-right text-gray-700">{i.price != null ? `$${i.price.toFixed(2)}` : '—'}</td>
+                              <td className="px-4 py-2.5 text-gray-500">{i.consignor?.name ?? 'Unknown'}</td>
+                              <td className={`px-4 py-2.5 text-right ${expiryColor}`}>
+                                {i.daysUntilExpiry != null ? (i.daysUntilExpiry <= 0 ? 'Expired' : `${i.daysUntilExpiry}d`) : '—'}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {agingItems.length > 50 && (
+                    <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+                      Showing 50 of {agingItems.length} items. Export CSV for full list.
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportAgingInventory} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Aging Inventory CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 8: Consignor Performance Rankings ═══ */}
+          <Section title="Consignor Performance Rankings">
+            {sortedRankings.length === 0 ? (
+              <p className="text-sm text-gray-400">No consignor data available.</p>
+            ) : (
+              <>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <SortHeader label="Consignor" sortKey="name" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} />
+                          <SortHeader label="Items" sortKey="items" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                          <SortHeader label="Sold" sortKey="sold" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                          <SortHeader label="Revenue" sortKey="revenue" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                          <SortHeader label="Avg Days" sortKey="avgDays" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                          <SortHeader label="Earned" sortKey="consignorEarned" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                          <SortHeader label="Sell-Through" sortKey="sellThrough" current={rankSort} onSort={k => setRankSort(toggleSort(rankSort, k))} align="right" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {sortedRankings.map(c => (
+                          <tr key={c.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">{c.name}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">{c.items}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">{c.sold}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${c.revenue.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">{c.avgDays}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${c.consignorEarned.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right">
+                              <span className={`text-xs font-semibold ${c.sellThrough >= 60 ? 'text-emerald-600' : c.sellThrough >= 30 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                {c.sellThrough}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportConsignorRankings} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Consignor Rankings CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 9: Weekly Operations Summary ═══ */}
+          <Section title="Weekly Operations Summary">
+            <p className="text-xs text-gray-400 mb-3">Last 7 days vs previous 7 days</p>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+              {([
+                { label: 'Items Intake\'d', icon: Package, thisWeek: weeklyOps.thisWeek.intaked, lastWeek: weeklyOps.lastWeek.intaked },
+                { label: 'Items Priced', icon: Tag, thisWeek: weeklyOps.thisWeek.priced, lastWeek: weeklyOps.lastWeek.priced },
+                { label: 'Items Sold', icon: DollarSign, thisWeek: weeklyOps.thisWeek.sold, lastWeek: weeklyOps.lastWeek.sold },
+                { label: 'Items Donated', icon: Gift, thisWeek: weeklyOps.thisWeek.donated, lastWeek: weeklyOps.lastWeek.donated },
+              ] as const).map(row => {
+                const pctChange = row.lastWeek > 0 ? Math.round((row.thisWeek - row.lastWeek) / row.lastWeek * 100) : (row.thisWeek > 0 ? 100 : 0)
+                return (
+                  <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <row.icon className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-700">{row.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold text-gray-900">{row.thisWeek}</span>
+                      <span className="text-xs text-gray-400">vs {row.lastWeek}</span>
+                      {pctChange !== 0 && (
+                        <span className={`text-xs font-semibold ${pctChange > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {pctChange > 0 ? '+' : ''}{pctChange}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-700">Revenue</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-900">${weeklyOps.thisWeek.revenue.toFixed(2)}</span>
+                  <span className="text-xs text-gray-400">vs ${weeklyOps.lastWeek.revenue.toFixed(2)}</span>
+                  {weeklyOps.lastWeek.revenue > 0 && (() => {
+                    const pct = Math.round((weeklyOps.thisWeek.revenue - weeklyOps.lastWeek.revenue) / weeklyOps.lastWeek.revenue * 100)
+                    return pct !== 0 ? (
+                      <span className={`text-xs font-semibold ${pct > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    ) : null
+                  })()}
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* ═══ Section 10: Markdown Effectiveness ═══ */}
+          <Section title="Markdown Effectiveness">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <StatCard icon={Percent} label="Markdown Sales" value={markdownStats.markdownCount}
+                sub={`of ${markdownStats.totalSoldCount} total sold`} color="amber" />
+              <StatCard icon={DollarSign} label="Markdown Revenue" value={`$${markdownStats.markdownRevenue.toFixed(2)}`} color="amber" />
+              <StatCard icon={DollarSign} label="Full Price Revenue" value={`$${markdownStats.fullPriceRevenue.toFixed(2)}`} color="emerald" />
+              <StatCard icon={TrendingUp} label="Markdown Rate"
+                value={markdownStats.totalSoldCount > 0 ? `${Math.round(markdownStats.markdownCount / markdownStats.totalSoldCount * 100)}%` : '0%'}
+                color={markdownStats.markdownCount > markdownStats.totalSoldCount / 2 ? 'red' : 'indigo'} />
+            </div>
+
+            {markdownStats.levels.length > 0 && (
+              <>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <th className="text-left px-4 py-3">Markdown %</th>
+                          <th className="text-right px-4 py-3">Items Sold</th>
+                          <th className="text-right px-4 py-3">Avg Original</th>
+                          <th className="text-right px-4 py-3">Avg Sold</th>
+                          <th className="text-right px-4 py-3">Total Revenue</th>
+                          <th className="text-right px-4 py-3">Avg Days</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {markdownStats.levels.map(l => (
+                          <tr key={l.pct} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">{l.pct}%</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">{l.count}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">${l.avgOriginal.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${l.avgSold.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${l.totalRevenue.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">{l.avgDays}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportMarkdownEffectiveness} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Markdown Effectiveness CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 11: Pricing Accuracy ═══ */}
+          <Section title="Pricing Accuracy (AI vs Actual)">
+            {pricingAccuracy.total === 0 ? (
+              <p className="text-sm text-gray-400">No AI-priced sold items available for accuracy analysis.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <StatCard icon={Target} label="AI-Priced & Sold" value={pricingAccuracy.total} color="indigo" />
+                  <StatCard icon={Target} label="Within Range"
+                    value={`${Math.round(pricingAccuracy.withinRange / pricingAccuracy.total * 100)}%`}
+                    sub={`${pricingAccuracy.withinRange} items`} color="emerald" />
+                  <StatCard icon={TrendingUp} label="Sold Above Range"
+                    value={pricingAccuracy.aboveRange} sub="under-priced by AI" color="amber" />
+                  <StatCard icon={AlertTriangle} label="Sold Below Range"
+                    value={pricingAccuracy.belowRange} sub="over-priced by AI" color="red" />
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <th className="text-left px-4 py-3">Item Name</th>
+                          <th className="text-left px-4 py-3">Category</th>
+                          <th className="text-right px-4 py-3">AI Range</th>
+                          <th className="text-right px-4 py-3">Sold Price</th>
+                          <th className="text-right px-4 py-3">Variance</th>
+                          <th className="text-left px-4 py-3">Accuracy</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {pricingAccuracy.details.slice(0, 50).map(d => (
+                          <tr key={d.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">{d.name}</td>
+                            <td className="px-4 py-2.5 text-gray-500">{d.category}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-500">${d.low.toFixed(0)}–${d.high.toFixed(0)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${d.sold.toFixed(2)}</td>
+                            <td className={`px-4 py-2.5 text-right font-medium ${
+                              d.accuracy === 'within' ? 'text-emerald-600' : d.accuracy === 'above' ? 'text-amber-600' : 'text-red-500'
+                            }`}>
+                              {d.variance > 0 ? '+' : ''}{d.variance.toFixed(1)}%
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                d.accuracy === 'within' ? 'bg-emerald-50 text-emerald-600'
+                                : d.accuracy === 'above' ? 'bg-amber-50 text-amber-600'
+                                : 'bg-red-50 text-red-600'
+                              }`}>
+                                {d.accuracy}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {pricingAccuracy.details.length > 50 && (
+                    <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+                      Showing 50 of {pricingAccuracy.details.length} items. Export CSV for full list.
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportPricingAccuracy} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Pricing Accuracy CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 12: Payout Reconciliation ═══ */}
+          <Section title="Payout Reconciliation (All Time)">
+            {payoutReconciliation.length === 0 ? (
+              <p className="text-sm text-gray-400">No sold items for reconciliation.</p>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 mb-3">
+                  All-time ledger. Paid tracking is stubbed — mark payouts as complete in a future update.
+                </p>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                          <th className="text-left px-4 py-3">Consignor</th>
+                          <th className="text-right px-4 py-3">Total Sold</th>
+                          <th className="text-right px-4 py-3">Consignor Share</th>
+                          <th className="text-right px-4 py-3">Paid</th>
+                          <th className="text-right px-4 py-3">Balance Owed</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {payoutReconciliation.map(c => (
+                          <tr key={c.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900">{c.name}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${c.totalSold.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-700">${c.consignorShare.toFixed(2)}</td>
+                            <td className="px-4 py-2.5 text-right text-gray-400">${c.paidAmount.toFixed(2)}</td>
+                            <td className={`px-4 py-2.5 text-right font-semibold ${c.balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                              ${c.balance.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-gray-200 bg-gray-50/50 font-semibold text-sm">
+                          <td className="px-4 py-2.5 text-gray-900">Total</td>
+                          <td className="px-4 py-2.5 text-right text-gray-900">
+                            ${payoutReconciliation.reduce((s, c) => s + c.totalSold, 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-gray-900">
+                            ${payoutReconciliation.reduce((s, c) => s + c.consignorShare, 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-gray-400">
+                            ${payoutReconciliation.reduce((s, c) => s + c.paidAmount, 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-amber-600">
+                            ${payoutReconciliation.reduce((s, c) => s + c.balance, 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button onClick={exportPayoutReconciliation} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Payout Reconciliation CSV
+                  </button>
+                </div>
+              </>
+            )}
+          </Section>
+
+          {/* ═══ Section 13: Donation & Tax Report ═══ */}
+          <Section title="Donation & Tax Report">
+            {donationTaxData.totalItems === 0 ? (
+              <p className="text-sm text-gray-400">No donated items in this period.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                  <StatCard icon={Gift} label="Items Donated" value={donationTaxData.totalItems} color="gray" />
+                  <StatCard icon={DollarSign} label="Total Fair Market Value"
+                    value={`$${donationTaxData.totalFMV.toFixed(2)}`}
+                    sub="based on original asking price" color="indigo" />
+                  <StatCard icon={FileText} label="Consignors" value={donationTaxData.groups.length} color="indigo" />
+                </div>
+
+                {donationTaxData.groups.map(group => (
+                  <div key={group.name} className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-gray-700">{group.name}</h3>
+                      <span className="text-xs text-gray-400">
+                        {group.items.length} items — FMV: ${group.totalFMV.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                              <th className="text-left px-4 py-2">Item Name</th>
+                              <th className="text-left px-4 py-2">Category</th>
+                              <th className="text-left px-4 py-2">Condition</th>
+                              <th className="text-right px-4 py-2">FMV (Asking Price)</th>
+                              <th className="text-left px-4 py-2">Intake Date</th>
+                              <th className="text-left px-4 py-2">Donation Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {group.items.map(i => (
+                              <tr key={i.id} className="hover:bg-gray-50/50">
+                                <td className="px-4 py-2 font-medium text-gray-900 max-w-[200px] truncate">{i.name}</td>
+                                <td className="px-4 py-2 text-gray-500">{i.category}</td>
+                                <td className="px-4 py-2 text-gray-500">{CONDITION_LABELS[i.condition as keyof typeof CONDITION_LABELS] ?? i.condition}</td>
+                                <td className="px-4 py-2 text-right text-gray-700">${(i.price ?? 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 text-gray-500">{i.intake_date}</td>
+                                <td className="px-4 py-2 text-gray-500">{i.donated_at ?? '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t border-gray-100 bg-gray-50/50">
+                              <td className="px-4 py-2 font-semibold text-gray-700" colSpan={3}>Subtotal</td>
+                              <td className="px-4 py-2 text-right font-semibold text-gray-900">${group.totalFMV.toFixed(2)}</td>
+                              <td colSpan={2} />
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button onClick={exportDonationTax} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <Download className="w-3.5 h-3.5" /> Donation & Tax Report CSV
+                </button>
+              </>
             )}
           </Section>
         </>
