@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, Filter, Download, Package, Loader2, X,
-  Tag, DollarSign, Gift, Pencil, Sparkles, Users,
+  Tag, DollarSign, Gift, Pencil, Sparkles, Users, Printer,
 } from 'lucide-react'
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
@@ -73,6 +73,54 @@ export default function InventoryPage() {
 
   // Sell form state
   const [soldPrice, setSoldPrice] = useState('')
+
+  // Label printing state
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [labelSize, setLabelSize] = useState<'2x1' | '4x2'>('2x1')
+  const [printingLabels, setPrintingLabels] = useState(false)
+
+  function toggleItem(id: string) {
+    setSelectedItems(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(items.map(i => i.id)))
+    }
+  }
+
+  async function printLabels(ids?: string[]) {
+    const itemIds = ids ?? Array.from(selectedItems)
+    if (itemIds.length === 0) return
+    setPrintingLabels(true)
+    try {
+      const res = await fetch('/api/labels/generate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_ids: itemIds, size: labelSize }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to generate labels')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch {
+      alert('Failed to generate labels')
+    } finally {
+      setPrintingLabels(false)
+    }
+  }
 
   // ─── Fetch consignors for filter dropdown ────────────────
   useEffect(() => {
@@ -278,15 +326,48 @@ export default function InventoryPage() {
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
           </p>
         </div>
-        <button
-          onClick={exportCSV}
-          disabled={items.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCSV}
+            disabled={items.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
+
+      {/* Bulk actions bar */}
+      {selectedItems.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+          <span className="text-sm font-medium text-indigo-700">
+            {selectedItems.size} selected
+          </span>
+          <select
+            value={labelSize}
+            onChange={e => setLabelSize(e.target.value as '2x1' | '4x2')}
+            className="text-xs px-2 py-1 rounded-lg border border-indigo-200 bg-white text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="2x1">2.25&quot; x 1.25&quot;</option>
+            <option value="4x2">4&quot; x 2&quot;</option>
+          </select>
+          <button
+            onClick={() => printLabels()}
+            disabled={printingLabels}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
+          >
+            {printingLabels ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+            Print Labels
+          </button>
+          <button
+            onClick={() => setSelectedItems(new Set())}
+            className="text-xs text-indigo-500 hover:text-indigo-700 ml-auto"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Status tabs */}
       <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
@@ -367,12 +448,30 @@ export default function InventoryPage() {
         </div>
       ) : (
         <div className="space-y-2">
+          {/* Select all */}
+          <label className="flex items-center gap-2 px-4 py-1 text-xs text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={items.length > 0 && selectedItems.size === items.length}
+              onChange={toggleAll}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Select all
+          </label>
           {items.map(item => (
             <div
               key={item.id}
-              className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md hover:border-gray-200 transition-all"
+              className={`bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition-all ${
+                selectedItems.has(item.id) ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-gray-100 hover:border-gray-200'
+              }`}
             >
               <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedItems.has(item.id)}
+                  onChange={() => toggleItem(item.id)}
+                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-sm font-semibold text-gray-900 truncate">
@@ -432,6 +531,15 @@ export default function InventoryPage() {
                         <Gift className="w-3.5 h-3.5" />
                       </button>
                     </>
+                  )}
+                  {item.status === 'priced' && (
+                    <button
+                      onClick={() => printLabels([item.id])}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Print label"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
                   )}
                   <button
                     onClick={() => openEdit(item)}

@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (96 tests across unit + API)
+- `npm test` — Jest test suite (116 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 
 ## Tech Stack
@@ -22,6 +22,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - **lucide-react** for icons
 - **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing and photo identification (vision)
 - **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`)
+- **pdf-lib** for PDF label generation (no browser dependency)
 - Path alias: `@/*` maps to `./src/*`
 
 ## Architecture
@@ -42,6 +43,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (starter/standard/pro) or status (active/suspended/cancelled). Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
 - `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
 - `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
+- `/api/labels/generate` — POST PDF label generation. Takes `{ item_ids: string[], size: '2x1' | '4x2' }`. Fetches items with consignor/location joins, scoped by account_id. Returns PDF blob. Labels include item name (2-line max), category, condition, price (with strikethrough for markdowns), consignor (first name + last initial), location, short item ID, ConsignIQ branding.
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -104,7 +106,7 @@ Server component. Shows stats (active consignors, pending items, inventory value
 List, detail, and new consignor form. Intake form (`/dashboard/consignors/[id]/intake`) with multi-item queue and photo-based AI identification per row.
 
 ### Inventory (`/dashboard/inventory`)
-Client component with status tabs, search, category filter, consignor filter dropdown, edit/sell/donate modals, CSV export. Filters persist in URL params.
+Client component with status tabs, search, category filter, consignor filter dropdown, edit/sell/donate modals, CSV export. Filters persist in URL params. Checkboxes on each item for bulk selection; bulk action bar with label size picker and "Print Labels" button. Individual "Print" button on priced items.
 
 ### Pricing (`/dashboard/inventory/[id]/price` and `/dashboard/pricing`)
 Two pricing UIs: inventory item pricing (for specific items) and price lookup (scratch pad). Both support:
@@ -187,7 +189,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **108 tests, all passing**.
+Full test baseline established for Phases 1–5. Test suite: **116 tests, all passing**.
 
 ### Test Structure
 ```
@@ -205,11 +207,12 @@ __tests__/
 │   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
 │   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 │   ├── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
-│   └── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
+│   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
+│   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 18 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts.
+Located at `/docs/test-plans/`. 19 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing.
 
 ## Phase Status
 
@@ -221,6 +224,7 @@ Phase 5 is in progress. Completed so far:
 - Admin Page: superadmin-only `/admin` route with overview stats, accounts list, account detail with tier/status management
 - Help System: three-layer help (tooltips, floating widget, AI search), `/api/help/search` endpoint, knowledge base
 - AI Report Prompts: natural language query bar on Reports page, Claude-generated SQL with validation and execution, `/api/reports/query` endpoint. Requires `execute_readonly_query` RPC function in Supabase.
-- Full test baseline established (108 tests passing, 18 manual test plans)
+- Label Printing: PDF label generation via pdf-lib. Single-item print from pricing page, bulk print with checkboxes from inventory page. Two sizes: 2.25"x1.25" and 4"x2". Labels include item name, category, condition, price (with markdown strikethrough), consignor (first+last initial), location, item ID, ConsignIQ branding.
+- Full test baseline established (116 tests passing, 19 manual test plans)
 - Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Next up: Label Printing
+- Phase 5 complete. Ready for Phase 5 wrap-up (Playwright setup + final commit).

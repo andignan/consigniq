@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
   ExternalLink, AlertCircle, RefreshCw, Search, Camera, X, Pencil,
-  History, TrendingUp,
+  History, TrendingUp, Printer,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import Tooltip from '@/components/Tooltip'
@@ -27,6 +27,35 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null)
   const [manualPrice, setManualPrice] = useState('')
   const [pendingCount, setPendingCount] = useState<number | null>(null)
+
+  // Label printing
+  const [labelSize, setLabelSize] = useState<'2x1' | '4x2'>('2x1')
+  const [printingLabel, setPrintingLabel] = useState(false)
+
+  async function printLabel() {
+    if (!item) return
+    setPrintingLabel(true)
+    try {
+      const res = await fetch('/api/labels/generate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_ids: [item.id], size: labelSize }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to generate label')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch {
+      alert('Failed to generate label')
+    } finally {
+      setPrintingLabel(false)
+    }
+  }
 
   // Inline editing
   const [editing, setEditing] = useState(false)
@@ -391,14 +420,36 @@ export default function PricingPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Back link */}
-      <button
-        onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Back
-      </button>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back
+        </button>
+        {item && (item.status === 'priced' || item.price != null) && (
+          <div className="flex items-center gap-2">
+            <select
+              value={labelSize}
+              onChange={e => setLabelSize(e.target.value as '2x1' | '4x2')}
+              className="text-xs px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="2x1">2.25&quot; x 1.25&quot;</option>
+              <option value="4x2">4&quot; x 2&quot;</option>
+            </select>
+            <button
+              onClick={printLabel}
+              disabled={printingLabel}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              {printingLabel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+              Print Label
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Item details card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">

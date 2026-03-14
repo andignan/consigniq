@@ -24,6 +24,7 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Admin Page](./admin-page.md) | `admin-page.md` | Superadmin dashboard, account management, tier/status changes | API route tests |
 | [Help System](./help-system.md) | `help-system.md` | Tooltips, floating help widget, AI search | API + unit tests |
 | [AI Report Prompts](./ai-report-prompts.md) | `ai-report-prompts.md` | NL prompt bar, SQL generation, validation, execution | API route tests |
+| [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route tests |
 
 ## Automated Test Suite
 
@@ -42,7 +43,8 @@ __tests__/
 │   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
 │   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 │   ├── help.test.ts           — POST /api/help/search validation, AI scoping
-│   └── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping
+│   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping
+│   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF
 ├── unit/
 │   └── help-components.test.ts — Knowledge base content, topic coverage
 └── components/                — (placeholder for future component tests)
