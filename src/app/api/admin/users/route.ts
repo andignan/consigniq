@@ -1,6 +1,8 @@
 // app/api/admin/users/route.ts
 import { checkSuperadmin, createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendEmail } from '@/lib/email'
+import { buildInviteEmail } from '@/lib/email-templates'
 
 export async function GET(request: NextRequest) {
   const auth = await checkSuperadmin()
@@ -118,10 +120,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Failed to create location: ${locationError.message}` }, { status: 500 })
   }
 
-  // 3. Create Supabase auth user (sends invite)
+  // 3. Create Supabase auth user (no email — we send our own via Resend)
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
-    email_confirm: true,
+    email_confirm: false,
     user_metadata: { full_name },
   })
 
@@ -157,5 +159,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Failed to create user record: ${userError.message}` }, { status: 500 })
   }
 
-  return NextResponse.json({ account, user, location }, { status: 201 })
+  // 5. Generate invite link and send branded email via Resend
+  let inviteError: string | undefined
+  try {
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'invite',
+      email,
+    })
+
+    if (linkError) {
+      inviteError = `Failed to generate invite link: ${linkError.message}`
+    } else if (linkData?.properties?.action_link) {
+      const emailContent = buildInviteEmail({
+        fullName: full_name,
+        accountName: account_name,
+        tier,
+        setupLink: linkData.properties.action_link,
+      })
+      await sendEmail({ to: email, ...emailContent })
+    }
+  } catch (err) {
+    // Non-critical — user and account are created, invite can be resent
+    inviteError = `Invite email failed: ${err instanceof Error ? err.message : String(err)}`
+  }
+
+  return NextResponse.json({
+    account,
+    user,
+    location,
+    ...(inviteError ? { invite_warning: inviteError } : {}),
+  }, { status: 201 })
 }

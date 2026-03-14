@@ -7,9 +7,11 @@ const mockSupabaseFrom = jest.fn()
 const mockSupabaseAuth = {
   admin: {
     createUser: jest.fn(),
+    generateLink: jest.fn(),
   },
 }
 const mockCheckSuperadmin = jest.fn()
+const mockSendEmail = jest.fn()
 
 jest.mock('@/lib/supabase/admin', () => ({
   checkSuperadmin: (...args: unknown[]) => mockCheckSuperadmin(...args),
@@ -19,11 +21,63 @@ jest.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
+jest.mock('@/lib/email', () => ({
+  sendEmail: (...args: unknown[]) => mockSendEmail(...args),
+}))
+
+jest.mock('@/lib/email-templates', () => ({
+  buildInviteEmail: (data: Record<string, unknown>) => ({
+    subject: "You've been invited to ConsignIQ",
+    text: `Hi ${data.fullName}, setup: ${data.setupLink}`,
+    html: `<p>Hi ${data.fullName}</p>`,
+  }),
+}))
+
 import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/admin/users/route'
 
 function makeRequest(url: string, init?: RequestInit) {
   return new NextRequest(new URL(url, 'http://localhost:3000'), init)
+}
+
+// Helper to set up POST mocks for account/location/users creation
+function setupPostMocks() {
+  const accountInsertMock = jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      single: jest.fn().mockResolvedValue({ data: { id: 'acc1' }, error: null }),
+    }),
+  })
+  const locationInsertMock = jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      single: jest.fn().mockResolvedValue({ data: { id: 'loc1' }, error: null }),
+    }),
+  })
+  const usersUpsertMock = jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      single: jest.fn().mockResolvedValue({ data: { id: 'usr1' }, error: null }),
+    }),
+  })
+
+  mockSupabaseFrom.mockImplementation((table: string) => {
+    if (table === 'accounts') return { insert: accountInsertMock }
+    if (table === 'locations') return { insert: locationInsertMock }
+    if (table === 'users') return { upsert: usersUpsertMock }
+    return {}
+  })
+
+  mockSupabaseAuth.admin.createUser.mockResolvedValue({
+    data: { user: { id: 'auth-u1' } },
+    error: null,
+  })
+
+  mockSupabaseAuth.admin.generateLink.mockResolvedValue({
+    data: { properties: { action_link: 'https://consigniq.com/auth/setup?token=abc123' } },
+    error: null,
+  })
+
+  mockSendEmail.mockResolvedValue({ id: 'msg1' })
+
+  return { accountInsertMock, locationInsertMock, usersUpsertMock }
 }
 
 describe('GET /api/admin/users', () => {
@@ -108,46 +162,14 @@ describe('POST /api/admin/users', () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
     const res = await POST(makeRequest('/api/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ email: 'a@b.com' }), // missing full_name, account_name, tier, account_type
+      body: JSON.stringify({ email: 'a@b.com' }),
     }))
     expect(res.status).toBe(400)
   })
 
-  it('creates account, location, auth user, and users row', async () => {
+  it('creates account, location, auth user, users row, and sends invite email', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
-
-    // Mock account insert
-    const accountInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'acc1' }, error: null }),
-      }),
-    })
-
-    // Mock location insert
-    const locationInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'loc1' }, error: null }),
-      }),
-    })
-
-    // Mock users insert
-    const usersInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'usr1' }, error: null }),
-      }),
-    })
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === 'accounts') return { insert: accountInsertMock }
-      if (table === 'locations') return { insert: locationInsertMock }
-      if (table === 'users') return { upsert: usersInsertMock }
-      return {}
-    })
-
-    mockSupabaseAuth.admin.createUser.mockResolvedValue({
-      data: { user: { id: 'auth-u1' } },
-      error: null,
-    })
+    const { accountInsertMock } = setupPostMocks()
 
     const res = await POST(makeRequest('/api/admin/users', {
       method: 'POST',
@@ -174,33 +196,30 @@ describe('POST /api/admin/users', () => {
         account_type: 'trial',
       })
     )
+
+    // Verify auth user created with email_confirm: false
+    expect(mockSupabaseAuth.admin.createUser).toHaveBeenCalledWith({
+      email: 'new@test.com',
+      email_confirm: false,
+      user_metadata: { full_name: 'New User' },
+    })
+
+    // Verify invite link generated and email sent
+    expect(mockSupabaseAuth.admin.generateLink).toHaveBeenCalledWith({
+      type: 'invite',
+      email: 'new@test.com',
+    })
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'new@test.com',
+        subject: "You've been invited to ConsignIQ",
+      })
+    )
   })
 
   it('sets is_complimentary for complimentary accounts', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
-
-    const accountInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'acc1' }, error: null }),
-      }),
-    })
-    const locationInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'loc1' }, error: null }),
-      }),
-    })
-    const usersInsertMock = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'usr1' }, error: null }),
-      }),
-    })
-
-    mockSupabaseFrom.mockImplementation((table: string) => {
-      if (table === 'accounts') return { insert: accountInsertMock }
-      if (table === 'locations') return { insert: locationInsertMock }
-      if (table === 'users') return { upsert: usersInsertMock }
-      return {}
-    })
+    const { accountInsertMock } = setupPostMocks()
 
     mockSupabaseAuth.admin.createUser.mockResolvedValue({
       data: { user: { id: 'auth-u2' } },
@@ -227,5 +246,33 @@ describe('POST /api/admin/users', () => {
         complimentary_tier: 'pro',
       })
     )
+  })
+
+  it('returns 201 with warning if invite email fails', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
+    setupPostMocks()
+
+    // Make generateLink fail
+    mockSupabaseAuth.admin.generateLink.mockResolvedValue({
+      data: null,
+      error: { message: 'Link generation failed' },
+    })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'fail@test.com',
+        full_name: 'Fail User',
+        account_name: 'Fail Shop',
+        tier: 'starter',
+        account_type: 'paid',
+      }),
+    }))
+
+    // Should still succeed — invite is non-critical
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.invite_warning).toContain('Failed to generate invite link')
+    expect(body.account.id).toBe('acc1')
   })
 })

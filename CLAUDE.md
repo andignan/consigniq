@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (245 tests across unit + API)
+- `npm test` — Jest test suite (246 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -47,7 +47,7 @@ Three Supabase client factories:
 - `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
 - `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
 - `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (solo/starter/standard/pro), status (active/suspended/cancelled/inactive), account_type, is_complimentary, complimentary_tier, extend_trial. Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
-- `/api/admin/users` — GET list all users across accounts with account join. Supports `?search=`, `?account_type=`, `?tier=` filters. POST creates a new user with account, location, auth user, and users table row (uses upsert to handle Supabase auth trigger creating a partial row). Superadmin only.
+- `/api/admin/users` — GET list all users across accounts with account join. Supports `?search=`, `?account_type=`, `?tier=` filters. POST creates a new user with account, location, auth user (email_confirm: false), and users table row (upsert for trigger compat), then generates invite link via `auth.admin.generateLink()` and sends branded invite email via Resend. Invite email is non-critical — returns `invite_warning` if it fails. Superadmin only.
 - `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
 - `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
 - `/api/labels/generate` — POST PDF label generation. Takes `{ item_ids: string[], size: '2x1' | '4x2' }`. Fetches items with consignor/location joins, scoped by account_id. Returns PDF blob. Labels include item name (2-line max), category, condition, price (with strikethrough for markdowns), consignor (first name + last initial), location, short item ID, ConsignIQ branding.
@@ -268,7 +268,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails + solo tier + admin user management. Test suite: **245 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails + solo tier + admin user management + invite emails. Test suite: **246 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
@@ -278,7 +278,7 @@ Full test baseline established for Phases 1–6 + sidebar improvements + agreeme
 - **eBay comps fix + auto-capitalize** (+10): pricing.test.ts +2 (SerpApi params, new-condition filtering), auto-capitalize.test.ts 8 (word capitalization, edge cases) = 180
 - **Description hints** (+12): description-hints.test.ts 12 (per-category hints, threshold, no-hint categories) = 192
 - **Agreement emails** (+11): agreements.test.ts 11 (send auth/validation/creation/email-sent-at, agreement template content/missing phone, expiry reminder template, notify-expiring auth/empty/query) = 203
-- **Solo tier + admin users** (+42): feature-gates.test.ts +28 (solo feature blocking, account type helpers, lookup limits, complimentary bypass, trial active/expired), admin-users.test.ts 10 (GET auth/search/list, POST auth/validation/create/complimentary), trial-check-expiry.test.ts 4 (auth/reminder/expired count) = 245
+- **Solo tier + admin users** (+43): feature-gates.test.ts +28 (solo feature blocking, account type helpers, lookup limits, complimentary bypass, trial active/expired), admin-users.test.ts 11 (GET auth/search/list, POST auth/validation/create/complimentary/invite-email/invite-warning), trial-check-expiry.test.ts 4 (auth/reminder/expired count) = 246
 
 ### Test Structure
 ```
@@ -307,7 +307,7 @@ __tests__/
 │   ├── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
 │   ├── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
 │   ├── agreements.test.ts      — POST /api/agreements/send + notify-expiring, auth, validation, email templates
-│   ├── admin-users.test.ts     — GET/POST /api/admin/users, superadmin enforcement, search, create account/user/location
+│   ├── admin-users.test.ts     — GET/POST /api/admin/users, superadmin enforcement, search, create account/user/location, invite email via Resend, invite failure warning
 │   └── trial-check-expiry.test.ts — POST /api/trial/check-expiry, auth, reminder emails, expired count
 ```
 
@@ -401,7 +401,7 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 - **Billing route updates**: `/api/billing/checkout` now supports 4 tiers + topup, `/api/billing/webhook` handles topup_50 and trial→paid conversion
 - **Usage enforcement update**: `/api/pricing/suggest` checks bonus lookups when monthly quota exhausted, increments `bonus_lookups_used` when monthly is spent
 - Migration: `20260314080000_solo_tier_and_account_types.sql` — adds account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used to accounts table
-- Test suite: **245 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
+- Test suite: **246 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
 - Stripe products created in **test mode** with the following price IDs (also set as Vercel env vars for all environments):
   - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` (Solo Pricer, $9/mo)
   - `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` (Starter, $49/mo)
@@ -415,7 +415,9 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 - **Admin sidebar "Back to App" removed**: The "Back to App" link is removed from the admin sidebar since superadmins live in `/admin` only and navigating to `/dashboard` would just redirect them back.
 - **Admin Add User public.users fix**: POST `/api/admin/users` now uses `upsert` (with `onConflict: 'id'`) instead of `insert` for the public.users row. Root cause: Supabase has a trigger on `auth.users` that auto-creates a partial row in `public.users` when `auth.admin.createUser()` is called, causing a primary key conflict on the subsequent insert. Upsert ensures all fields (account_id, location_id, role, email, full_name) are set correctly regardless of whether the trigger fired.
 - **Add User modal "Paid" option**: The Account Type dropdown now includes Paid as a third option (default), in addition to Trial and Complimentary.
-- Test suite: **245 Jest tests passing**
+- **Invite email via Resend**: Replaced Supabase's built-in invite flow (which doesn't route through custom SMTP/Resend) with a two-step approach: `auth.admin.createUser({ email_confirm: false })` to create the auth user without sending email, then `auth.admin.generateLink({ type: 'invite', email })` to generate a one-time setup link, then send a branded invite email via Resend with `buildInviteEmail()` template. Email includes user name, account name, tier, and setup link. Invite email is non-critical — if it fails, the user/account are still created and the response includes an `invite_warning` field.
+- `src/lib/email-templates.ts` — added `buildInviteEmail()` template (HTML + plain text) with ConsignIQ branding, account details, and setup CTA button.
+- Test suite: **246 Jest tests passing**
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

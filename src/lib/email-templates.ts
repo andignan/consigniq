@@ -154,6 +154,88 @@ This is an automated message from ConsignIQ.
   return { subject, text, html }
 }
 
+interface InviteEmailData {
+  fullName: string
+  accountName: string
+  tier: string
+  setupLink: string
+}
+
+export function buildInviteEmail(data: InviteEmailData) {
+  const tierLabel: Record<string, string> = {
+    solo: 'Solo Pricer',
+    starter: 'Starter',
+    standard: 'Standard',
+    pro: 'Pro',
+  }
+  const tierName = tierLabel[data.tier] || data.tier
+
+  const text = `Hi ${data.fullName},
+
+You've been invited to ConsignIQ!
+
+Account: ${data.accountName}
+Plan: ${tierName}
+
+To get started, set your password and log in using the link below:
+
+${data.setupLink}
+
+This link expires in 24 hours. If it expires, contact your administrator for a new invite.
+
+Welcome aboard!
+The ConsignIQ Team
+
+This is an automated message from ConsignIQ.
+`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
+    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  </div>
+
+  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're Invited!</h2>
+
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    Hi ${data.fullName},
+  </p>
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    You've been invited to join <strong>${data.accountName}</strong> on ConsignIQ.
+  </p>
+
+  <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
+    <table style="width:100%;font-size:14px;">
+      <tr><td style="padding:4px 0;color:#6b7280;">Account</td><td style="padding:4px 0;font-weight:600;">${data.accountName}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Plan</td><td style="padding:4px 0;font-weight:600;">${tierName}</td></tr>
+    </table>
+  </div>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${data.setupLink}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+      Set Up Your Account
+    </a>
+  </div>
+
+  <p style="font-size:13px;line-height:1.6;color:#6b7280;text-align:center;">
+    This link expires in 24 hours. If it expires, contact your administrator for a new invite.
+  </p>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">
+    This is an automated message from ConsignIQ.
+  </p>
+</body>
+</html>`
+
+  const subject = "You've been invited to ConsignIQ"
+
+  return { subject, text, html }
+}
+
 interface ExpiryReminderData {
   storeName: string
   storePhone: string | null
