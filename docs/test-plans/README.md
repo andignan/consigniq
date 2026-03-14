@@ -1,12 +1,12 @@
 # ConsignIQ Test Plans
 
-Test baseline established for Phases 1–4. Each test plan covers happy paths, edge cases, role enforcement, mobile layout, and current automation status.
+Test baseline established for Phases 1–5. Each test plan covers happy paths, edge cases, role enforcement, mobile layout, and current automation status.
 
 ## Test Plans
 
 | Test Plan | File | Scope | Automated Tests |
 |-----------|------|-------|-----------------|
-| [Authentication](./authentication.md) | `authentication.md` | Login, middleware, sessions, role access | Indirect (API tests) |
+| [Authentication](./authentication.md) | `authentication.md` | Login, middleware, sessions, role access | API tests + Playwright E2E |
 | [Consignor Management](./consignor-management.md) | `consignor-management.md` | CRUD, lifecycle badges, list/detail pages | API route tests |
 | [Item Intake](./item-intake.md) | `item-intake.md` | IntakeQueue, photo AI, multi-item queue | API + pricing tests |
 | [AI Pricing Engine](./ai-pricing-engine.md) | `ai-pricing-engine.md` | eBay comps, Claude pricing, photo ID, categories | API + unit tests |
@@ -17,23 +17,24 @@ Test baseline established for Phases 1–4. Each test plan covers happy paths, e
 | [Agreement Emails](./agreement-emails.md) | `agreement-emails.md` | Agreement PDF + email delivery | N/A (not implemented) |
 | [Settings Page](./settings-page.md) | `settings-page.md` | Location/account settings, team mgmt, invites | API role tests |
 | [Dashboard Home](./dashboard-home.md) | `dashboard-home.md` | Stats cards, lifecycle alerts, quick actions | None (server component) |
-| [Multi-Tenancy](./multi-tenancy.md) | `multi-tenancy.md` | Account/location scoping, RLS, data isolation | Indirect (API auth tests) |
-| [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | None (client component) |
+| [Multi-Tenancy](./multi-tenancy.md) | `multi-tenancy.md` | Account/location scoping, RLS, data isolation | API tests + Playwright E2E |
+| [Sidebar & Navigation](./sidebar-navigation.md) | `sidebar-navigation.md` | Responsive sidebar, mobile menu, active states | Playwright E2E |
 | [Multi-Location](./multi-location.md) | `multi-location.md` | Location switcher, cross-location dashboard, location management | API route tests |
 | [Repeat Item History](./repeat-item-history.md) | `repeat-item-history.md` | Price history recording, "Priced Before" panel, similar items API | API route tests |
-| [Admin Page](./admin-page.md) | `admin-page.md` | Superadmin dashboard, account management, tier/status changes | API route tests |
-| [Help System](./help-system.md) | `help-system.md` | Tooltips, floating help widget, AI search | API + unit tests |
+| [Admin Page](./admin-page.md) | `admin-page.md` | Superadmin dashboard, account management, tier/status changes | API tests + Playwright E2E |
+| [Help System](./help-system.md) | `help-system.md` | Tooltips, floating help widget, AI search | API + unit + Playwright E2E |
 | [AI Report Prompts](./ai-report-prompts.md) | `ai-report-prompts.md` | NL prompt bar, SQL generation, validation, execution | API route tests |
-| [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route tests |
+| [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route + Playwright E2E |
 
 ## Automated Test Suite
 
-### Structure
+### Jest Tests (116 tests)
 ```
 __tests__/
 ├── unit/
 │   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
-│   └── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
+│   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
+│   └── help-components.test.ts — Knowledge base content, topic coverage
 ├── api/
 │   ├── consignors.test.ts     — GET/POST /api/consignors, validation, auth
 │   ├── items.test.ts          — GET/POST/PATCH /api/items, filters, auto-timestamps
@@ -45,23 +46,35 @@ __tests__/
 │   ├── help.test.ts           — POST /api/help/search validation, AI scoping
 │   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping
 │   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF
-├── unit/
-│   └── help-components.test.ts — Knowledge base content, topic coverage
 └── components/                — (placeholder for future component tests)
 ```
 
+### Playwright E2E Tests (5 specs)
+```
+e2e/
+├── auth.spec.ts           — Login page render, invalid credentials, valid login redirect
+├── navigation.spec.ts     — 7 sidebar nav items, active state, mobile hamburger
+├── data-isolation.spec.ts — /admin redirects non-superadmin, unauthenticated access blocked
+├── help-widget.spec.ts    — Widget visible on /dashboard, opens on click, absent on /admin
+└── labels.spec.ts         — Checkboxes on inventory, bulk action bar, print button on priced
+```
+
+**Note:** E2E tests require `npm run dev` running + seeded test data in Supabase. Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars. Install browsers: `npx playwright install chromium`.
+
 ### Running Tests
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Run tests in watch mode
+npm test              # Run all Jest tests
+npm run test:watch    # Jest in watch mode
+npm run test:e2e      # Playwright E2E (requires running app + test data)
+npm run test:e2e:ui   # Playwright with interactive UI
 ```
 
 ## Current Status
 
-- **Unit tests**: Passing — lifecycle, categories
-- **API tests**: Passing — consignors, items, pricing, settings
+- **Unit tests**: Passing — lifecycle, categories, help knowledge base
+- **API tests**: Passing — consignors, items, pricing, settings, locations, price-history, admin, help, reports-query, labels
+- **E2E tests**: Configured — 5 Playwright specs (auth, navigation, data-isolation, help-widget, labels)
 - **Component tests**: Not yet implemented (would require more extensive mocking of Next.js rendering)
-- **E2E tests**: Not yet implemented (would require Playwright or Cypress)
 
 ## Notes
 
@@ -69,3 +82,4 @@ npm run test:watch    # Run tests in watch mode
 - Reports page is purely client-side computation — testing requires component rendering tests or E2E
 - Markdown automation (auto-applying markdowns) is not yet implemented; only the toggle and display exist
 - All API tests mock the Supabase client to test route handler logic in isolation
+- E2E tests will not run in CI without additional setup (test database seeding, environment variables)

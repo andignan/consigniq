@@ -13,9 +13,12 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run lint` — ESLint
 - `npm test` — Jest test suite (116 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
+- `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
+- `npm run test:e2e:ui` — Playwright E2E with interactive UI
 
 ## Tech Stack
 
+- **Playwright** for E2E browser testing (chromium)
 - **Next.js 14** (App Router, React 18, TypeScript, `src/` directory)
 - **Supabase** for auth, database, and RLS — accessed via `@supabase/ssr`
 - **Tailwind CSS 3** for styling (responsive: `md:` breakpoint for desktop)
@@ -211,20 +214,39 @@ __tests__/
 │   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
 ```
 
+### Playwright E2E Tests
+```
+e2e/
+├── auth.spec.ts           — Login page render, invalid credentials, valid login redirect
+├── navigation.spec.ts     — 7 sidebar nav items, active state, mobile hamburger
+├── data-isolation.spec.ts — /admin redirects non-superadmin, unauthenticated access blocked
+├── help-widget.spec.ts    — Widget visible on /dashboard, opens on click, absent on /admin
+└── labels.spec.ts         — Checkboxes on inventory, bulk action bar, print button on priced items
+```
+
+**Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
+
 ### Manual Test Plans
 Located at `/docs/test-plans/`. 19 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing.
 
 ## Phase Status
 
-Phase 5 is in progress. Completed so far:
-- `sold_price` column added to `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql` — must be run via Supabase Dashboard SQL Editor)
-- Settings page at `/dashboard/settings` with Location Settings, Locations, and Account Settings tabs
-- Multi-location support: LocationContext, sidebar location switcher, owner cross-location dashboard, location management in settings, `/api/locations` route
-- Repeat Item History: price_history auto-written on sold, `/api/price-history` endpoint, "Priced Before" panel on inventory pricing page
-- Admin Page: superadmin-only `/admin` route with overview stats, accounts list, account detail with tier/status management
-- Help System: three-layer help (tooltips, floating widget, AI search), `/api/help/search` endpoint, knowledge base
-- AI Report Prompts: natural language query bar on Reports page, Claude-generated SQL with validation and execution, `/api/reports/query` endpoint. Requires `execute_readonly_query` RPC function in Supabase.
-- Label Printing: PDF label generation via pdf-lib. Single-item print from pricing page, bulk print with checkboxes from inventory page. Two sizes: 2.25"x1.25" and 4"x2". Labels include item name, category, condition, price (with markdown strikethrough), consignor (first+last initial), location, item ID, ConsignIQ branding.
-- Full test baseline established (116 tests passing, 19 manual test plans)
-- Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Phase 5 complete. Ready for Phase 5 wrap-up (Playwright setup + final commit).
+**Phase 5 — COMPLETE.** All features implemented, tested, and documented.
+
+### Phase 5 Feature List (Done)
+- Settings page at `/dashboard/settings` (Location Settings, Locations, Account Settings tabs)
+- Multi-location support (LocationContext, sidebar switcher, owner cross-location dashboard, `/api/locations`)
+- Repeat Item History (price_history auto-write on sold, `/api/price-history`, "Priced Before" panel)
+- Admin Page (superadmin `/admin` route: overview stats, accounts list, account detail with tier/status)
+- Help System (tooltips, floating widget, AI search via `/api/help/search` + knowledge base)
+- AI Report Prompts (natural language query bar, Claude-generated SQL, `/api/reports/query`)
+- Label Printing (PDF via pdf-lib, single/bulk print, 2 sizes, `/api/labels/generate`)
+- Playwright E2E test setup (5 specs: auth, navigation, data-isolation, help-widget, labels)
+- `sold_price` column on `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql`)
+- Timezone bugfix: `getLifecycleStatus()` parses date strings as local time (appends `T00:00:00`)
+- Test suite: **116 Jest tests passing**, 5 Playwright E2E specs, 19 manual test plans
+
+### Next: Phase 6
+- Cross-customer analytics and community pricing
+- Billing and subscriptions via Stripe
+- Advanced reporting and benchmarks
