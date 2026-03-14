@@ -52,7 +52,7 @@ export default function PriceLookupPage() {
     try {
       const formData = new FormData()
       formData.append('photo', file)
-      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error ?? 'Identification failed')
@@ -83,6 +83,7 @@ export default function PriceLookupPage() {
     try {
       const res = await fetch('/api/pricing/comps', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, category, description, condition }),
       })
@@ -125,6 +126,7 @@ export default function PriceLookupPage() {
     try {
       const suggestRes = await fetch('/api/pricing/suggest', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name, category, condition, description, comps: fetchedComps,

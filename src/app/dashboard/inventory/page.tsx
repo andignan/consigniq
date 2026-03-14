@@ -75,7 +75,7 @@ export default function InventoryPage() {
     if (searchQuery) params.set('search', searchQuery)
 
     try {
-      const res = await fetch(`/api/items?${params}`)
+      const res = await fetch(`/api/items?${params}`, { credentials: 'include' })
       if (!res.ok) throw new Error('Failed to load')
       const { items: data } = await res.json()
       setItems(data ?? [])
@@ -141,6 +141,7 @@ export default function InventoryPage() {
     try {
       const res = await fetch('/api/items', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: modalItem.id,
@@ -164,6 +165,7 @@ export default function InventoryPage() {
     try {
       const res = await fetch('/api/items', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: modalItem.id,
@@ -185,6 +187,7 @@ export default function InventoryPage() {
     try {
       const res = await fetch('/api/items', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: modalItem.id,

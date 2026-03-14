@@ -80,6 +80,7 @@ export function NewConsignorForm({
     try {
       const res = await fetch('/api/consignors', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           account_id: accountId,

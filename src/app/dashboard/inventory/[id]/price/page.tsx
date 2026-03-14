@@ -53,6 +53,7 @@ export default function PricingPage() {
     try {
       const res = await fetch('/api/items', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: item.id,
@@ -106,7 +107,7 @@ export default function PricingPage() {
     try {
       const formData = new FormData()
       formData.append('photo', file)
-      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error ?? 'Identification failed')
@@ -138,7 +139,7 @@ export default function PricingPage() {
   useEffect(() => {
     async function loadItem() {
       try {
-        const res = await fetch(`/api/items?id=${id}`)
+        const res = await fetch(`/api/items?id=${id}`, { credentials: 'include' })
         if (!res.ok) throw new Error('Item not found')
         const { items } = await res.json()
         const found = (items as Item[])?.[0]
@@ -166,6 +167,7 @@ export default function PricingPage() {
     try {
       const res = await fetch('/api/pricing/comps', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -213,6 +215,7 @@ export default function PricingPage() {
     try {
       const suggestRes = await fetch('/api/pricing/suggest', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: item.name,
@@ -248,6 +251,7 @@ export default function PricingPage() {
     try {
       const res = await fetch('/api/items', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: item.id,
@@ -260,7 +264,7 @@ export default function PricingPage() {
       if (!res.ok) throw new Error('Failed to apply price')
 
       try {
-        const pendingRes = await fetch('/api/items?status=pending')
+        const pendingRes = await fetch('/api/items?status=pending', { credentials: 'include' })
         if (pendingRes.ok) {
           const { items: pending } = await pendingRes.json()
           setPendingCount((pending as Item[]).length)
