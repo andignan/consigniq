@@ -402,7 +402,13 @@ Located at `/docs/test-plans/`. 25 test plans covering: authentication, consigno
 - **Usage enforcement update**: `/api/pricing/suggest` checks bonus lookups when monthly quota exhausted, increments `bonus_lookups_used` when monthly is spent
 - Migration: `20260314080000_solo_tier_and_account_types.sql` — adds account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used to accounts table
 - Test suite: **245 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
-- Stripe products needed: Solo Pricer ($9/mo), Starter ($49/mo), Standard ($79/mo), Pro ($129/mo), 50 Lookup Top-Up ($5 one-time)
+- Stripe products created in **test mode** with the following price IDs (also set as Vercel env vars for all environments):
+  - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` (Solo Pricer, $9/mo)
+  - `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` (Starter, $49/mo)
+  - `STRIPE_STANDARD_PRICE_ID=price_1TB07NRoBkkefSr8kQX1pXxL` (Standard, $79/mo)
+  - `STRIPE_PRO_PRICE_ID=price_1TB07ORoBkkefSr8TjMEohzi` (Pro, $129/mo)
+  - `STRIPE_TOPUP_50_PRICE_ID=price_1TB07ORoBkkefSr8Ey050TZt` (50 Lookup Top-Up, $5 one-time)
+- All Stripe env vars configured in Vercel (production/preview/development): `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, plus all 5 price IDs above
 
 ### Admin UX Fixes (Done)
 - **Superadmin /dashboard redirect**: Dashboard layout now redirects superadmin users to `/admin` in all cases — whether RLS blocks the profile query or not. Previously only redirected when `!profile`, which missed the case where the superadmin had a users table row that RLS could return.
