@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (180 tests across unit + API)
+- `npm test` — Jest test suite (192 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -138,6 +138,7 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - Inline editing of item details (inventory pricing only)
 - Manual price override with apply
 - Item name auto-capitalize on blur (first letter of each word capitalized when user leaves the field)
+- Category-specific description hints for high-variance categories (China & Crystal, Jewelry & Silver, Collectibles & Art, Furniture, Electronics, Clothing & Shoes) — shown below description field when description is empty or under 20 chars
 - "Priced Before" panel (inventory pricing only) — shows similar previously-sold items from `price_history` with avg sold price and avg days to sell
 - "Market Intelligence" panel (inventory pricing only, Pro tier) — cross-account pricing data from the entire ConsignIQ network with avg/median/range/days stats and optional AI insight text. Three-level matching: exact → fuzzy → category fallback. Shows UpgradePrompt for non-Pro tiers.
 
@@ -216,7 +217,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **180 tests, all passing**.
+Full test baseline established for Phases 1–6 + sidebar improvements. Test suite: **192 tests, all passing**.
 
 ### Test Count History
 - **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
@@ -224,6 +225,7 @@ Full test baseline established for Phases 1–6 + sidebar improvements. Test sui
 - **Timestamp regression** (+2): items.test.ts +1 (priced_at/sold_at ISO string regression), cross-account-pricing.test.ts +1 (view shape validation) = 158
 - **Sidebar improvements** (+12): payouts.test.ts 12 (GET auth/404/empty/splits/location filter/unpaid filter/paid filter, PATCH auth/400 missing/400 empty/mark with note/mark without note) = 170
 - **eBay comps fix + auto-capitalize** (+10): pricing.test.ts +2 (SerpApi params, new-condition filtering), auto-capitalize.test.ts 8 (word capitalization, edge cases) = 180
+- **Description hints** (+12): description-hints.test.ts 12 (per-category hints, threshold, no-hint categories) = 192
 
 ### Test Structure
 ```
@@ -233,7 +235,8 @@ __tests__/
 │   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
 │   ├── help-components.test.ts — Knowledge base content and topic coverage
 │   ├── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping
-│   └── auto-capitalize.test.ts — Item name auto-capitalize on blur behavior
+│   ├── auto-capitalize.test.ts — Item name auto-capitalize on blur behavior
+│   └── description-hints.test.ts — Category-specific description hints, threshold, coverage
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
 │   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes, timestamp type regression

@@ -5,6 +5,7 @@ import {
   Plus, Trash2, Check, ChevronDown, Loader2, Package, ArrowRight, Camera, X,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
+import { getDescriptionHint } from '@/lib/description-hints'
 
 // ============================================================
 // Types
@@ -513,15 +514,21 @@ function IntakeRow({
           </div>
 
           {/* Row 2: Description — full width */}
-          <textarea
-            value={draft.description}
-            onChange={e => onChange(draft.id, 'description', e.target.value)}
-            onKeyDown={onDescKeyDown}
-            placeholder={identifying ? 'Identifying...' : 'Notes / description (brand, size, color, markings, damage...)'}
-            disabled={isDisabled}
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
-          />
+          <div>
+            <textarea
+              value={draft.description}
+              onChange={e => onChange(draft.id, 'description', e.target.value)}
+              onKeyDown={onDescKeyDown}
+              placeholder={identifying ? 'Identifying...' : 'Notes / description (brand, size, color, markings, damage...)'}
+              disabled={isDisabled}
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
+            />
+            {(() => {
+              const hint = getDescriptionHint(draft.category, draft.description)
+              return hint ? <p className="mt-1 text-xs text-gray-400">{hint}</p> : null
+            })()}
+          </div>
         </div>
 
         {/* Remove */}

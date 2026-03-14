@@ -7,6 +7,7 @@ import {
   Camera, X, Search,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type ItemCondition } from '@/types'
+import { getDescriptionHint } from '@/lib/description-hints'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
@@ -276,6 +277,10 @@ export default function PriceLookupPage() {
               rows={2}
               className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
             />
+            {(() => {
+              const hint = getDescriptionHint(category, description)
+              return hint ? <p className="mt-1 text-xs text-gray-400">{hint}</p> : null
+            })()}
           </div>
         </div>
 

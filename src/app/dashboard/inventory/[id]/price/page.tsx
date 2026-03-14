@@ -13,6 +13,7 @@ import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from
 import Tooltip from '@/components/Tooltip'
 import UpgradePrompt from '@/components/UpgradePrompt'
 import { useUser } from '@/contexts/UserContext'
+import { getDescriptionHint } from '@/lib/description-hints'
 import { canUseFeature } from '@/lib/feature-gates'
 import type { Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
@@ -543,6 +544,10 @@ export default function PricingPage() {
                 placeholder="Brand, size, color, markings, damage, extras (box, papers)..."
                 className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
               />
+              {(() => {
+                const hint = getDescriptionHint(editCategory, editDescription)
+                return hint ? <p className="mt-1 text-xs text-gray-400">{hint}</p> : null
+              })()}
             </div>
             <div className="flex gap-2 pt-1">
               <button
