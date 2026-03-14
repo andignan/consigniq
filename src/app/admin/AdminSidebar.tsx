@@ -3,10 +3,11 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useState } from 'react'
-import { LayoutDashboard, Building2, ArrowLeft, Menu, X, Shield } from 'lucide-react'
+import { LayoutDashboard, Building2, Menu, X, Shield, Users as Users2 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Users', icon: Users2 },
   { href: '/admin/accounts', label: 'Accounts', icon: Building2 },
 ]
 
@@ -47,15 +48,6 @@ export default function AdminSidebar({ email }: { email: string }) {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-gray-100">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-        >
-          <ArrowLeft className="w-4.5 h-4.5" />
-          Back to App
-        </Link>
-      </div>
     </>
   )
 

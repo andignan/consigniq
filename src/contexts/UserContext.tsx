@@ -9,7 +9,20 @@ export interface UserProfile {
   email: string
   full_name: string | null
   role: 'owner' | 'staff'
-  accounts?: { id: string; name: string; tier: string; ai_lookups_this_month?: number }
+  accounts?: {
+    id: string
+    name: string
+    tier: string
+    ai_lookups_this_month?: number
+    ai_lookups_reset_at?: string
+    account_type?: string
+    trial_ends_at?: string | null
+    is_complimentary?: boolean
+    complimentary_tier?: string | null
+    bonus_lookups?: number
+    bonus_lookups_used?: number
+    status?: string
+  }
   locations?: { id: string; name: string }
 }
 

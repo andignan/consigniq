@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Sidebar from '@/components/layout/Sidebar'
 import HelpWidget from '@/components/HelpWidget'
+import TrialBanner from '@/components/TrialBanner'
+import TrialExpiredPage from '@/components/TrialExpiredPage'
 import { UserProvider } from '@/contexts/UserContext'
 import { LocationProvider } from '@/contexts/LocationContext'
 
@@ -40,6 +42,35 @@ export default async function DashboardLayout({
     profile = adminProfile
   }
 
+  // Superadmin users always belong in /admin, even if RLS returned a profile
+  if (profile?.is_superadmin) {
+    redirect('/admin')
+  }
+
+  // Check if trial has expired — show locked page
+  const accountType = profile?.accounts?.account_type
+  const trialEndsAt = profile?.accounts?.trial_ends_at
+  if (accountType === 'trial' && trialEndsAt) {
+    const isExpired = new Date(trialEndsAt) <= new Date()
+    if (isExpired) {
+      return (
+        <UserProvider user={profile}>
+          <TrialExpiredPage />
+        </UserProvider>
+      )
+    }
+  }
+
+  // Check if account is suspended/cancelled
+  const accountStatus = profile?.accounts?.status
+  if (accountStatus === 'suspended' || accountStatus === 'cancelled') {
+    return (
+      <UserProvider user={profile}>
+        <TrialExpiredPage />
+      </UserProvider>
+    )
+  }
+
   // Load all locations for this account (for location switcher)
   const { data: allLocations } = await supabase
     .from('locations')
@@ -59,9 +90,12 @@ export default async function DashboardLayout({
             locations={locationsList}
           >
             <Sidebar user={profile} />
-            <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <TrialBanner />
+              <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+                {children}
+              </main>
+            </div>
             <HelpWidget />
           </LocationProvider>
         </Suspense>

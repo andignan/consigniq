@@ -33,9 +33,12 @@ Set all of these in **Vercel → Project → Settings → Environment Variables*
 | `STRIPE_SECRET_KEY` | Billing portal | Returns error on billing actions |
 | `STRIPE_PUBLISHABLE_KEY` | Client-side Stripe | Checkout won't initialize |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification | Webhook events rejected |
+| `STRIPE_SOLO_PRICE_ID` | Solo tier checkout | Checkout for that tier fails |
 | `STRIPE_STARTER_PRICE_ID` | Starter tier checkout | Checkout for that tier fails |
 | `STRIPE_STANDARD_PRICE_ID` | Standard tier checkout | Checkout for that tier fails |
 | `STRIPE_PRO_PRICE_ID` | Pro tier checkout | Checkout for that tier fails |
+| `STRIPE_TOPUP_50_PRICE_ID` | 50-lookup top-up pack | Top-up purchase fails |
+| `CRON_SECRET` | Trial expiry cron auth | Cron endpoint open (no auth) |
 
 ## Supabase Setup
 
@@ -69,6 +72,33 @@ No special `next.config.mjs` settings required — the config is empty.
 After deploying, register your webhook endpoint in Stripe Dashboard → Developers → Webhooks:
 - Endpoint URL: `https://your-domain.com/api/billing/webhook`
 - Events to listen for: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+
+## Stripe Products to Create
+
+Create these products in the Stripe Dashboard:
+
+| Product | Type | Price |
+|---|---|---|
+| ConsignIQ Solo Pricer | Recurring (monthly) | $9/month |
+| ConsignIQ Starter | Recurring (monthly) | $49/month |
+| ConsignIQ Standard | Recurring (monthly) | $79/month |
+| ConsignIQ Pro | Recurring (monthly) | $129/month |
+| 50 Lookup Top-Up Pack | One-time | $5 |
+
+After creating each product, copy its Price ID and set the corresponding environment variable (`STRIPE_SOLO_PRICE_ID`, `STRIPE_STARTER_PRICE_ID`, `STRIPE_STANDARD_PRICE_ID`, `STRIPE_PRO_PRICE_ID`, `STRIPE_TOPUP_50_PRICE_ID`).
+
+## Trial Expiry Cron
+
+Set up a cron job to call `POST /api/trial/check-expiry` daily. Include `Authorization: Bearer <CRON_SECRET>` header.
+
+For Vercel Cron Jobs, add to `vercel.json`:
+```json
+{
+  "crons": [
+    { "path": "/api/trial/check-expiry", "schedule": "0 8 * * *" }
+  ]
+}
+```
 
 ## DNS & Custom Domain
 

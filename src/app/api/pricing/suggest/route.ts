@@ -83,7 +83,7 @@ Important:
     if (profile) {
       const { data: account } = await supabase
         .from('accounts')
-        .select('id, tier, ai_lookups_this_month, ai_lookups_reset_at')
+        .select('id, tier, ai_lookups_this_month, ai_lookups_reset_at, bonus_lookups, bonus_lookups_used')
         .eq('id', profile.account_id)
         .single()
 
@@ -104,9 +104,13 @@ Important:
             account.ai_lookups_this_month = 0
           }
 
-          if ((account.ai_lookups_this_month ?? 0) >= tierConfig.aiPricingLimit) {
+          const monthlyUsed = account.ai_lookups_this_month ?? 0
+          const bonusAvailable = (account.bonus_lookups ?? 0) - (account.bonus_lookups_used ?? 0)
+          const monthlyRemaining = tierConfig.aiPricingLimit - monthlyUsed
+
+          if (monthlyRemaining <= 0 && bonusAvailable <= 0) {
             return NextResponse.json(
-              { error: 'limit_reached', tier, limit: tierConfig.aiPricingLimit },
+              { error: 'limit_reached', tier, limit: tierConfig.aiPricingLimit, bonus_lookups: account.bonus_lookups ?? 0 },
               { status: 403 }
             )
           }
@@ -174,7 +178,23 @@ Important:
 
       if (profile) {
         try {
-          await supabase.rpc('increment_ai_lookups', { p_account_id: profile.account_id })
+          // Check if monthly quota is exhausted — if so, use bonus lookups
+          const { data: acct } = await supabase
+            .from('accounts')
+            .select('ai_lookups_this_month, tier, bonus_lookups, bonus_lookups_used')
+            .eq('id', profile.account_id)
+            .single()
+
+          const tierCfg = TIER_CONFIGS[(acct?.tier || 'starter') as Tier]
+          if (tierCfg.aiPricingLimit !== null && (acct?.ai_lookups_this_month ?? 0) >= tierCfg.aiPricingLimit) {
+            // Monthly exhausted, use bonus
+            await supabase
+              .from('accounts')
+              .update({ bonus_lookups_used: (acct?.bonus_lookups_used ?? 0) + 1 })
+              .eq('id', profile.account_id)
+          } else {
+            await supabase.rpc('increment_ai_lookups', { p_account_id: profile.account_id })
+          }
         } catch {
           // Non-critical — usage tracking failure should not block the response
         }

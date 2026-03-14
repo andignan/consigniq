@@ -1,14 +1,50 @@
 /**
  * Tests for feature gating logic and tier limits
- * Covers: canUseFeature(), getUpgradeMessage(), tier configs
+ * Covers: canUseFeature(), getUpgradeMessage(), tier configs, account type helpers
  */
 
-import { canUseFeature, getUpgradeMessage } from '@/lib/feature-gates'
+import { canUseFeature, getUpgradeMessage, isAccountActive, getEffectiveTier, canAccountUseFeature, isLookupLimitReached } from '@/lib/feature-gates'
 import { TIER_CONFIGS, FEATURE_REQUIRED_TIER } from '@/lib/tier-limits'
 
 describe('canUseFeature', () => {
+  it('solo can use ai_pricing', () => {
+    expect(canUseFeature('solo', 'ai_pricing')).toBe(true)
+  })
+
+  it('solo can use price_lookup', () => {
+    expect(canUseFeature('solo', 'price_lookup')).toBe(true)
+  })
+
+  it('solo can use csv_export', () => {
+    expect(canUseFeature('solo', 'csv_export')).toBe(true)
+  })
+
+  it('solo cannot use consignor_mgmt', () => {
+    expect(canUseFeature('solo', 'consignor_mgmt')).toBe(false)
+  })
+
+  it('solo cannot use payouts', () => {
+    expect(canUseFeature('solo', 'payouts')).toBe(false)
+  })
+
+  it('solo cannot use reports', () => {
+    expect(canUseFeature('solo', 'reports')).toBe(false)
+  })
+
+  it('solo cannot use agreements', () => {
+    expect(canUseFeature('solo', 'agreements')).toBe(false)
+  })
+
+  it('solo cannot use lifecycle', () => {
+    expect(canUseFeature('solo', 'lifecycle')).toBe(false)
+  })
+
   it('starter can use ai_pricing', () => {
     expect(canUseFeature('starter', 'ai_pricing')).toBe(true)
+  })
+
+  it('starter can use consignor_mgmt', () => {
+    expect(canUseFeature('starter', 'consignor_mgmt')).toBe(true)
   })
 
   it('starter cannot use repeat_item_history', () => {
@@ -57,11 +93,29 @@ describe('getUpgradeMessage', () => {
     expect(msg).toContain('Pro')
     expect(msg).toContain('$129')
   })
+
+  it('returns message with correct tier for consignor_mgmt', () => {
+    const msg = getUpgradeMessage('consignor_mgmt')
+    expect(msg).toContain('Starter')
+    expect(msg).toContain('$49')
+  })
 })
 
 describe('TIER_CONFIGS', () => {
-  it('starter has 50 AI pricing limit', () => {
-    expect(TIER_CONFIGS.starter.aiPricingLimit).toBe(50)
+  it('solo has 200 AI pricing limit', () => {
+    expect(TIER_CONFIGS.solo.aiPricingLimit).toBe(200)
+  })
+
+  it('solo costs $9/mo', () => {
+    expect(TIER_CONFIGS.solo.price).toBe(9)
+  })
+
+  it('starter has unlimited AI pricing', () => {
+    expect(TIER_CONFIGS.starter.aiPricingLimit).toBeNull()
+  })
+
+  it('starter costs $49/mo', () => {
+    expect(TIER_CONFIGS.starter.price).toBe(49)
   })
 
   it('standard has unlimited AI pricing', () => {
@@ -75,7 +129,12 @@ describe('TIER_CONFIGS', () => {
 
 describe('FEATURE_REQUIRED_TIER', () => {
   it('maps features to correct minimum tier', () => {
-    expect(FEATURE_REQUIRED_TIER.ai_pricing).toBe('starter')
+    expect(FEATURE_REQUIRED_TIER.ai_pricing).toBe('solo')
+    expect(FEATURE_REQUIRED_TIER.price_lookup).toBe('solo')
+    expect(FEATURE_REQUIRED_TIER.csv_export).toBe('solo')
+    expect(FEATURE_REQUIRED_TIER.consignor_mgmt).toBe('starter')
+    expect(FEATURE_REQUIRED_TIER.lifecycle).toBe('starter')
+    expect(FEATURE_REQUIRED_TIER.payouts).toBe('starter')
     expect(FEATURE_REQUIRED_TIER.repeat_item_history).toBe('standard')
     expect(FEATURE_REQUIRED_TIER.markdown_schedule).toBe('standard')
     expect(FEATURE_REQUIRED_TIER.email_notifications).toBe('standard')
@@ -83,5 +142,112 @@ describe('FEATURE_REQUIRED_TIER', () => {
     expect(FEATURE_REQUIRED_TIER.community_pricing_feed).toBe('pro')
     expect(FEATURE_REQUIRED_TIER.multi_location_all).toBe('pro')
     expect(FEATURE_REQUIRED_TIER.api_access).toBe('pro')
+  })
+})
+
+describe('isAccountActive', () => {
+  it('returns true for paid accounts', () => {
+    expect(isAccountActive({ tier: 'starter', account_type: 'paid' })).toBe(true)
+  })
+
+  it('returns true for complimentary accounts', () => {
+    expect(isAccountActive({ tier: 'solo', account_type: 'complimentary', is_complimentary: true })).toBe(true)
+  })
+
+  it('returns true for trial accounts before expiry', () => {
+    const future = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: future })).toBe(true)
+  })
+
+  it('returns false for trial accounts after expiry', () => {
+    const past = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: past })).toBe(false)
+  })
+
+  it('returns false for trial accounts with no trial_ends_at', () => {
+    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: null })).toBe(false)
+  })
+
+  it('returns false for suspended accounts', () => {
+    expect(isAccountActive({ tier: 'pro', account_type: 'paid', status: 'suspended' })).toBe(false)
+  })
+
+  it('returns false for cancelled accounts', () => {
+    expect(isAccountActive({ tier: 'pro', account_type: 'paid', status: 'cancelled' })).toBe(false)
+  })
+})
+
+describe('getEffectiveTier', () => {
+  it('returns account tier for paid accounts', () => {
+    expect(getEffectiveTier({ tier: 'starter', account_type: 'paid' })).toBe('starter')
+  })
+
+  it('returns complimentary_tier for complimentary accounts', () => {
+    expect(getEffectiveTier({
+      tier: 'solo',
+      account_type: 'complimentary',
+      is_complimentary: true,
+      complimentary_tier: 'pro',
+    })).toBe('pro')
+  })
+
+  it('returns account tier for complimentary without complimentary_tier', () => {
+    expect(getEffectiveTier({
+      tier: 'starter',
+      account_type: 'complimentary',
+      is_complimentary: true,
+      complimentary_tier: null,
+    })).toBe('starter')
+  })
+})
+
+describe('canAccountUseFeature', () => {
+  it('complimentary with pro tier can use all features', () => {
+    const account = {
+      tier: 'solo' as const,
+      account_type: 'complimentary' as const,
+      is_complimentary: true,
+      complimentary_tier: 'pro' as const,
+    }
+    expect(canAccountUseFeature(account, 'cross_customer_pricing')).toBe(true)
+    expect(canAccountUseFeature(account, 'consignor_mgmt')).toBe(true)
+  })
+
+  it('expired trial cannot use any features', () => {
+    const account = {
+      tier: 'standard' as const,
+      account_type: 'trial' as const,
+      trial_ends_at: new Date(Date.now() - 86400000).toISOString(),
+    }
+    expect(canAccountUseFeature(account, 'ai_pricing')).toBe(false)
+  })
+})
+
+describe('isLookupLimitReached', () => {
+  it('returns false when monthly lookups not exhausted', () => {
+    expect(isLookupLimitReached('solo', 100, 0, 0)).toBe(false)
+  })
+
+  it('returns true when all lookups exhausted (monthly + bonus)', () => {
+    expect(isLookupLimitReached('solo', 200, 50, 50)).toBe(true)
+  })
+
+  it('returns false when monthly exhausted but bonus available', () => {
+    expect(isLookupLimitReached('solo', 200, 50, 10)).toBe(false)
+  })
+
+  it('returns false for unlimited tiers', () => {
+    expect(isLookupLimitReached('starter', 10000, 0, 0)).toBe(false)
+  })
+
+  it('bonus lookups persist through monthly reset', () => {
+    // After monthly reset (usedThisMonth = 0), user has 200 fresh + remaining bonus
+    // All bonus used (50/50) but monthly reset, so 200 monthly still available
+    expect(isLookupLimitReached('solo', 0, 50, 50)).toBe(false)
+    // Monthly used + bonus used = total used vs total available
+    // 200 used + 50 used = 250, total available = 200 + 50 = 250
+    expect(isLookupLimitReached('solo', 200, 50, 50)).toBe(true)
+    // Bonus lookups don't reset: 200 monthly used + 40 bonus used = 240 < 250
+    expect(isLookupLimitReached('solo', 200, 50, 40)).toBe(false)
   })
 })

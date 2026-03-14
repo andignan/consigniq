@@ -95,13 +95,32 @@ export async function PATCH(request: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  // Only allow tier and status updates
+  // Build allowed updates
   const allowed: Record<string, unknown> = {}
-  if (updates.tier && ['starter', 'standard', 'pro'].includes(updates.tier)) {
+  if (updates.tier && ['solo', 'starter', 'standard', 'pro'].includes(updates.tier)) {
     allowed.tier = updates.tier
   }
-  if (updates.status && ['active', 'suspended', 'cancelled'].includes(updates.status)) {
+  if (updates.status && ['active', 'suspended', 'cancelled', 'inactive'].includes(updates.status)) {
     allowed.status = updates.status
+  }
+  if (updates.account_type && ['paid', 'trial', 'complimentary'].includes(updates.account_type)) {
+    allowed.account_type = updates.account_type
+  }
+  if (typeof updates.is_complimentary === 'boolean') {
+    allowed.is_complimentary = updates.is_complimentary
+  }
+  if (updates.complimentary_tier && ['solo', 'starter', 'standard', 'pro'].includes(updates.complimentary_tier)) {
+    allowed.complimentary_tier = updates.complimentary_tier
+  } else if (updates.complimentary_tier === null) {
+    allowed.complimentary_tier = null
+  }
+
+  // Handle extend_trial: add 30 days from current end or now
+  if (updates.extend_trial === true) {
+    const current = await supabase.from('accounts').select('trial_ends_at').eq('id', id).single()
+    const currentEnd = current.data?.trial_ends_at ? new Date(current.data.trial_ends_at) : new Date()
+    const base = currentEnd > new Date() ? currentEnd : new Date()
+    allowed.trial_ends_at = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
   }
 
   if (Object.keys(allowed).length === 0) {

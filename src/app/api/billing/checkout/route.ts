@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 
 function getTierPriceId(tier: string): string | undefined {
+  if (tier === 'solo') return process.env.STRIPE_SOLO_PRICE_ID
+  if (tier === 'starter') return process.env.STRIPE_STARTER_PRICE_ID
   if (tier === 'standard') return process.env.STRIPE_STANDARD_PRICE_ID
   if (tier === 'pro') return process.env.STRIPE_PRO_PRICE_ID
   return undefined
@@ -26,35 +28,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Only account owners can manage billing' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const { tier } = body as { tier?: string }
-
-  const priceId = tier ? getTierPriceId(tier) : undefined
-  if (!tier || !priceId) {
-    return NextResponse.json({ error: 'Invalid tier. Must be "standard" or "pro"' }, { status: 400 })
-  }
-
-  if (!priceId) {
-    return NextResponse.json({ error: `Price ID not configured for ${tier} tier` }, { status: 500 })
-  }
-
+  let stripe
   try {
-    const stripe = getStripe()
+    stripe = getStripe()
+  } catch {
+    return NextResponse.json({ error: 'Billing setup in progress' }, { status: 503 })
+  }
 
-    // Get or create Stripe customer
-    const { data: account } = await supabase
-      .from('accounts')
-      .select('id, stripe_customer_id, name')
-      .eq('id', profile.account_id)
-      .single()
+  const body = await request.json()
 
-    if (!account) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 })
-    }
+  // Get or create Stripe customer (shared between tier upgrade and top-up)
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('id, stripe_customer_id, name')
+    .eq('id', profile.account_id)
+    .single()
 
-    let customerId = account.stripe_customer_id
+  if (!account) {
+    return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+  }
 
-    if (!customerId) {
+  let customerId = account.stripe_customer_id
+
+  if (!customerId) {
+    try {
       const customer = await stripe.customers.create({
         email: user.email,
         name: account.name,
@@ -66,10 +63,49 @@ export async function POST(request: NextRequest) {
         .from('accounts')
         .update({ stripe_customer_id: customerId })
         .eq('id', account.id)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('Stripe customer creation failed:', msg)
+      return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 })
+    }
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  // Handle top-up purchase
+  if (body.product === 'topup_50') {
+    const topupPriceId = process.env.STRIPE_TOPUP_50_PRICE_ID
+    if (!topupPriceId) {
+      return NextResponse.json({ error: 'Top-up pricing not configured' }, { status: 500 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    try {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: 'payment',
+        line_items: [{ price: topupPriceId, quantity: 1 }],
+        success_url: `${appUrl}/dashboard?billing=success`,
+        cancel_url: `${appUrl}/dashboard/settings?tab=account`,
+        metadata: { account_id: account.id, product: 'topup_50' },
+      })
 
+      return NextResponse.json({ url: session.url })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('Stripe top-up checkout failed:', msg)
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
+    }
+  }
+
+  // Handle tier subscription checkout
+  const { tier } = body as { tier?: string }
+
+  const priceId = tier ? getTierPriceId(tier) : undefined
+  if (!tier || !priceId) {
+    return NextResponse.json({ error: 'Invalid tier. Must be "solo", "starter", "standard", or "pro"' }, { status: 400 })
+  }
+
+  try {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',

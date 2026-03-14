@@ -11,6 +11,12 @@ interface AccountDetail {
   status: string
   stripe_customer_id: string | null
   created_at: string
+  account_type: string
+  trial_ends_at: string | null
+  is_complimentary: boolean
+  complimentary_tier: string | null
+  bonus_lookups: number
+  bonus_lookups_used: number
 }
 
 interface LocationRow {
@@ -38,8 +44,8 @@ interface ItemCounts {
   donated: number
 }
 
-const TIER_OPTIONS = ['starter', 'standard', 'pro']
-const STATUS_OPTIONS = ['active', 'suspended', 'cancelled']
+const TIER_OPTIONS = ['solo', 'starter', 'standard', 'pro']
+const STATUS_OPTIONS = ['active', 'suspended', 'cancelled', 'inactive']
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -55,6 +61,7 @@ export default function AccountDetailPage() {
   const [editStatus, setEditStatus] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+  const [actionSaving, setActionSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -130,6 +137,38 @@ export default function AccountDetailPage() {
     }
   }
 
+  async function patchAccount(body: Record<string, unknown>) {
+    setActionSaving(true)
+    setSaveMsg('')
+    try {
+      const res = await fetch('/api/admin/accounts', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: account?.id, ...body }),
+      })
+      if (res.ok) {
+        const { account: updated } = await res.json()
+        setAccount(updated)
+        setEditTier(updated.tier)
+        setEditStatus(updated.status)
+        setSaveMsg('Updated successfully')
+      } else {
+        setSaveMsg('Update failed')
+      }
+    } catch {
+      setSaveMsg('Update failed')
+    } finally {
+      setActionSaving(false)
+      setTimeout(() => setSaveMsg(''), 3000)
+    }
+  }
+
+  function getTrialDaysRemaining(): number | null {
+    if (!account?.trial_ends_at) return null
+    return Math.ceil((new Date(account.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -154,7 +193,27 @@ export default function AccountDetailPage() {
 
       {/* Account Info */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-        <h1 className="text-lg font-bold text-gray-900 mb-3">{account.name}</h1>
+        <div className="flex items-center gap-3 mb-3">
+          <h1 className="text-lg font-bold text-gray-900">{account.name}</h1>
+          {account.account_type === 'trial' && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+              Trial {(() => {
+                const days = getTrialDaysRemaining()
+                return days !== null ? (days > 0 ? `(${days}d remaining)` : '(Expired)') : ''
+              })()}
+            </span>
+          )}
+          {account.account_type === 'complimentary' && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+              Complimentary{account.complimentary_tier ? ` (${account.complimentary_tier})` : ''}
+            </span>
+          )}
+          {account.account_type === 'paid' && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+              Paid
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <span className="text-gray-500 block text-xs mb-0.5">Created</span>
@@ -164,6 +223,12 @@ export default function AccountDetailPage() {
             <span className="text-gray-500 block text-xs mb-0.5">Stripe ID</span>
             <span className="text-gray-900 font-mono text-xs">{account.stripe_customer_id ?? '—'}</span>
           </div>
+          {account.trial_ends_at && (
+            <div>
+              <span className="text-gray-500 block text-xs mb-0.5">Trial Ends</span>
+              <span className="text-gray-900">{new Date(account.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -219,8 +284,53 @@ export default function AccountDetailPage() {
       </div>
 
       {saveMsg && (
-        <p className={`text-xs mb-4 ${saveMsg.includes('Failed') ? 'text-red-600' : 'text-emerald-600'}`}>{saveMsg}</p>
+        <p className={`text-xs mb-4 ${saveMsg.includes('Failed') || saveMsg.includes('failed') ? 'text-red-600' : 'text-emerald-600'}`}>{saveMsg}</p>
       )}
+
+      {/* Action Buttons */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+        <label className="block text-xs font-medium text-gray-500 mb-3">Actions</label>
+        <div className="flex flex-wrap gap-2">
+          {account.account_type === 'trial' && (
+            <button
+              onClick={() => patchAccount({ extend_trial: true })}
+              disabled={actionSaving}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+            >
+              Extend Trial (+30d)
+            </button>
+          )}
+          {account.account_type !== 'complimentary' && (
+            <button
+              onClick={() => patchAccount({ account_type: 'complimentary', is_complimentary: true, complimentary_tier: account.tier })}
+              disabled={actionSaving}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+            >
+              Convert to Complimentary
+            </button>
+          )}
+          {account.account_type !== 'paid' && (
+            <button
+              onClick={() => patchAccount({ account_type: 'paid' })}
+              disabled={actionSaving}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+            >
+              Convert to Paid
+            </button>
+          )}
+          <button
+            onClick={() => patchAccount({ status: account.status === 'active' ? 'inactive' : 'active' })}
+            disabled={actionSaving}
+            className={`px-3 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors ${
+              account.status === 'active'
+                ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+            }`}
+          >
+            {account.status === 'active' ? 'Disable Account' : 'Enable Account'}
+          </button>
+        </div>
+      </div>
 
       {/* Item counts */}
       {items && (

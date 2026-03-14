@@ -7,84 +7,79 @@ import { createClient } from '@/lib/supabase/client'
 import { useLocation } from '@/contexts/LocationContext'
 import { useUser } from '@/contexts/UserContext'
 import type { User } from '@/types/database'
+import type { Tier } from '@/lib/tier-limits'
 
-const NAV_ITEMS = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Consignors',
-    href: '/dashboard/consignors',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Inventory',
-    href: '/dashboard/inventory',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Price Lookup',
-    href: '/dashboard/pricing',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Reports',
-    href: '/dashboard/reports',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Payouts',
-    href: '/dashboard/payouts',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Settings',
-    href: '/dashboard/settings',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
+// Icons as inline SVGs (same as before)
+const DashboardIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  </svg>
+)
+const ConsignorsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+const InventoryIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+)
+const PriceLookupIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+  </svg>
+)
+const ReportsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+)
+const PayoutsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+const SettingsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+
+interface NavItem {
+  label: string
+  href: string
+  icon: React.ReactNode
+}
+
+const FULL_NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', href: '/dashboard', icon: <DashboardIcon /> },
+  { label: 'Consignors', href: '/dashboard/consignors', icon: <ConsignorsIcon /> },
+  { label: 'Inventory', href: '/dashboard/inventory', icon: <InventoryIcon /> },
+  { label: 'Price Lookup', href: '/dashboard/pricing', icon: <PriceLookupIcon /> },
+  { label: 'Reports', href: '/dashboard/reports', icon: <ReportsIcon /> },
+  { label: 'Payouts', href: '/dashboard/payouts', icon: <PayoutsIcon /> },
+  { label: 'Settings', href: '/dashboard/settings', icon: <SettingsIcon /> },
+]
+
+const SOLO_NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', href: '/dashboard', icon: <DashboardIcon /> },
+  { label: 'Price Lookup', href: '/dashboard/pricing', icon: <PriceLookupIcon /> },
+  { label: 'My Inventory', href: '/dashboard/inventory', icon: <InventoryIcon /> },
+  { label: 'Settings', href: '/dashboard/settings', icon: <SettingsIcon /> },
 ]
 
 interface SidebarProps {
-  user: (User & { accounts?: { name: string }; locations?: { name: string } }) | null
+  user: (User & { accounts?: { name: string; tier?: string }; locations?: { name: string } }) | null
 }
 
 export default function Sidebar({ user }: SidebarProps) {
@@ -107,6 +102,9 @@ export default function Sidebar({ user }: SidebarProps) {
   } = useLocation()
 
   const contextUser = useUser()
+  const accountTier = (contextUser?.accounts?.tier ?? user?.accounts?.tier ?? 'starter') as Tier
+  const isSolo = accountTier === 'solo'
+  const navItems = isSolo ? SOLO_NAV_ITEMS : FULL_NAV_ITEMS
 
   // Close sidebar on route change
   useEffect(() => {
@@ -124,17 +122,16 @@ export default function Sidebar({ user }: SidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch expiring consignor count (expiring within 7 days or in grace)
+  // Fetch expiring consignor count (expiring within 7 days or in grace) — skip for solo
   useEffect(() => {
+    if (isSolo) return
     async function fetchExpiringCount() {
       if (!contextUser?.account_id) return
-      // We don't have a dedicated endpoint, so fetch consignors and filter client-side
       if (!activeLocationId && !isAllLocations) return
       const locId = activeLocationId || (locations.length > 0 ? locations[0].id : null)
       if (!locId && !isAllLocations) return
 
       try {
-        // Fetch from all locations if owner viewing all, otherwise specific location
         const fetchLocations = isAllLocations ? locations.map(l => l.id) : [locId!]
         let total = 0
         for (const lid of fetchLocations) {
@@ -160,7 +157,7 @@ export default function Sidebar({ user }: SidebarProps) {
       }
     }
     fetchExpiringCount()
-  }, [contextUser?.account_id, activeLocationId, isAllLocations, locations])
+  }, [contextUser?.account_id, activeLocationId, isAllLocations, locations, isSolo])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -174,7 +171,7 @@ export default function Sidebar({ user }: SidebarProps) {
     setLocationDropdownOpen(false)
   }
 
-  const locationSwitcher = (
+  const locationSwitcher = !isSolo ? (
     <div className="px-5 py-3 border-b border-stone-800" ref={dropdownRef}>
       {canSwitchLocations ? (
         <div className="relative">
@@ -200,7 +197,6 @@ export default function Sidebar({ user }: SidebarProps) {
 
           {locationDropdownOpen && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-stone-800 rounded-lg shadow-lg border border-stone-700 overflow-hidden z-50">
-              {/* All Locations option for owners */}
               <button
                 onClick={() => handleLocationSwitch('all')}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
@@ -262,21 +258,24 @@ export default function Sidebar({ user }: SidebarProps) {
         </div>
       )}
     </div>
-  )
+  ) : null
 
   const sidebarContent = (
     <>
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-800">
         <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
+        {isSolo && (
+          <p className="text-stone-500 text-xs mt-0.5">Solo Pricer</p>
+        )}
       </div>
 
-      {/* Location Switcher */}
+      {/* Location Switcher (hidden for solo) */}
       {locationSwitcher}
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map(item => {
+        {navItems.map(item => {
           const hasQuery = item.href.includes('?')
           const active = hasQuery
             ? fullPath === item.href
@@ -304,6 +303,18 @@ export default function Sidebar({ user }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Solo upgrade CTA */}
+      {isSolo && (
+        <div className="px-3 pb-2">
+          <Link
+            href="/dashboard/settings?tab=account"
+            className="block px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-medium hover:bg-indigo-600/30 transition-colors text-center"
+          >
+            Upgrade to Starter — full shop management. $49/month
+          </Link>
+        </div>
+      )}
 
       {/* User + sign out */}
       <div className="px-3 py-4 border-t border-stone-800">
@@ -344,7 +355,7 @@ export default function Sidebar({ user }: SidebarProps) {
             </svg>
           </button>
           <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
-          {activeLocationName && (
+          {!isSolo && activeLocationName && (
             <span className="text-stone-400 text-xs truncate ml-auto">{activeLocationName}</span>
           )}
         </div>

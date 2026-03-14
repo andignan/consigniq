@@ -36,12 +36,32 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const accountId = session.metadata?.account_id
-        const tier = session.metadata?.tier
 
-        if (accountId && tier) {
+        if (session.metadata?.product === 'topup_50' && accountId) {
+          // Add 50 bonus lookups
+          const { data: account } = await supabase
+            .from('accounts')
+            .select('bonus_lookups')
+            .eq('id', accountId)
+            .single()
+
+          if (account) {
+            await supabase
+              .from('accounts')
+              .update({ bonus_lookups: (account.bonus_lookups ?? 0) + 50 })
+              .eq('id', accountId)
+          }
+        } else if (accountId && session.metadata?.tier) {
+          // Tier upgrade
           await supabase
             .from('accounts')
-            .update({ tier })
+            .update({ tier: session.metadata.tier })
+            .eq('id', accountId)
+
+          // If this was a trial account, convert to paid
+          await supabase
+            .from('accounts')
+            .update({ account_type: 'paid', trial_ends_at: null })
             .eq('id', accountId)
         }
         break
