@@ -317,11 +317,15 @@ Located at `/docs/test-plans/`. 22 test plans covering: authentication, consigno
 - Test suite: **192 Jest tests passing**
 
 ### Superadmin Bugfixes (Done)
-- Admin route access: admin layout and all admin API routes now use service role client (`createAdminClient`) to bypass RLS, fixing superadmin being redirected to /dashboard
-- Login redirect: superadmin users now redirect to `/admin` after login via `/api/auth/check-superadmin` endpoint
+- **Root cause**: `admin@getconsigniq.com` existed in Supabase Auth but had no corresponding row in the `users` table. All profile queries returned null, causing: redirect to /dashboard (no `is_superadmin` to check), "Unknown" in sidebar (null profile), and admin API routes returning 403.
+- Created migration `20260314070000_ensure_superadmin_user.sql` to insert superadmin user row (uses `auth.users` lookup + first available account, with `ON CONFLICT DO UPDATE SET is_superadmin = true`)
+- Admin layout and all admin API routes now use service role client (`createAdminClient`) to bypass RLS
+- Dashboard layout: added fallback — if RLS blocks profile query, retries with service role; if user is superadmin, redirects to `/admin`
+- Login redirect: superadmin users redirect to `/admin` after login via `/api/auth/check-superadmin` endpoint
 - Sidebar name fallback: displays email when `full_name` is null/empty (also applied to admin sidebar)
 - Created shared `src/lib/supabase/admin.ts` with `createAdminClient()` and `checkSuperadmin()` helpers
 - Updated admin test mocks to use `@/lib/supabase/admin` mock
+- **Critical lesson**: every Supabase Auth user that logs in MUST have a corresponding row in the `users` table — auth alone is not enough. The `users` table row provides `account_id`, `role`, `is_superadmin`, and `full_name`.
 - Test suite: **192 Jest tests passing**
 
 ### Deferred to Phase 7+

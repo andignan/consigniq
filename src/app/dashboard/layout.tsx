@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Sidebar from '@/components/layout/Sidebar'
 import HelpWidget from '@/components/HelpWidget'
 import { UserProvider } from '@/contexts/UserContext'
@@ -11,16 +12,33 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('users')
     .select('*, accounts(*), locations(*)')
     .eq('id', user.id)
     .single()
+
+  // If RLS blocked the query (e.g. superadmin without matching account_id),
+  // try with service role and redirect superadmins to /admin
+  if (!profile) {
+    const adminClient = createAdminClient()
+    const { data: adminProfile } = await adminClient
+      .from('users')
+      .select('*, accounts(*), locations(*)')
+      .eq('id', user.id)
+      .single()
+
+    if (adminProfile?.is_superadmin) {
+      redirect('/admin')
+    }
+    // Non-superadmin with no profile — use whatever we got
+    profile = adminProfile
+  }
 
   // Load all locations for this account (for location switcher)
   const { data: allLocations } = await supabase
