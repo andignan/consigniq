@@ -41,6 +41,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
 - `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (starter/standard/pro) or status (active/suspended/cancelled). Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
 - `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
+- `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -132,6 +133,8 @@ Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role locat
 
 Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period. Items query includes `ai_reasoning`, `current_markdown_pct`, `low_price`, `high_price`. Consignor join includes `intake_date`, `expiry_date`, `grace_end_date`.
 
+**AI Report Prompt Bar** — natural language query bar at top of Reports page. User types a question, Claude generates read-only SQL, validated for safety (SELECT-only, account_id scoping, no forbidden tables), executed via Supabase RPC, results displayed in data table with AI summary. 6 suggested prompt chips for common queries. Staff auto-scoped to their location. Requires `execute_readonly_query` RPC function in Supabase.
+
 ### Settings (`/dashboard/settings`)
 Three-tab settings page with role-based access:
 - **Location Settings** (visible to owner + staff, only owner can edit): location name/address/city/state/phone, default split % (store + consignor, must add to 100 with live validation), agreement_days, grace_days, markdown_enabled toggle with hardcoded schedule display (Day 31 → 25% off, Day 46 → 50% off). Shows settings for the currently active location from LocationContext.
@@ -184,7 +187,7 @@ See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pric
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **96 tests, all passing**.
+Full test baseline established for Phases 1–5. Test suite: **108 tests, all passing**.
 
 ### Test Structure
 ```
@@ -201,11 +204,12 @@ __tests__/
 │   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
 │   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
 │   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
-│   └── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
+│   ├── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
+│   └── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
 ```
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 17 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system.
+Located at `/docs/test-plans/`. 18 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts.
 
 ## Phase Status
 
@@ -216,6 +220,7 @@ Phase 5 is in progress. Completed so far:
 - Repeat Item History: price_history auto-written on sold, `/api/price-history` endpoint, "Priced Before" panel on inventory pricing page
 - Admin Page: superadmin-only `/admin` route with overview stats, accounts list, account detail with tier/status management
 - Help System: three-layer help (tooltips, floating widget, AI search), `/api/help/search` endpoint, knowledge base
-- Full test baseline established (96 tests passing, 17 manual test plans)
+- AI Report Prompts: natural language query bar on Reports page, Claude-generated SQL with validation and execution, `/api/reports/query` endpoint. Requires `execute_readonly_query` RPC function in Supabase.
+- Full test baseline established (108 tests passing, 18 manual test plans)
 - Timezone bugfix: `getLifecycleStatus()` now parses date strings as local time (appends `T00:00:00`)
-- Next up: AI Report Prompts
+- Next up: Label Printing

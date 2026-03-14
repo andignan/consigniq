@@ -5,7 +5,7 @@ import {
   DollarSign, TrendingUp, Package, Users, Clock,
   Gift, Download, Loader2, MapPin, Calendar, Tag, Search, ChevronDown,
   Phone, Mail, User, ArrowUpDown, AlertTriangle, Target,
-  FileText, Percent,
+  FileText, Percent, Sparkles, X, Send,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
@@ -225,6 +225,57 @@ export default function ReportsPage() {
   const [items, setItems] = useState<ItemRow[]>([])
   const [consignors, setConsignors] = useState<ConsignorRow[]>([])
   const [markdowns, setMarkdowns] = useState<MarkdownRow[]>([])
+
+  // AI prompt bar state
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiResult, setAiResult] = useState<{
+    question: string
+    sql: string
+    summary: string
+    rows: Record<string, unknown>[]
+    columns: string[]
+  } | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const AI_SUGGESTED_PROMPTS = [
+    'What are our top 5 selling categories this month?',
+    'Which consignors have the most unsold items?',
+    'Average days to sell by category',
+    'Total revenue by consignor this month',
+    'Items priced but not yet sold over 30 days',
+    'How many items were donated vs sold this quarter?',
+  ]
+
+  async function handleAiQuery(question?: string) {
+    const q = (question ?? aiQuery).trim()
+    if (!q) return
+    setAiLoading(true)
+    setAiError(null)
+    setAiResult(null)
+    try {
+      const res = await fetch('/api/reports/query', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: q,
+          location_id: isAllLocations ? 'all' : activeLocationId,
+        }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setAiError(body.error || 'Query failed')
+      } else {
+        setAiResult(body)
+        setAiQuery(q)
+      }
+    } catch {
+      setAiError('Failed to connect to the server')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   // Fetch all data
   const fetchData = useCallback(async () => {
@@ -933,6 +984,105 @@ export default function ReportsPage() {
           </button>
         ))}
       </div>
+
+      {/* ═══ AI Report Prompt Bar ═══ */}
+      <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-indigo-500" />
+          <span className="text-sm font-semibold text-indigo-700">Ask a question about your data</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={aiQuery}
+            onChange={e => setAiQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !aiLoading && handleAiQuery()}
+            placeholder="e.g. What are our top selling categories this month?"
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            disabled={aiLoading}
+          />
+          <button
+            onClick={() => handleAiQuery()}
+            disabled={aiLoading || !aiQuery.trim()}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          >
+            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Ask
+          </button>
+        </div>
+        {/* Suggested prompts */}
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {AI_SUGGESTED_PROMPTS.map(prompt => (
+            <button
+              key={prompt}
+              onClick={() => { setAiQuery(prompt); handleAiQuery(prompt) }}
+              disabled={aiLoading}
+              className="px-2.5 py-1 text-xs rounded-full bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Result */}
+      {aiError && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-red-700">{aiError}</p>
+            <button onClick={() => setAiError(null)} className="text-red-400 hover:text-red-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {aiResult && (
+        <div className="mb-6 rounded-xl border border-indigo-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-500" />
+              <span className="text-sm font-semibold text-gray-900">{aiResult.question}</span>
+            </div>
+            <button onClick={() => { setAiResult(null); setAiQuery('') }} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {aiResult.summary && (
+            <p className="text-sm text-gray-700 mb-3 bg-indigo-50 rounded-lg p-3">{aiResult.summary}</p>
+          )}
+          {aiResult.rows.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    {aiResult.columns.map(col => (
+                      <th key={col} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{col.replace(/_/g, ' ')}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {aiResult.rows.map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-50">
+                      {aiResult.columns.map(col => (
+                        <td key={col} className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                          {row[col] == null ? '—' : String(row[col])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic">No results returned.</p>
+          )}
+          <div className="mt-2 flex items-center gap-1 text-xs text-gray-400">
+            <Sparkles className="w-3 h-3" />
+            Powered by AI
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
