@@ -89,7 +89,14 @@ Two pricing UIs: inventory item pricing (for specific items) and price lookup (s
 - Manual price override with apply
 
 ### Reports (`/dashboard/reports`)
-Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 4 sections (Store Performance, Pricing Performance, Inventory Snapshot, Activity Summary), and 3 CSV exports (Payout Report, Item Detail, Donation Report). Uses browser Supabase client with client-side date filtering.
+Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 5 sections:
+1. **Store Performance** — revenue, store earnings, consignor payouts, items sold/donated + Payout Report & Item Detail CSV exports
+2. **Pricing Performance** — avg days to sell, avg sale price, sell-through rate, full price vs markdown breakdown
+3. **Inventory Snapshot** — active consignors, pending/priced counts, inventory value, expiring items + Donation Report CSV export
+4. **Activity Summary** — intake'd, priced, sold, donated, new consignors counts
+5. **Consignor Report** — searchable consignor dropdown, summary card with lifecycle status (uses `getLifecycleStatus`), item breakdown stats, full item detail table with status/asking/sold/days/consignor cut columns, and Consignor Payout Slip CSV export
+
+Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period.
 
 ### Sidebar (`/dashboard` layout)
 Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset.

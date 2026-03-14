@@ -3,10 +3,12 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   DollarSign, TrendingUp, Package, Users, Clock,
-  Gift, Download, Loader2, MapPin, Calendar, Tag,
+  Gift, Download, Loader2, MapPin, Calendar, Tag, Search, ChevronDown,
+  Phone, Mail, User,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { createClient } from '@/lib/supabase/client'
+import { getLifecycleStatus, COLOR_CLASSES, CONDITION_LABELS } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────
 type Period = '7d' | '30d' | '90d' | 'ytd' | 'all'
@@ -21,7 +23,9 @@ interface ConsignorRow {
   status: string
   location_id: string
   created_at: string
+  intake_date: string
   expiry_date: string
+  grace_end_date: string
 }
 
 interface ItemRow {
@@ -213,7 +217,7 @@ export default function ReportsPage() {
 
     let consignorsQuery = supabase
       .from('consignors')
-      .select('id, name, phone, email, split_store, split_consignor, status, location_id, created_at, expiry_date')
+      .select('id, name, phone, email, split_store, split_consignor, status, location_id, created_at, intake_date, expiry_date, grace_end_date')
     if (effectiveLocation) {
       consignorsQuery = consignorsQuery.eq('location_id', effectiveLocation)
     } else {
@@ -452,6 +456,105 @@ export default function ReportsPage() {
     downloadCsv(toCsvString([headers, ...rows]), `consigniq-donations-${dateSlug}.csv`)
   }
 
+  // ─── Consignor Report ──────────────────────────────────────
+  const [selectedConsignorId, setSelectedConsignorId] = useState<string>('')
+  const [consignorSearch, setConsignorSearch] = useState('')
+  const [consignorDropdownOpen, setConsignorDropdownOpen] = useState(false)
+  const [consignorItems, setConsignorItems] = useState<ItemRow[]>([])
+  const [consignorItemsLoading, setConsignorItemsLoading] = useState(false)
+
+  const selectedConsignor = consignors.find(c => c.id === selectedConsignorId) ?? null
+
+  const filteredConsignorList = useMemo(() => {
+    const q = consignorSearch.toLowerCase()
+    return consignors
+      .filter(c => !q || c.name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [consignors, consignorSearch])
+
+  // Fetch items for selected consignor
+  useEffect(() => {
+    if (!selectedConsignorId) {
+      setConsignorItems([])
+      return
+    }
+    setConsignorItemsLoading(true)
+    fetch(`/api/items?consignor_id=${selectedConsignorId}`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : { items: [] })
+      .then(({ items: data }) => setConsignorItems(data ?? []))
+      .catch(() => setConsignorItems([]))
+      .finally(() => setConsignorItemsLoading(false))
+  }, [selectedConsignorId])
+
+  // Consignor computed stats
+  const crSold = consignorItems.filter(i => i.status === 'sold')
+  const crPending = consignorItems.filter(i => i.status === 'pending').length
+  const crPriced = consignorItems.filter(i => i.status === 'priced').length
+  const crDonated = consignorItems.filter(i => i.status === 'donated').length
+  const crReturned = consignorItems.filter(i => i.status === 'returned').length
+  const crTotalSoldValue = crSold.reduce((s, i) => s + (i.sold_price ?? 0), 0)
+  const crConsignorOwed = selectedConsignor
+    ? crSold.reduce((s, i) => s + (i.sold_price ?? 0) * selectedConsignor.split_consignor / 100, 0)
+    : 0
+  const crStoreEarnings = selectedConsignor
+    ? crSold.reduce((s, i) => s + (i.sold_price ?? 0) * selectedConsignor.split_store / 100, 0)
+    : 0
+  const crAvgDaysToSell = crSold.length > 0
+    ? Math.round(crSold.reduce((s, i) =>
+        s + (i.sold_date && i.intake_date ? daysBetween(i.intake_date, i.sold_date) : 0), 0) / crSold.length)
+    : 0
+
+  function selectConsignor(id: string) {
+    setSelectedConsignorId(id)
+    setConsignorSearch('')
+    setConsignorDropdownOpen(false)
+  }
+
+  function exportConsignorPayoutSlip() {
+    if (!selectedConsignor) return
+    const headers = [
+      'Consignor Name', 'Consignor Phone', 'Consignor Email',
+      'Item Name', 'Category', 'Condition', 'Intake Date',
+      'Asking Price', 'Sold Price', 'Days to Sell',
+      'Store Cut $', 'Consignor Cut $', 'Split %', 'Status',
+    ]
+
+    const rows = consignorItems.map(i => {
+      const isSold = i.status === 'sold'
+      return [
+        selectedConsignor.name,
+        selectedConsignor.phone ?? '',
+        selectedConsignor.email ?? '',
+        i.name,
+        i.category,
+        i.condition,
+        i.intake_date,
+        (i.price ?? 0).toFixed(2),
+        isSold ? (i.sold_price ?? 0).toFixed(2) : '',
+        isSold && i.sold_date ? daysBetween(i.intake_date, i.sold_date).toString() : '',
+        isSold ? ((i.sold_price ?? 0) * selectedConsignor.split_store / 100).toFixed(2) : '',
+        isSold ? ((i.sold_price ?? 0) * selectedConsignor.split_consignor / 100).toFixed(2) : '',
+        selectedConsignor.split_consignor.toString(),
+        i.status,
+      ]
+    })
+
+    // Summary row
+    rows.push([
+      'TOTAL', '', '', '', '', '', '',
+      '',
+      crTotalSoldValue.toFixed(2),
+      '',
+      crStoreEarnings.toFixed(2),
+      crConsignorOwed.toFixed(2),
+      '',
+      `${crSold.length} sold`,
+    ])
+
+    const nameSlug = selectedConsignor.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')
+    downloadCsv(toCsvString([headers, ...rows]), `consigniq-consignor-${nameSlug}-${dateSlug}.csv`)
+  }
+
   // ─── Render ─────────────────────────────────────────────────
   if (!user) {
     return (
@@ -673,6 +776,236 @@ export default function ReportsPage() {
               <ActivityRow icon={Gift} label="Items Donated" value={donatedInPeriod.length} />
               <ActivityRow icon={Users} label="New Consignors" value={newConsignorsInPeriod.length} />
             </div>
+          </Section>
+
+          {/* ═══ Section 5: Consignor Report ═══ */}
+          <Section title="Consignor Report">
+            {/* Searchable consignor dropdown */}
+            <div className="relative mb-4">
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-colors"
+                onClick={() => setConsignorDropdownOpen(!consignorDropdownOpen)}
+              >
+                <User className="w-4 h-4 text-gray-400" />
+                <span className={`flex-1 text-sm ${selectedConsignor ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {selectedConsignor?.name ?? 'Select a consignor...'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${consignorDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+
+              {consignorDropdownOpen && (
+                <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-hidden">
+                  <div className="p-2 border-b border-gray-100">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                      <input
+                        type="text"
+                        value={consignorSearch}
+                        onChange={e => setConsignorSearch(e.target.value)}
+                        placeholder="Search consignors..."
+                        autoFocus
+                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto max-h-48">
+                    {selectedConsignorId && (
+                      <button
+                        onClick={() => { setSelectedConsignorId(''); setConsignorDropdownOpen(false); setConsignorSearch(''); }}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 transition-colors"
+                      >
+                        Clear selection
+                      </button>
+                    )}
+                    {filteredConsignorList.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-gray-400">No consignors found</p>
+                    ) : (
+                      filteredConsignorList.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => selectConsignor(c.id)}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            c.id === selectedConsignorId
+                              ? 'bg-indigo-50 text-indigo-700 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {c.name}
+                          <span className="ml-2 text-xs text-gray-400 capitalize">{c.status}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Consignor report content */}
+            {selectedConsignor && (
+              consignorItemsLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Summary card */}
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">{selectedConsignor.name}</h3>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                          {selectedConsignor.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {selectedConsignor.phone}
+                            </span>
+                          )}
+                          {selectedConsignor.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {selectedConsignor.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {(() => {
+                        const lc = getLifecycleStatus(selectedConsignor.intake_date, selectedConsignor.expiry_date, selectedConsignor.grace_end_date)
+                        const colors = COLOR_CLASSES[lc.color]
+                        return (
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${colors.badge}`}>
+                            {lc.label}
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400">Intake Date</p>
+                        <p className="font-medium text-gray-900">{selectedConsignor.intake_date}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Expiry Date</p>
+                        <p className="font-medium text-gray-900">{selectedConsignor.expiry_date}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Grace End</p>
+                        <p className="font-medium text-gray-900">{selectedConsignor.grace_end_date}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Split</p>
+                        <p className="font-medium text-gray-900">
+                          {selectedConsignor.split_store}% store / {selectedConsignor.split_consignor}% consignor
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Item breakdown */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <StatCard icon={Package} label="Total Items" value={consignorItems.length} color="indigo" />
+                    <StatCard icon={Clock} label="Pending Pricing" value={crPending} color="amber" />
+                    <StatCard icon={Tag} label="Priced / On Floor" value={crPriced} color="emerald" />
+                    <StatCard
+                      icon={DollarSign}
+                      label="Items Sold"
+                      value={crSold.length}
+                      sub={`$${crTotalSoldValue.toFixed(2)} total`}
+                      color="emerald"
+                    />
+                    <StatCard icon={Gift} label="Donated" value={crDonated} color="gray" />
+                    <StatCard
+                      icon={DollarSign}
+                      label="Owed to Consignor"
+                      value={`$${crConsignorOwed.toFixed(2)}`}
+                      sub={`${selectedConsignor.split_consignor}% of sold`}
+                      color="amber"
+                    />
+                    <StatCard
+                      icon={Clock}
+                      label="Avg Days to Sell"
+                      value={crAvgDaysToSell}
+                      sub="days"
+                      color="indigo"
+                    />
+                    {crReturned > 0 && (
+                      <StatCard icon={Package} label="Returned/Expired" value={crReturned} color="red" />
+                    )}
+                  </div>
+
+                  {/* Item detail table */}
+                  {consignorItems.length > 0 && (
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-xs text-gray-400 font-medium">
+                              <th className="text-left px-4 py-3">Item Name</th>
+                              <th className="text-left px-4 py-3">Category</th>
+                              <th className="text-left px-4 py-3">Condition</th>
+                              <th className="text-left px-4 py-3">Status</th>
+                              <th className="text-right px-4 py-3">Asking</th>
+                              <th className="text-right px-4 py-3">Sold</th>
+                              <th className="text-right px-4 py-3">Days</th>
+                              <th className="text-right px-4 py-3">Consignor Cut</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {consignorItems.map(i => {
+                              const isSold = i.status === 'sold'
+                              const dts = isSold && i.sold_date ? daysBetween(i.intake_date, i.sold_date) : null
+                              const cut = isSold ? (i.sold_price ?? 0) * selectedConsignor.split_consignor / 100 : null
+                              return (
+                                <tr key={i.id} className="hover:bg-gray-50/50">
+                                  <td className="px-4 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">{i.name}</td>
+                                  <td className="px-4 py-2.5 text-gray-500">{i.category}</td>
+                                  <td className="px-4 py-2.5 text-gray-500">{CONDITION_LABELS[i.condition as keyof typeof CONDITION_LABELS] ?? i.condition}</td>
+                                  <td className="px-4 py-2.5">
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                      i.status === 'sold' ? 'bg-emerald-50 text-emerald-600'
+                                      : i.status === 'priced' ? 'bg-indigo-50 text-indigo-600'
+                                      : i.status === 'pending' ? 'bg-amber-50 text-amber-600'
+                                      : i.status === 'donated' ? 'bg-gray-100 text-gray-500'
+                                      : 'bg-red-50 text-red-600'
+                                    }`}>
+                                      {i.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2.5 text-right text-gray-700">{i.price != null ? `$${i.price.toFixed(2)}` : '—'}</td>
+                                  <td className="px-4 py-2.5 text-right text-gray-700">{isSold && i.sold_price != null ? `$${i.sold_price.toFixed(2)}` : '—'}</td>
+                                  <td className="px-4 py-2.5 text-right text-gray-500">{dts != null ? dts : '—'}</td>
+                                  <td className="px-4 py-2.5 text-right font-medium text-gray-900">{cut != null ? `$${cut.toFixed(2)}` : '—'}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          {crSold.length > 0 && (
+                            <tfoot>
+                              <tr className="border-t border-gray-200 bg-gray-50/50 font-semibold text-sm">
+                                <td className="px-4 py-2.5 text-gray-900" colSpan={4}>Totals ({crSold.length} sold)</td>
+                                <td className="px-4 py-2.5 text-right text-gray-500">—</td>
+                                <td className="px-4 py-2.5 text-right text-gray-900">${crTotalSoldValue.toFixed(2)}</td>
+                                <td className="px-4 py-2.5 text-right text-gray-500">{crAvgDaysToSell}d avg</td>
+                                <td className="px-4 py-2.5 text-right text-gray-900">${crConsignorOwed.toFixed(2)}</td>
+                              </tr>
+                            </tfoot>
+                          )}
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Export button */}
+                  <button
+                    onClick={exportConsignorPayoutSlip}
+                    disabled={consignorItems.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export Consignor Payout Slip
+                  </button>
+                </div>
+              )
+            )}
           </Section>
         </>
       )}
