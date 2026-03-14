@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from '@/contexts/LocationContext'
-import { useUser } from '@/contexts/UserContext'
 
 interface PayoutItem {
   id: string
@@ -44,7 +43,6 @@ type FilterStatus = 'unpaid' | 'paid' | 'all'
 
 export default function PayoutsPage() {
   const { activeLocationId } = useLocation()
-  const { user } = useUser()
   const [payouts, setPayouts] = useState<PayoutEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterStatus>('unpaid')

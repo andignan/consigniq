@@ -3,7 +3,6 @@ import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-const ALLOWED_TABLES = ['items', 'consignors', 'price_history', 'locations', 'markdowns']
 const FORBIDDEN_TABLES = ['users', 'accounts', 'invitations', 'agreements']
 
 const SQL_SYSTEM_PROMPT = `You are a SQL query generator for ConsignIQ, a consignment shop management platform. Generate a single, safe, read-only PostgreSQL SELECT query based on the user's question.

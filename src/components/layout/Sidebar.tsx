@@ -106,7 +106,7 @@ export default function Sidebar({ user }: SidebarProps) {
     setActiveLocation,
   } = useLocation()
 
-  const { user: contextUser } = useUser()
+  const contextUser = useUser()
 
   // Close sidebar on route change
   useEffect(() => {
@@ -128,7 +128,6 @@ export default function Sidebar({ user }: SidebarProps) {
   useEffect(() => {
     async function fetchExpiringCount() {
       if (!contextUser?.account_id) return
-      const locationParam = activeLocationId ? `&location_id=${activeLocationId}` : ''
       // We don't have a dedicated endpoint, so fetch consignors and filter client-side
       if (!activeLocationId && !isAllLocations) return
       const locId = activeLocationId || (locations.length > 0 ? locations[0].id : null)

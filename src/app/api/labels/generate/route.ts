@@ -1,7 +1,7 @@
 // app/api/labels/generate/route.ts
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib'
 
 type LabelSize = '2x1' | '4x2'
 
@@ -16,7 +16,7 @@ function formatConsignorName(fullName: string): string {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`
 }
 
-function truncateText(text: string, font: ReturnType<Awaited<ReturnType<typeof PDFDocument.create>>['embedFont']>, maxWidth: number, fontSize: number): string[] {
+function truncateText(text: string, font: PDFFont, maxWidth: number, fontSize: number): string[] {
   const words = text.split(' ')
   const lines: string[] = []
   let currentLine = ''
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 
   const pdfBytes = await pdfDoc.save()
 
-  return new NextResponse(pdfBytes, {
+  return new NextResponse(Buffer.from(pdfBytes), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

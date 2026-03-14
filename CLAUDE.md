@@ -213,7 +213,7 @@ API routes: read from request query params or body.
 
 ## Environment Variables
 
-See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email), Stripe (billing).
+See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email), Stripe (billing). See `DEPLOYMENT.md` for Vercel deployment instructions and env var reference.
 
 ## Testing
 
@@ -304,6 +304,12 @@ Located at `/docs/test-plans/`. 22 test plans covering: authentication, consigno
 - Migration `20260314060000_add_payout_fields.sql` — adds `paid_at` (timestamptz) and `payout_note` (text) to items table
 - Updated E2E navigation spec (replaced Pending Items with Payouts)
 - Test suite: **170 Jest tests passing**, 5 Playwright E2E specs, 22 manual test plans
+
+### Production Deployment Preparation (Done)
+- Fixed all build errors: unused imports/vars, JSX fragment issues, Stripe API version, pdf-lib types, Supabase PromiseLike `.catch()` pattern
+- Created `DEPLOYMENT.md` — Vercel deployment guide with env var reference, Supabase setup, Stripe webhook config, post-deploy checklist
+- Build passes cleanly (`npm run build` succeeds with only warnings, no errors)
+- Test suite: **192 Jest tests passing**
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.

@@ -74,11 +74,6 @@ interface MarkdownRow {
   applied_at: string
 }
 
-interface LocationRow {
-  id: string
-  name: string
-}
-
 // ─── Helpers ──────────────────────────────────────────────────
 const PERIODS: { value: Period; label: string }[] = [
   { value: '7d', label: '7 Days' },

@@ -4,14 +4,14 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Loader2, Save, MapPin, Building2, Mail, Shield,
   ChevronDown, X, Plus, ExternalLink, AlertCircle, Pencil,
-  Lock, Sparkles, Zap, Crown,
+  Zap, Crown,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
 import Tooltip from '@/components/Tooltip'
 import UpgradePrompt from '@/components/UpgradePrompt'
 import { canUseFeature } from '@/lib/feature-gates'
-import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
+import { type Tier } from '@/lib/tier-limits'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -501,6 +501,7 @@ export default function SettingsPage() {
               {!canUseFeature(accountTier, 'markdown_schedule') ? (
                 <UpgradePrompt feature="markdown_schedule" description="Automatically reduce prices on aging inventory to move it faster." />
               ) : (
+              <>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -537,6 +538,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+              </>
               )}
             </div>
 

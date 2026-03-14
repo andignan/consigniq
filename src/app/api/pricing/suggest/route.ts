@@ -173,11 +173,11 @@ Important:
         .single()
 
       if (profile) {
-        await supabase.rpc('increment_ai_lookups', { p_account_id: profile.account_id })
-          .then(() => {})
-          .catch(() => {
-            // Non-critical — usage tracking failure should not block the response
-          })
+        try {
+          await supabase.rpc('increment_ai_lookups', { p_account_id: profile.account_id })
+        } catch {
+          // Non-critical — usage tracking failure should not block the response
+        }
       }
     }
 

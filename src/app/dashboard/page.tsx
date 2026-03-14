@@ -57,14 +57,12 @@ function LocationCard({
   name,
   activeConsignors,
   pendingItems,
-  pricedItems,
   inventoryValue,
   soldItems,
 }: {
   name: string
   activeConsignors: number
   pendingItems: number
-  pricedItems: number
   inventoryValue: number
   soldItems: number
 }) {
@@ -178,7 +176,6 @@ export default async function DashboardPage({
         name: loc.name,
         activeConsignors: locConsignors.length,
         pendingItems: locItems.filter(i => i.status === 'pending').length,
-        pricedItems: locItems.filter(i => i.status === 'priced').length,
         inventoryValue: locItems
           .filter(i => i.status === 'priced' && i.price)
           .reduce((sum, i) => sum + (i.price ?? 0), 0),
