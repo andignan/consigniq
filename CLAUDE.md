@@ -33,9 +33,10 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 
 ### Supabase Client Pattern
 
-Two Supabase client factories, both reading from env vars:
+Three Supabase client factories:
 - `src/lib/supabase/client.ts` — browser client (`createBrowserClient`), used in `'use client'` components
 - `src/lib/supabase/server.ts` — server client (`createServerClient`), uses `cookies()` from `next/headers`. Used in Server Components and API routes. Exported as both `createServerClient` and `createClient`
+- `src/lib/supabase/admin.ts` — service role client (`createAdminClient`), bypasses RLS. Used only in admin routes and superadmin checks. Also exports `checkSuperadmin()` helper that authenticates via the regular client then verifies `is_superadmin` via service role (needed because superadmin users may not satisfy RLS policies on the users table)
 
 ### Data Layer
 
@@ -56,6 +57,7 @@ Two Supabase client factories, both reading from env vars:
 - `/api/pricing/identify` — Claude vision item identification from photos
 - `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
 - `/api/payouts` — GET consignor payout data (sold items grouped by consignor with split calculations). Supports `location_id`, `status` (`unpaid`/`paid`/`all`) filters. PATCH marks items as paid (takes `item_ids[]`, optional `payout_note`).
+- `/api/auth/check-superadmin` — GET returns `{ is_superadmin: boolean }`. Uses service role to bypass RLS. Called by login page to determine redirect destination. Excluded from middleware auth protection (under `/api/auth/*`).
 
 ### UserContext
 
@@ -85,14 +87,17 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 - Auth: Supabase email/password auth. Login at `/auth/login`.
 - Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side, redirects to login if unauthenticated, loads user profile with joined account/location data, loads all account locations, wraps children in `<Suspense>`, `<UserProvider>`, and `<LocationProvider>`.
 - Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*` and `/api/billing/webhook` are excluded from protection.
+- Post-login redirect: login page calls `/api/auth/check-superadmin` after successful auth — superadmins go to `/admin`, regular users go to `/dashboard`.
 
 ### Superadmin Access
 
 - The `is_superadmin` boolean on the `users` table gates access to `/admin` routes
-- Admin layout (`src/app/admin/layout.tsx`) checks `is_superadmin` server-side; non-superadmins redirect to `/dashboard`
-- Admin API routes (`/api/admin/stats`, `/api/admin/accounts`) also check `is_superadmin` and return 403 for non-superadmins
+- Admin layout (`src/app/admin/layout.tsx`) checks `is_superadmin` server-side using service role client (bypasses RLS); non-superadmins redirect to `/dashboard`
+- Admin API routes (`/api/admin/stats`, `/api/admin/accounts`, `/api/admin/network-stats`) use `checkSuperadmin()` from `@/lib/supabase/admin` and `createAdminClient()` for all queries — return 403 for non-superadmins
 - All admin queries are cross-account (no `account_id` scoping) — superadmin sees all data
 - Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar
+- **Login redirect**: after successful login, `/api/auth/check-superadmin` is called (uses service role to bypass RLS). If `is_superadmin` is true, user is redirected to `/admin` instead of `/dashboard`
+- **Important**: all superadmin checks must use the service role client because the superadmin user may not have an `account_id` that satisfies RLS policies on the users table
 
 ### Stripe Billing & Tier Enforcement
 
@@ -174,7 +179,7 @@ API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET
 Client component. Shows consignors with sold items, split calculations (store/consignor shares), Mark as Paid functionality, filter tabs (Unpaid/Paid/All), CSV export. Summary cards: Total Owed, Total Paid Out, Consignors with Balance. Expandable consignor rows with item checkboxes for bulk "Mark as Paid" with optional payout note.
 
 ### Sidebar (`/dashboard` layout)
-Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Reports, Payouts, Settings. Consignors nav item shows amber badge with count of consignors expiring within 7 days or in grace period (scoped by active location). Location switcher dropdown below brand (owners can switch locations, staff sees static location name). Mobile header shows active location name.
+Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. Nav items: Dashboard, Consignors, Inventory, Price Lookup, Reports, Payouts, Settings. Consignors nav item shows amber badge with count of consignors expiring within 7 days or in grace period (scoped by active location). Location switcher dropdown below brand (owners can switch locations, staff sees static location name). Mobile header shows active location name. User display at bottom shows `full_name` with fallback to `email` if name is null/empty/whitespace.
 
 ### Admin (`/admin`) — Superadmin Only
 Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
@@ -309,6 +314,14 @@ Located at `/docs/test-plans/`. 22 test plans covering: authentication, consigno
 - Fixed all build errors: unused imports/vars, JSX fragment issues, Stripe API version, pdf-lib types, Supabase PromiseLike `.catch()` pattern
 - Created `DEPLOYMENT.md` — Vercel deployment guide with env var reference, Supabase setup, Stripe webhook config, post-deploy checklist
 - Build passes cleanly (`npm run build` succeeds with only warnings, no errors)
+- Test suite: **192 Jest tests passing**
+
+### Superadmin Bugfixes (Done)
+- Admin route access: admin layout and all admin API routes now use service role client (`createAdminClient`) to bypass RLS, fixing superadmin being redirected to /dashboard
+- Login redirect: superadmin users now redirect to `/admin` after login via `/api/auth/check-superadmin` endpoint
+- Sidebar name fallback: displays email when `full_name` is null/empty (also applied to admin sidebar)
+- Created shared `src/lib/supabase/admin.ts` with `createAdminClient()` and `checkSuperadmin()` helpers
+- Updated admin test mocks to use `@/lib/supabase/admin` mock
 - Test suite: **192 Jest tests passing**
 
 ### Deferred to Phase 7+
