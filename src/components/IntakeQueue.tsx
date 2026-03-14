@@ -112,6 +112,7 @@ export function IntakeQueue({
 
     const res = await fetch('/api/items', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         account_id: accountId,
@@ -176,7 +177,7 @@ export function IntakeQueue({
 
   async function handleDeleteSaved(itemId: string) {
     try {
-      await fetch(`/api/items/${itemId}`, { method: 'DELETE' })
+      await fetch(`/api/items/${itemId}`, { method: 'DELETE', credentials: 'include' })
       setSavedItems(prev => prev.filter(i => i.id !== itemId))
     } catch {
       setError('Failed to delete item')
@@ -367,7 +368,7 @@ function IntakeRow({
     try {
       const formData = new FormData()
       formData.append('photo', file)
-      const res = await fetch('/api/pricing/identify', { method: 'POST', body: formData })
+      const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) return
       const { result } = await res.json()
       if (result.name) onChange(draft.id, 'name', result.name)

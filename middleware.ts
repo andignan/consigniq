@@ -23,16 +23,21 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Only protect dashboard routes — don't redirect on auth pages
+  // Protect dashboard routes — redirect to login
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
   }
 
+  // Protect API routes (except /api/auth/*) — return 401 JSON
+  if (!user && request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/api/auth')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/api/:path*'],
 }

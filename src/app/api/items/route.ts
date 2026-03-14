@@ -5,11 +5,23 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
   const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
   const locationId = searchParams.get('location_id')
   const consignorId = searchParams.get('consignor_id')
   const status = searchParams.get('status')
   const category = searchParams.get('category')
   const search = searchParams.get('search')
+
+  // Single-item fetch by ID
+  if (id) {
+    const { data, error } = await supabase
+      .from('items')
+      .select(`*, consignor:consignors(id, name)`)
+      .eq('id', id)
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+    return NextResponse.json({ items: [data] })
+  }
 
   let query = supabase
     .from('items')

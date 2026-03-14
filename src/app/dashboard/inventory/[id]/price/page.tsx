@@ -134,23 +134,16 @@ export default function PricingPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Load item
+  // Load item by ID
   useEffect(() => {
     async function loadItem() {
       try {
-        const allRes = await fetch(`/api/items?status=pending`)
-        if (!allRes.ok) throw new Error('Failed to load items')
-        const { items } = await allRes.json()
-        const found = (items as Item[]).find(i => i.id === id)
-        if (!found) {
-          const anyRes = await fetch(`/api/items?search=`)
-          const { items: allItems } = await anyRes.json()
-          const anyFound = (allItems as Item[]).find((i: Item) => i.id === id)
-          if (!anyFound) throw new Error('Item not found')
-          setItem(anyFound)
-        } else {
-          setItem(found)
-        }
+        const res = await fetch(`/api/items?id=${id}`)
+        if (!res.ok) throw new Error('Item not found')
+        const { items } = await res.json()
+        const found = (items as Item[])?.[0]
+        if (!found) throw new Error('Item not found')
+        setItem(found)
         setStage('loaded')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load item')

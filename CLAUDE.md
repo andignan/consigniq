@@ -46,7 +46,7 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 
 - Auth: Supabase email/password auth. Login at `/auth/login`.
 - Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side and redirects to login if unauthenticated. It also loads the user profile with joined account and location data for the Sidebar.
-- No middleware file exists yet — auth is checked in the dashboard layout.
+- Middleware exists at the root middleware.ts and protects /dashboard/:path* routes. It needs to be extended to also protect /api/:path* routes.
 
 ### Multi-tenancy Model
 

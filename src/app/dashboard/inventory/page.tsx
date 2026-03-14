@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
+import { useUser } from '@/contexts/UserContext'
 
 // ─── Status config ────────────────────────────────────────────
 const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
@@ -39,6 +40,7 @@ interface ItemWithConsignor extends Item {
 export default function InventoryPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const user = useUser()
 
   const [items, setItems] = useState<ItemWithConsignor[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,6 +69,7 @@ export default function InventoryPage() {
   const fetchItems = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
+    if (user?.location_id) params.set('location_id', user.location_id)
     if (statusFilter !== 'all') params.set('status', statusFilter)
     if (categoryFilter) params.set('category', categoryFilter)
     if (searchQuery) params.set('search', searchQuery)
@@ -81,7 +84,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, categoryFilter, searchQuery])
+  }, [statusFilter, categoryFilter, searchQuery, user?.location_id])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 

@@ -20,8 +20,8 @@ export default function IntakePage() {
     async function load() {
       try {
         const [consRes, itemsRes] = await Promise.all([
-          fetch(`/api/consignors/${id}`),
-          fetch(`/api/items?consignor_id=${id}&status=pending`),
+          fetch(`/api/consignors/${id}`, { credentials: 'include' }),
+          fetch(`/api/items?consignor_id=${id}&status=pending`, { credentials: 'include' }),
         ])
 
         if (!consRes.ok) throw new Error('Failed to load consignor')
