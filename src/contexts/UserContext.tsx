@@ -9,7 +9,7 @@ export interface UserProfile {
   email: string
   full_name: string | null
   role: 'owner' | 'staff'
-  accounts?: { id: string; name: string }
+  accounts?: { id: string; name: string; tier: string; ai_lookups_this_month?: number }
   locations?: { id: string; name: string }
 }
 

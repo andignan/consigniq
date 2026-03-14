@@ -4,10 +4,14 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Loader2, Save, MapPin, Building2, Mail, Shield,
   ChevronDown, X, Plus, ExternalLink, AlertCircle, Pencil,
+  Lock, Sparkles, Zap, Crown,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
 import Tooltip from '@/components/Tooltip'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import { canUseFeature } from '@/lib/feature-gates'
+import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -62,6 +66,7 @@ export default function SettingsPage() {
   const user = useUser()
   const { activeLocationId, locations: allLocations, setActiveLocation } = useLocation()
   const isOwner = user?.role === 'owner'
+  const accountTier = (user?.accounts?.tier ?? 'starter') as Tier
 
   // Tab state (owner sees 3 tabs, staff sees 1)
   const [activeTab, setActiveTab] = useState<'location' | 'account' | 'locations'>('location')
@@ -73,6 +78,51 @@ export default function SettingsPage() {
   const [locationSaving, setLocationSaving] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [locationSuccess, setLocationSuccess] = useState('')
+
+  // Billing state
+  const [billingLoading, setBillingLoading] = useState(false)
+
+  async function handleCheckout(tier: string) {
+    setBillingLoading(true)
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      })
+      const body = await res.json()
+      if (body.url) {
+        window.location.href = body.url
+      } else {
+        alert(body.error || 'Failed to create checkout session')
+      }
+    } catch {
+      alert('Failed to connect to billing')
+    } finally {
+      setBillingLoading(false)
+    }
+  }
+
+  async function handlePortal() {
+    setBillingLoading(true)
+    try {
+      const res = await fetch('/api/billing/portal', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const body = await res.json()
+      if (body.url) {
+        window.location.href = body.url
+      } else {
+        alert(body.error || 'Failed to open billing portal')
+      }
+    } catch {
+      alert('Failed to connect to billing')
+    } finally {
+      setBillingLoading(false)
+    }
+  }
 
   // Account settings (owner only)
   const [account, setAccount] = useState<AccountData | null>(null)
@@ -448,6 +498,9 @@ export default function SettingsPage() {
             {/* Markdown Schedule */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Markdown Schedule</h2>
+              {!canUseFeature(accountTier, 'markdown_schedule') ? (
+                <UpgradePrompt feature="markdown_schedule" description="Automatically reduce prices on aging inventory to move it faster." />
+              ) : (
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -483,6 +536,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              )}
               )}
             </div>
 
@@ -559,19 +613,120 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Billing */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Billing</h2>
-              <p className="text-sm text-gray-500 mb-3">
-                Manage your subscription, payment method, and billing history.
-              </p>
-              <a
-                href="/api/billing/portal"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Manage Billing
-              </a>
+            {/* Billing & Subscription */}
+            <div id="billing" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Billing & Subscription</h2>
+
+              {/* Usage meter for starter tier */}
+              {account.tier === 'starter' && (
+                <div className="mb-5 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-700 font-medium">AI Pricing Lookups</span>
+                    <span className="text-xs text-gray-500">{user?.accounts?.ai_lookups_this_month ?? 0} of 50 used this month</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        (user?.accounts?.ai_lookups_this_month ?? 0) >= 48 ? 'bg-red-500' :
+                        (user?.accounts?.ai_lookups_this_month ?? 0) >= 40 ? 'bg-amber-500' : 'bg-indigo-500'
+                      }`}
+                      style={{ width: `${Math.min(100, ((user?.accounts?.ai_lookups_this_month ?? 0) / 50) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Resets monthly. Upgrade for unlimited.</p>
+                </div>
+              )}
+
+              {/* Pricing cards */}
+              {account.tier === 'starter' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* Standard card */}
+                  <div className="border border-indigo-200 rounded-xl p-4 bg-indigo-50/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-4 h-4 text-indigo-600" />
+                      <h3 className="text-sm font-bold text-indigo-700">Standard</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 mb-2">$79<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
+                      <li>Unlimited AI pricing lookups</li>
+                      <li>Repeat item history</li>
+                      <li>Markdown schedules</li>
+                      <li>Email notifications</li>
+                    </ul>
+                    <button
+                      onClick={() => handleCheckout('standard')}
+                      disabled={billingLoading}
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Standard'}
+                    </button>
+                  </div>
+
+                  {/* Pro card */}
+                  <div className="border border-amber-200 rounded-xl p-4 bg-amber-50/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="w-4 h-4 text-amber-600" />
+                      <h3 className="text-sm font-bold text-amber-700">Pro</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
+                      <li>Everything in Standard</li>
+                      <li>Cross-customer pricing intel</li>
+                      <li>Community pricing feed</li>
+                      <li>Multi-location &quot;All Locations&quot;</li>
+                      <li>API access</li>
+                    </ul>
+                    <button
+                      onClick={() => handleCheckout('pro')}
+                      disabled={billingLoading}
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {account.tier === 'standard' && (
+                <div className="mb-4">
+                  <div className="border border-amber-200 rounded-xl p-4 bg-amber-50/30 mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="w-4 h-4 text-amber-600" />
+                      <h3 className="text-sm font-bold text-amber-700">Upgrade to Pro</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
+                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
+                      <li>Cross-customer pricing intelligence</li>
+                      <li>Community pricing feed</li>
+                      <li>Multi-location &quot;All Locations&quot; dashboard</li>
+                      <li>API access</li>
+                    </ul>
+                    <button
+                      onClick={() => handleCheckout('pro')}
+                      disabled={billingLoading}
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Manage Billing button (for paid tiers) */}
+              {account.tier !== 'starter' && (
+                <button
+                  onClick={handlePortal}
+                  disabled={billingLoading}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                  Manage Billing
+                </button>
+              )}
+
+              {account.tier === 'starter' && (
+                <p className="text-xs text-gray-400 mt-3">Free plan — no credit card required.</p>
+              )}
             </div>
 
             {/* Users */}

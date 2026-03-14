@@ -37,8 +37,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Protect API routes (except /api/auth/*) — return 401 JSON
-  if (!user && request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/api/auth')) {
+  // Protect API routes (except /api/auth/* and /api/billing/webhook) — return 401 JSON
+  if (
+    !user &&
+    request.nextUrl.pathname.startsWith('/api') &&
+    !request.nextUrl.pathname.startsWith('/api/auth') &&
+    !request.nextUrl.pathname.startsWith('/api/billing/webhook')
+  ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -25,16 +25,18 @@ Test baseline established for Phases 1–5. Each test plan covers happy paths, e
 | [Help System](./help-system.md) | `help-system.md` | Tooltips, floating help widget, AI search | API + unit + Playwright E2E |
 | [AI Report Prompts](./ai-report-prompts.md) | `ai-report-prompts.md` | NL prompt bar, SQL generation, validation, execution | API route tests |
 | [Label Printing](./label-printing.md) | `label-printing.md` | Single/bulk PDF labels, sizing, content | API route + Playwright E2E |
+| [Stripe Billing](./stripe-billing.md) | `stripe-billing.md` | Checkout, portal, webhook, tier gates, usage tracking | API + unit tests |
 
 ## Automated Test Suite
 
-### Jest Tests (116 tests)
+### Jest Tests (143 tests)
 ```
 __tests__/
 ├── unit/
 │   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
 │   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
-│   └── help-components.test.ts — Knowledge base content, topic coverage
+│   ├── help-components.test.ts — Knowledge base content, topic coverage
+│   └── feature-gates.test.ts  — canUseFeature(), tier configs, feature mapping
 ├── api/
 │   ├── consignors.test.ts     — GET/POST /api/consignors, validation, auth
 │   ├── items.test.ts          — GET/POST/PATCH /api/items, filters, auto-timestamps
@@ -45,7 +47,9 @@ __tests__/
 │   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 │   ├── help.test.ts           — POST /api/help/search validation, AI scoping
 │   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping
-│   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF
+│   ├── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF
+│   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe
+│   └── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates
 └── components/                — (placeholder for future component tests)
 ```
 

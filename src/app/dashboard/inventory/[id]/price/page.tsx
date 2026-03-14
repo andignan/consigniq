@@ -11,6 +11,10 @@ import {
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import Tooltip from '@/components/Tooltip'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import { useUser } from '@/contexts/UserContext'
+import { canUseFeature } from '@/lib/feature-gates'
+import type { Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 
@@ -19,6 +23,8 @@ type Stage = 'loading' | 'loaded' | 'identifying' | 'fetching-comps' | 'pricing'
 export default function PricingPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const currentUser = useUser()
+  const accountTier = (currentUser?.accounts?.tier ?? 'starter') as Tier
 
   const [item, setItem] = useState<Item | null>(null)
   const [comps, setComps] = useState<CompResult[]>([])
@@ -570,8 +576,12 @@ export default function PricingPage() {
       {/* Everything below is hidden during edit mode */}
       {!editing && <>
 
-      {/* Priced Before — similar sold items from price_history */}
-      {historyLoading ? (
+      {/* Priced Before — similar sold items from price_history (standard+ only) */}
+      {!canUseFeature(accountTier, 'repeat_item_history') ? (
+        <div className="mb-4">
+          <UpgradePrompt feature="repeat_item_history" description="See what similar items sold for in the past to price smarter." />
+        </div>
+      ) : historyLoading ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Loader2 className="w-4 h-4 animate-spin" />

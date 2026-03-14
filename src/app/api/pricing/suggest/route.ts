@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getCategoryConfig } from '@/lib/pricing/categories'
+import { createServerClient } from '@/lib/supabase/server'
+import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 
 export interface PriceSuggestion {
@@ -67,6 +69,52 @@ Important:
     )
   }
 
+  // ─── Tier-based usage limit check ─────────────────────────
+  const supabase = createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('account_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profile) {
+      const { data: account } = await supabase
+        .from('accounts')
+        .select('id, tier, ai_lookups_this_month, ai_lookups_reset_at')
+        .eq('id', profile.account_id)
+        .single()
+
+      if (account) {
+        const tier = (account.tier || 'starter') as Tier
+        const tierConfig = TIER_CONFIGS[tier]
+
+        if (tierConfig.aiPricingLimit !== null) {
+          // Check if counter needs reset (>30 days since last reset)
+          const resetAt = new Date(account.ai_lookups_reset_at || 0)
+          const daysSinceReset = (Date.now() - resetAt.getTime()) / (1000 * 60 * 60 * 24)
+
+          if (daysSinceReset > 30) {
+            await supabase
+              .from('accounts')
+              .update({ ai_lookups_this_month: 0, ai_lookups_reset_at: new Date().toISOString() })
+              .eq('id', account.id)
+            account.ai_lookups_this_month = 0
+          }
+
+          if ((account.ai_lookups_this_month ?? 0) >= tierConfig.aiPricingLimit) {
+            return NextResponse.json(
+              { error: 'limit_reached', tier, limit: tierConfig.aiPricingLimit },
+              { status: 403 }
+            )
+          }
+        }
+      }
+    }
+  }
+
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -114,6 +162,23 @@ Important:
         { error: 'AI returned unexpected shape: ' + JSON.stringify(parsed).substring(0, 200) },
         { status: 500 }
       )
+    }
+
+    // Increment AI pricing usage for starter tier tracking
+    if (user) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('account_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        await supabase.rpc('increment_ai_lookups', { p_account_id: profile.account_id })
+          .then(() => {})
+          .catch(() => {
+            // Non-critical — usage tracking failure should not block the response
+          })
+      }
     }
 
     return NextResponse.json({ suggestion: parsed })

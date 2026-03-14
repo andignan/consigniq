@@ -26,6 +26,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing and photo identification (vision)
 - **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`)
 - **pdf-lib** for PDF label generation (no browser dependency)
+- **Stripe** (`stripe`) for subscription billing and payment processing
 - Path alias: `@/*` maps to `./src/*`
 
 ## Architecture
@@ -47,6 +48,9 @@ Two Supabase client factories, both reading from env vars:
 - `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
 - `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
 - `/api/labels/generate` — POST PDF label generation. Takes `{ item_ids: string[], size: '2x1' | '4x2' }`. Fetches items with consignor/location joins, scoped by account_id. Returns PDF blob. Labels include item name (2-line max), category, condition, price (with strikethrough for markdowns), consignor (first name + last initial), location, short item ID, ConsignIQ branding.
+- `/api/billing/checkout` — POST creates Stripe Checkout session for subscription. Takes `{ tier: 'standard' | 'pro' }`. Creates Stripe customer if needed. Owner only. Returns `{ url }` to redirect.
+- `/api/billing/portal` — POST creates Stripe Customer Portal session. Requires existing stripe_customer_id. Owner only. Returns `{ url }`.
+- `/api/billing/webhook` — POST Stripe webhook handler. Excluded from auth middleware. Handles: `checkout.session.completed` (update tier), `customer.subscription.updated` (sync tier), `customer.subscription.deleted` (downgrade to starter), `invoice.payment_failed` (log warning only).
 - `/api/pricing/comps` — SerpApi eBay sold comp lookup
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
 - `/api/pricing/identify` — Claude vision item identification from photos
@@ -78,7 +82,7 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 
 - Auth: Supabase email/password auth. Login at `/auth/login`.
 - Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side, redirects to login if unauthenticated, loads user profile with joined account/location data, loads all account locations, wraps children in `<Suspense>`, `<UserProvider>`, and `<LocationProvider>`.
-- Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*` is excluded from protection.
+- Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*` and `/api/billing/webhook` are excluded from protection.
 
 ### Superadmin Access
 
@@ -87,6 +91,19 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 - Admin API routes (`/api/admin/stats`, `/api/admin/accounts`) also check `is_superadmin` and return 403 for non-superadmins
 - All admin queries are cross-account (no `account_id` scoping) — superadmin sees all data
 - Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar
+
+### Stripe Billing & Tier Enforcement
+
+Three tiers: `starter` (free, 50 AI lookups/mo), `standard` ($79/mo, unlimited), `pro` ($129/mo, all features).
+
+- **Tier limits** defined in `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
+- **Feature gates** in `src/lib/feature-gates.ts` — `canUseFeature(tier, feature)`, `getUpgradeMessage(feature)`
+- **Stripe client** singleton in `src/lib/stripe.ts` — `getStripe()`
+- **UpgradePrompt** component (`src/components/UpgradePrompt.tsx`) — shown in place of locked features with "Upgrade to [tier]" CTA
+- **AI pricing usage tracking**: `accounts.ai_lookups_this_month` + `accounts.ai_lookups_reset_at` columns. Checked in `/api/pricing/suggest` — starter tier limited to 50/month, counter resets after 30 days. Incremented via `increment_ai_lookups` RPC.
+- **Webhook** at `/api/billing/webhook` — excluded from auth middleware, uses service role Supabase client, verifies Stripe signature
+- **Feature gating in UI**: "Priced Before" panel (standard+), markdown schedules (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro)
+- **Settings billing UI**: usage meter for starter, pricing cards for upgrade, "Manage Billing" button for paid tiers via Stripe Portal
 
 ### Multi-tenancy Model
 
@@ -176,7 +193,7 @@ Always audit actual column names before writing queries. Key fields:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`
+- Accounts: `id`, `name`, `tier`, `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id`, `name`, `priced_at`, `sold`, `sold_at`, `sold_price` (added Phase 5)
@@ -188,11 +205,11 @@ API routes: read from request query params or body.
 
 ## Environment Variables
 
-See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email).
+See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email), Stripe (billing).
 
 ## Testing
 
-Full test baseline established for Phases 1–5. Test suite: **116 tests, all passing**.
+Full test baseline established for Phases 1–6. Test suite: **143 tests, all passing**.
 
 ### Test Structure
 ```
@@ -200,7 +217,8 @@ __tests__/
 ├── unit/
 │   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
 │   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
-│   └── help-components.test.ts — Knowledge base content and topic coverage
+│   ├── help-components.test.ts — Knowledge base content and topic coverage
+│   └── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping
 ├── api/
 │   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
 │   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes
@@ -211,7 +229,9 @@ __tests__/
 │   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
 │   ├── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
 │   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
-│   └── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
+│   ├── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
+│   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe session
+│   └── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
 ```
 
 ### Playwright E2E Tests
@@ -227,7 +247,7 @@ e2e/
 **Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
 
 ### Manual Test Plans
-Located at `/docs/test-plans/`. 19 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing.
+Located at `/docs/test-plans/`. 20 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails (not yet implemented), settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing.
 
 ## Phase Status
 
@@ -246,7 +266,8 @@ Located at `/docs/test-plans/`. 19 test plans covering: authentication, consigno
 - Timezone bugfix: `getLifecycleStatus()` parses date strings as local time (appends `T00:00:00`)
 - Test suite: **116 Jest tests passing**, 5 Playwright E2E specs, 19 manual test plans
 
-### Next: Phase 6
-- Cross-customer analytics and community pricing
-- Billing and subscriptions via Stripe
-- Advanced reporting and benchmarks
+### Phase 6 — In Progress
+- **Done**: Stripe Billing & Tier Enforcement — subscription checkout, portal, webhook, tier-based feature gating, AI pricing usage tracking (50/mo starter limit), UpgradePrompt component, billing UI in Settings
+- Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`
+- Test suite: **143 Jest tests passing**, 5 Playwright E2E specs, 20 manual test plans
+- Next up: Cross-Customer Pricing Intelligence
