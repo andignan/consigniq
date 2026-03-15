@@ -81,7 +81,7 @@ export default async function DashboardLayout({
   const locationsList = (allLocations ?? []).map(l => ({ id: l.id, name: l.name }))
 
   return (
-    <div className="flex h-screen bg-stone-50 overflow-hidden">
+    <div className="flex h-screen w-full max-w-[100vw] bg-stone-50 overflow-hidden">
       <UserProvider user={profile}>
         <Suspense fallback={null}>
           <LocationProvider
@@ -90,7 +90,7 @@ export default async function DashboardLayout({
             locations={locationsList}
           >
             <Sidebar user={profile} />
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
               <TrialBanner />
               <main className="flex-1 overflow-y-auto pt-14 md:pt-0 pb-20 md:pb-0">
                 {children}
