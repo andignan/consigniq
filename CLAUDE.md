@@ -48,9 +48,9 @@ Three client factories:
 - `/api/payouts` — GET (sold items grouped by consignor with split calcs, `location_id`/`status` filters), PATCH (mark items paid, `item_ids[]`, optional `payout_note`)
 
 **Pricing:**
-- `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results
+- `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits.
-- `/api/pricing/identify` — Claude vision item identification
+- `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check
 - `/api/pricing/cross-account` — Pro-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
 **Admin (superadmin only):**
@@ -73,7 +73,7 @@ Three client factories:
 - `/api/agreements/send` — POST, takes `{ consignor_id }`. Creates agreement record, sends email
 - `/api/agreements/notify-expiring` — POST cron. Finds consignors expiring in 3 days, sends reminders
 - `/api/help/search` — POST, takes `{ question }`. Claude with help knowledge base context
-- `/api/reports/query` — POST, takes `{ question, location_id? }`. Claude generates read-only SQL, validated (SELECT-only, account_id scoping, forbidden tables blocked), executed via `execute_readonly_query` RPC. Allowed: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements
+- `/api/reports/query` — POST, takes `{ question, location_id? }`. Claude generates read-only SQL, validated (SELECT-only, account_id scoping, forbidden tables blocked, UUID validation on all interpolated IDs), executed via `execute_readonly_query` RPC. Allowed: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements
 - `/api/labels/generate` — POST, takes `{ item_ids[], size: '2x1'|'4x2' }`. Returns PDF blob
 - `/api/trial/check-expiry` — POST cron. Auth via `Authorization: Bearer CRON_SECRET`. Excluded from middleware
 - `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST)
@@ -152,7 +152,18 @@ Three client factories:
 
 **UI feature gating:** consignor management (starter+), markdown schedules (starter+), payouts (starter+), reports (starter+), "Priced Before" panel (standard+), email notifications (standard+), multi-location (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro)
 
-**Server-side tier guards:** `requireFeature()` in `src/lib/tier-guard.ts` — used in dashboard layouts/pages for consignors, reports, payouts. API routes check `canUseFeature()` on consignors (GET/POST), agreements/send, payouts (GET/PATCH).
+**Server-side tier guards (two layers):**
+
+1. **Page-level:** `requireFeature(feature)` in `src/lib/tier-guard.ts` — async server component guard. Fetches user profile + account tier, calls `canUseFeature()`, redirects to `/dashboard` if blocked. Used at top of:
+   - `src/app/dashboard/consignors/page.tsx` — `requireFeature('consignor_mgmt')`
+   - `src/app/dashboard/reports/layout.tsx` — `requireFeature('reports')`
+   - `src/app/dashboard/payouts/layout.tsx` — `requireFeature('payouts')`
+
+2. **API-level:** `canUseFeature(tier, feature)` checks in route handlers, returning 403 with upgrade message:
+   - `/api/consignors` GET+POST — `canUseFeature(tier, 'consignor_mgmt')`
+   - `/api/agreements/send` POST — `canUseFeature(tier, 'agreements')`
+   - `/api/payouts` GET+PATCH — `canUseFeature(tier, 'payouts')`
+   - `/api/pricing/cross-account` GET — `canUseFeature(tier, 'cross_customer_pricing')`
 
 **Billing lifecycle emails** via Resend (from webhook): `buildUpgradeEmail()`, `buildCancellationEmail()`, `buildPaymentFailedEmail()`. All non-critical.
 
@@ -315,16 +326,25 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260314070000` — ensure superadmin user row
 - `20260314080000` — solo tier + account types (account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used)
 
-## Code Review — March 2026
+## Security
+
+### Code Review — March 2026
 
 Full report: `docs/code-review/code-review-march-2026.md`
 
 **5 critical issues — ALL RESOLVED:**
-- C1: SQL injection in reports query → UUID validation on location_id/account_id
-- C2: Missing auth on /api/pricing/comps → `getUser()` check added
-- C3: Missing auth on /api/pricing/identify → `getUser()` check added
-- C4: No server-side solo route guards → `requireFeature()` tier guard + layout guards
-- C5: No tier enforcement on API routes → `canUseFeature()` checks added
+
+- **C1: SQL injection in `/api/reports/query`** — `location_id` and `account_id` are interpolated into AI-generated SQL. Fix: UUID regex validation (`/^[0-9a-f]{8}-…$/i`) on `location_id` (from request body), `profile.account_id`, and `profile.location_id` before SQL generation. Returns 400 on invalid. Located at `src/app/api/reports/query/route.ts:81-92`.
+
+- **C2: Missing auth on `/api/pricing/comps`** — relied solely on middleware (which can be misconfigured). Fix: explicit `supabase.auth.getUser()` check at top of handler, returns 401 if no user. Located at `src/app/api/pricing/comps/route.ts:18`.
+
+- **C3: Missing auth on `/api/pricing/identify`** — same pattern as C2. Fix: explicit `getUser()` check. Located at `src/app/api/pricing/identify/route.ts:17`.
+
+- **C4: No server-side solo route guards** — solo users could navigate directly to `/dashboard/consignors`, `/dashboard/reports`, `/dashboard/payouts`. Fix: `requireFeature()` in `src/lib/tier-guard.ts` (see "Server-side tier guards" above).
+
+- **C5: No tier enforcement on API routes** — solo users could call starter+ APIs directly. Fix: `canUseFeature()` checks in `/api/consignors`, `/api/agreements/send`, `/api/payouts` (see "Server-side tier guards" above).
+
+**Regression tests:** `__tests__/api/critical-security.test.ts` — 5 UUID validation tests (C1) + 7 tier enforcement tests (C5) = 12 total.
 
 **Open issues:** 7 important (N+1 sidebar fetch, reports perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth), 18 minor, ~30-40 component tests missing.
 
