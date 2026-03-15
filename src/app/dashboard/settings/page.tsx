@@ -740,21 +740,15 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Manage Billing button (for paid tiers) */}
-              {account.tier !== 'starter' && (
-                <button
-                  onClick={handlePortal}
-                  disabled={billingLoading}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                >
-                  {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                  Manage Billing
-                </button>
-              )}
-
-              {account.tier === 'starter' && (
-                <p className="text-xs text-gray-400 mt-3">Free plan — no credit card required.</p>
-              )}
+              {/* Manage Billing button */}
+              <button
+                onClick={handlePortal}
+                disabled={billingLoading}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                Manage Subscription
+              </button>
             </div>
 
             {/* Users */}

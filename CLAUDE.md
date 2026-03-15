@@ -108,7 +108,7 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 
 ### Stripe Billing & Tier Enforcement
 
-Four tiers: `solo` ($9/mo, 200 AI lookups/mo, pricing-only), `starter` ($49/mo, unlimited AI, full shop), `standard` ($79/mo, markdowns/repeat history), `pro` ($129/mo, all features).
+Four tiers: `solo` ($9/mo, 200 AI lookups/mo, pricing-only), `starter` ($49/mo, unlimited AI, full shop + markdowns/repeat history/email notifications), `standard` ($79/mo, multi-location), `pro` ($129/mo, all features).
 
 - **Tier limits** defined in `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
 - **Feature gates** in `src/lib/feature-gates.ts` — `canUseFeature(tier, feature)`, `getUpgradeMessage(feature)`
@@ -116,7 +116,7 @@ Four tiers: `solo` ($9/mo, 200 AI lookups/mo, pricing-only), `starter` ($49/mo, 
 - **UpgradePrompt** component (`src/components/UpgradePrompt.tsx`) — shown in place of locked features with "Upgrade to [tier]" CTA
 - **AI pricing usage tracking**: `accounts.ai_lookups_this_month` + `accounts.ai_lookups_reset_at` columns. Checked in `/api/pricing/suggest` — solo tier limited to 200/month, starter/standard/pro unlimited (`aiPricingLimit: null`). Counter resets after 30 days. Incremented via `increment_ai_lookups` RPC.
 - **Webhook** at `/api/billing/webhook` — excluded from auth middleware, uses service role Supabase client, verifies Stripe signature. Sends branded lifecycle emails via Resend: upgrade confirmation, cancellation notice, payment failure alert.
-- **Feature gating in UI**: "Priced Before" panel (standard+), markdown schedules (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro), consignor management (starter+), payouts (starter+), reports (starter+)
+- **Feature gating in UI**: "Priced Before" panel (starter+), markdown schedules (starter+), email notifications (starter+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro), consignor management (starter+), payouts (starter+), reports (starter+)
 - **Bonus lookups**: Solo/starter accounts can purchase 50-lookup top-up packs ($5). Tracked via `accounts.bonus_lookups` (purchased) and `accounts.bonus_lookups_used` (consumed). Monthly reset clears `ai_lookups_this_month` only; bonus lookups persist until used.
 - **Settings billing UI**: Solo tier shows usage meter (X of 200); Starter/Standard/Pro show "Unlimited" badge. Pricing cards for upgrade, "Manage Billing" button for paid tiers via Stripe Portal
 - **Billing lifecycle emails** via Resend (sent from webhook): `buildUpgradeEmail()` on checkout.session.completed (plan name, price, features, dashboard CTA), `buildCancellationEmail()` on subscription.deleted (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` on invoice.payment_failed (update payment method CTA to Stripe portal). All non-critical — webhook returns 200 even if email fails.
@@ -454,6 +454,12 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 ### Billing Lifecycle & Lookup Limits Fix (Done)
 - **Lookup limits corrected**: Solo tier: 200/month. Starter/Standard/Pro: unlimited (`aiPricingLimit: null`). Settings billing UI shows "Unlimited" badge for non-solo tiers instead of a usage meter with hardcoded "50" limit.
 - **Billing lifecycle emails**: Three new email templates in `src/lib/email-templates.ts`: `buildUpgradeEmail()` (plan name, price, features list, dashboard CTA), `buildCancellationEmail()` (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` (update payment method CTA). Webhook at `/api/billing/webhook` sends these via Resend on `checkout.session.completed`, `customer.subscription.deleted`, and `invoice.payment_failed` events. All email sends are non-critical (caught, logged, webhook still returns 200).
+- Test suite: **260 Jest tests passing**
+
+### Starter Tier UX Fixes (Done)
+- **"Free plan" text removed**: Settings billing section no longer shows "Free plan — no credit card required" for any paid tier. Replaced with "Manage Subscription" button (Stripe portal) for all tiers.
+- **Sidebar role label shows tier name**: Owner users show their tier label (Solo Pricer, Starter, Standard, Pro) instead of "Owner". Staff users still show "Staff".
+- **Markdown schedule gate fixed**: `markdown_schedule`, `repeat_item_history`, and `email_notifications` moved from Standard-required to Starter-required in `FEATURE_REQUIRED_TIER`. Starter `features` array updated to include these three. Starter users no longer see "Upgrade to Standard" on markdown settings.
 - Test suite: **260 Jest tests passing**
 
 ### Deferred to Phase 7+

@@ -47,12 +47,12 @@ describe('canUseFeature', () => {
     expect(canUseFeature('starter', 'consignor_mgmt')).toBe(true)
   })
 
-  it('starter cannot use repeat_item_history', () => {
-    expect(canUseFeature('starter', 'repeat_item_history')).toBe(false)
+  it('starter can use repeat_item_history', () => {
+    expect(canUseFeature('starter', 'repeat_item_history')).toBe(true)
   })
 
-  it('starter cannot use markdown_schedule', () => {
-    expect(canUseFeature('starter', 'markdown_schedule')).toBe(false)
+  it('starter can use markdown_schedule', () => {
+    expect(canUseFeature('starter', 'markdown_schedule')).toBe(true)
   })
 
   it('starter cannot use cross_customer_pricing', () => {
@@ -84,8 +84,8 @@ describe('canUseFeature', () => {
 describe('getUpgradeMessage', () => {
   it('returns message with correct tier for repeat_item_history', () => {
     const msg = getUpgradeMessage('repeat_item_history')
-    expect(msg).toContain('Standard')
-    expect(msg).toContain('$79')
+    expect(msg).toContain('Starter')
+    expect(msg).toContain('$49')
   })
 
   it('returns message with correct tier for cross_customer_pricing', () => {
@@ -135,9 +135,9 @@ describe('FEATURE_REQUIRED_TIER', () => {
     expect(FEATURE_REQUIRED_TIER.consignor_mgmt).toBe('starter')
     expect(FEATURE_REQUIRED_TIER.lifecycle).toBe('starter')
     expect(FEATURE_REQUIRED_TIER.payouts).toBe('starter')
-    expect(FEATURE_REQUIRED_TIER.repeat_item_history).toBe('standard')
-    expect(FEATURE_REQUIRED_TIER.markdown_schedule).toBe('standard')
-    expect(FEATURE_REQUIRED_TIER.email_notifications).toBe('standard')
+    expect(FEATURE_REQUIRED_TIER.repeat_item_history).toBe('starter')
+    expect(FEATURE_REQUIRED_TIER.markdown_schedule).toBe('starter')
+    expect(FEATURE_REQUIRED_TIER.email_notifications).toBe('starter')
     expect(FEATURE_REQUIRED_TIER.cross_customer_pricing).toBe('pro')
     expect(FEATURE_REQUIRED_TIER.community_pricing_feed).toBe('pro')
     expect(FEATURE_REQUIRED_TIER.multi_location_all).toBe('pro')

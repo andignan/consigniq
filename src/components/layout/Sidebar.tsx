@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useLocation } from '@/contexts/LocationContext'
 import { useUser } from '@/contexts/UserContext'
 import type { User } from '@/types/database'
-import type { Tier } from '@/lib/tier-limits'
+import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 
 // Icons as inline SVGs (same as before)
 const DashboardIcon = () => (
@@ -336,7 +336,7 @@ export default function Sidebar({ user }: SidebarProps) {
           <p className="text-stone-300 text-sm font-medium truncate">
             {user?.full_name?.trim() || user?.email || 'Unknown'}
           </p>
-          <p className="text-stone-500 text-xs capitalize">{isSolo ? 'Solo Pricer' : user?.role}</p>
+          <p className="text-stone-500 text-xs">{user?.role === 'staff' ? 'Staff' : TIER_CONFIGS[accountTier]?.label ?? 'Owner'}</p>
         </div>
         <button
           onClick={handleSignOut}
