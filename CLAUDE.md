@@ -15,6 +15,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
+- `/consigniq [task description]` — Claude Code slash command. Reads CLAUDE.md, audits schema before DB changes, writes tests + manual test plan, runs full suite, updates CLAUDE.md, commits and pushes. File: `.claude/commands/consigniq.md`
 
 ## Tech Stack
 
