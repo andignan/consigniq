@@ -1,0 +1,74 @@
+# Inventory Management — PRD
+
+**Status:** Implemented
+
+## Item Status States
+
+| Status | Description | Transition from | Transition to |
+|---|---|---|---|
+| `pending` | Intake'd, not yet priced | (creation) | `priced` |
+| `priced` | Has a price assigned | `pending` | `sold`, `donated` |
+| `sold` | Sold to customer | `priced` | (terminal) |
+| `donated` | Donated after grace period | `priced` | (terminal) |
+| `archived` | Solo-only soft archive | `priced` | (terminal) |
+
+## Auto-Timestamps on PATCH
+
+- `status = 'sold'` → sets `sold_date` (date only, YYYY-MM-DD)
+- `status = 'donated'` → sets `donated_at` (ISO timestamp)
+- `price` provided → sets `priced_at` (ISO timestamp) + forces `status = 'priced'`
+
+## Price History on Sold
+
+When an item is marked sold, a `price_history` record is automatically inserted:
+- `sold_price`: prefers `updates.sold_price` → `item.sold_price` → `item.price`
+- `days_to_sell`: computed from `priced_at` to `sold_date`
+- `sold: true`
+- Wrapped in try/catch — failure is non-fatal
+
+## Solo vs Starter+ Inventory
+
+| Aspect | Solo | Starter+ |
+|---|---|---|
+| Page title | "My Inventory" | "Inventory" |
+| Status tabs | All / Priced / Sold / Archived | All / Pending / Priced / Sold / Donated |
+| Consignor filter | Hidden | Shown ("All Consignors" dropdown) |
+| `consignor_id` | null (no consignors) | Required (linked to consignor) |
+| Empty state | "No items yet" + "Price an Item" CTA | "No items found" |
+| Save from pricing | "Save to My Inventory" button | Not shown (items created via intake) |
+
+## Markdown Schedule
+
+If `markdown_enabled` on the location:
+- Day 31: `current_markdown_pct = 25` → `effective_price = price * 0.75`
+- Day 46: `current_markdown_pct = 50` → `effective_price = price * 0.50`
+- Labels show original price struck through + effective price
+
+## CSV Export
+
+Client-side export with columns: name, category, condition, status, price, sold_price, consignor name, intake_date, description.
+
+## Label Printing
+
+**Endpoint:** POST `/api/labels/generate` with `{ item_ids[], size: '2x1' | '4x2' }`
+
+**Sizes:** 2.25" x 1.25" (default) or 4" x 2"
+
+**Label content:** Item name (2-line max), category + condition, price (with strikethrough for markdowns), consignor (first name + last initial), location name, short item ID (last 6 chars), ConsignIQ branding.
+
+**Technology:** `pdf-lib` with Helvetica/HelveticaBold. One page per item. Returns PDF blob.
+
+## Bulk Actions
+
+- Checkbox selection on each item row
+- "Select All" checkbox in header
+- Bulk label printing: select items → choose size → print
+- Label size picker (2.25"x1.25" or 4"x2")
+
+## API
+
+**GET `/api/items`:** Params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search` (ilike on name). Joins `consignor:consignors(id, name)`.
+
+**POST `/api/items`:** Required: `account_id`, `location_id`, `consignor_id`, `name`, `category`, `condition`. Sets `status: 'pending'`, `intake_date: today`, `current_markdown_pct: 0`.
+
+**PATCH `/api/items`:** Takes `{ id, ...updates }`. Handles auto-timestamps and price_history write.

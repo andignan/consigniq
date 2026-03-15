@@ -115,15 +115,19 @@ Three client factories:
 - **Critical**: every Supabase Auth user MUST have a `users` table row. Auth alone is not enough.
 - All superadmin checks MUST use service role client (superadmin may not satisfy RLS)
 
-### Subscription Lifecycle
+### PRDs (Product Requirements Documents)
 
-**Spec: `/docs/prd/subscription-lifecycle.md`**
-**IMPORTANT: Read this file before modifying any subscription, cancellation, webhook, or account state code. It is the source of truth for all subscription behavior.**
-
-### Account Deletion & Suspension
-
-**Spec: `/docs/prd/account-deletion.md`**
-**Read before modifying deletion, suspension, or account closure code.**
+Read the relevant PRD before modifying any of these systems:
+- **AI Pricing:** `/docs/prd/ai-pricing-engine.md`
+- **60-Day Lifecycle:** `/docs/prd/60-day-lifecycle.md`
+- **Consignor Management:** `/docs/prd/consignor-management.md`
+- **Multi-tenancy:** `/docs/prd/multi-tenancy.md`
+- **Tier System:** `/docs/prd/tier-system.md`
+- **Inventory:** `/docs/prd/inventory-management.md`
+- **Admin Panel:** `/docs/prd/admin-panel.md`
+- **Email System:** `/docs/prd/email-system.md`
+- **Subscription Lifecycle:** `/docs/prd/subscription-lifecycle.md`
+- **Account Deletion:** `/docs/prd/account-deletion.md`
 
 ### Stripe Billing & Tier Enforcement
 
