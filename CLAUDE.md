@@ -214,10 +214,12 @@ Uses browser Supabase client with client-side date filtering. All data fetched o
 **AI Report Prompt Bar** — natural language query bar at top of Reports page. User types a question, Claude generates read-only SQL, validated for safety (SELECT-only, account_id scoping, no forbidden tables), executed via Supabase RPC, results displayed in data table with AI summary. 6 suggested prompt chips for common queries. Staff auto-scoped to their location. Requires `execute_readonly_query` RPC function in Supabase.
 
 ### Settings (`/dashboard/settings`)
-Three-tab settings page with role-based access:
-- **Location Settings** (visible to owner + staff, only owner can edit): location name/address/city/state/phone, default split % (store + consignor, must add to 100 with live validation), agreement_days, grace_days, markdown_enabled toggle with hardcoded schedule display (Day 31 → 25% off, Day 46 → 50% off). Shows settings for the currently active location from LocationContext.
-- **Locations** (owner only): list all locations on account with active badge, "Add Location" form with full settings (name, address, splits, agreement/grace days, markdown toggle). Click "Edit" to switch to that location's settings.
-- **Account Settings** (owner only): account name (editable), tier badge (read-only), Manage Billing link (placeholder `/api/billing/portal`), team member list, invite user modal (email + role → writes to invitations table)
+Tier-aware settings page:
+- **Solo tier** sees 2 tabs: Billing (plan badge, usage meter, buy top-up, manage billing, upgrade to Starter CTA) and Profile (name, email, change password). No location/team/consignment settings shown.
+- **Starter+ tiers** see 3 tabs with role-based access:
+  - **Location Settings** (visible to owner + staff, only owner can edit): location name/address/city/state/phone, default split % (store + consignor, must add to 100 with live validation), agreement_days, grace_days, markdown_enabled toggle with hardcoded schedule display (Day 31 → 25% off, Day 46 → 50% off). Shows settings for the currently active location from LocationContext.
+  - **Locations** (owner only): list all locations on account with active badge, "Add Location" form with full settings (name, address, splits, agreement/grace days, markdown toggle). Click "Edit" to switch to that location's settings.
+  - **Account Settings** (owner only): account name (editable), tier badge (read-only), Manage Billing link (placeholder `/api/billing/portal`), team member list, invite user modal (email + role → writes to invitations table)
 
 API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET + PATCH), `/api/settings/invite` (POST), `/api/locations` (GET + POST). All enforce role checks — owner for edits, staff gets read-only location settings.
 
@@ -439,6 +441,13 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Password show/hide toggle**: Eye/eye-off icon toggle on all password fields — `/auth/setup-password` (both fields) and `/auth/login` (password field). Toggles between `type="password"` and `type="text"`.
 - **Dashboard quick actions for solo**: Server component (`/dashboard/page.tsx`) now fetches account tier via `accounts(tier)` join. Solo users see "Price an Item" + "My Inventory" quick actions; consignor-related actions ("Add New Consignor", "View All Consignors") and lifecycle alerts are hidden. Header button changes from "New Consignor" to "Price an Item".
 - **Sidebar role label**: Solo tier users show "Solo Pricer" instead of "Owner" in the sidebar user section.
+
+### Solo Pricer Full Audit (Done)
+- **Dashboard renders SoloDashboard**: Solo users now get the `SoloDashboard` client component (usage meter, quick actions, upgrade CTA) via dynamic import — completely bypasses the consignor/location server component logic. No consignor stats, lifecycle alerts, location cards, or "New Consignor" button shown.
+- **Settings page solo-specific tabs**: Solo users see only Billing and Profile tabs (not Location Settings, Locations, or Account Settings). Billing tab shows: current plan badge ("Solo Pricer $9/mo"), usage meter with remaining/reset date, "Buy 50 more lookups — $5" button (direct Stripe checkout), "Manage Billing" portal link, and upgrade CTA for Starter only ($49/mo, no Standard/Pro cards). Profile tab shows: name, email (read-only), and "Change Password" link (sends reset via `/api/auth/forgot-password`).
+- **Settings subtitle**: Changes from "Manage your location and account settings" to "Manage your account and billing" for solo users.
+- **Sidebar upgrade CTA**: Changed from link to `/dashboard/settings?tab=account` to direct Stripe checkout for Starter tier via `/api/billing/checkout`. Falls back to settings on error.
+- **No shop owner content**: Solo users cannot see: Location Settings, Locations, Consignment Terms, split percentages, Agreement Duration, Grace Period, Markdown Schedule, Team Members, Invite User, or any Standard/Pro upgrade CTAs.
 - Test suite: **260 Jest tests passing**
 
 ### Deferred to Phase 7+

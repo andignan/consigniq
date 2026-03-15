@@ -56,6 +56,7 @@ interface Invitation {
 }
 
 const TIER_COLORS: Record<string, string> = {
+  solo: 'bg-slate-100 text-slate-600',
   starter: 'bg-gray-100 text-gray-600',
   standard: 'bg-indigo-50 text-indigo-600',
   pro: 'bg-amber-50 text-amber-600',
@@ -67,9 +68,10 @@ export default function SettingsPage() {
   const { activeLocationId, locations: allLocations, setActiveLocation } = useLocation()
   const isOwner = user?.role === 'owner'
   const accountTier = (user?.accounts?.tier ?? 'starter') as Tier
+  const isSolo = accountTier === 'solo'
 
-  // Tab state (owner sees 3 tabs, staff sees 1)
-  const [activeTab, setActiveTab] = useState<'location' | 'account' | 'locations'>('location')
+  // Tab state — solo sees billing+profile, owner sees location+locations+account, staff sees location
+  const [activeTab, setActiveTab] = useState<'location' | 'account' | 'locations' | 'billing' | 'profile'>(isSolo ? 'billing' : 'location')
 
   // Location settings
   const [location, setLocation] = useState<LocationSettings | null>(null)
@@ -288,53 +290,86 @@ export default function SettingsPage() {
     <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-400">Manage your location and account settings</p>
+        <p className="text-sm text-gray-400">{isSolo ? 'Manage your account and billing' : 'Manage your location and account settings'}</p>
       </div>
 
-      {/* Tabs (owner sees both, staff sees only Location) */}
+      {/* Tabs */}
       <div className="flex gap-1.5 mb-6 border-b border-gray-200 pb-px">
-        <button
-          onClick={() => setActiveTab('location')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'location'
-              ? 'border-indigo-500 text-indigo-600'
-              : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <span className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4" />
-            Location Settings
-          </span>
-        </button>
-        {isOwner && (
-          <button
-            onClick={() => setActiveTab('locations')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'locations'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              Locations
-            </span>
-          </button>
-        )}
-        {isOwner && (
-          <button
-            onClick={() => setActiveTab('account')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'account'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <Building2 className="w-4 h-4" />
-              Account Settings
-            </span>
-          </button>
+        {isSolo ? (
+          <>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'billing'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Zap className="w-4 h-4" />
+                Billing
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'profile'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Shield className="w-4 h-4" />
+                Profile
+              </span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setActiveTab('location')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'location'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-4 h-4" />
+                Location Settings
+              </span>
+            </button>
+            {isOwner && (
+              <button
+                onClick={() => setActiveTab('locations')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'locations'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" />
+                  Locations
+                </span>
+              </button>
+            )}
+            {isOwner && (
+              <button
+                onClick={() => setActiveTab('account')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'account'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4" />
+                  Account Settings
+                </span>
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -798,6 +833,149 @@ export default function SettingsPage() {
             </div>
           </div>
         )
+      )}
+
+      {/* ═══ Solo Billing Tab ═══ */}
+      {activeTab === 'billing' && isSolo && (
+        <div className="space-y-6">
+          {/* Current Plan */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Current Plan</h2>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Solo Pricer</span>
+              <span className="text-sm text-gray-500">$9/month</span>
+            </div>
+
+            {/* Usage meter */}
+            <div className="p-4 bg-gray-50 rounded-lg mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-700 font-medium">AI Pricing Lookups</span>
+                <span className="text-xs text-gray-500">
+                  {(user?.accounts?.ai_lookups_this_month ?? 0) + (user?.accounts?.bonus_lookups_used ?? 0)} of {200 + (user?.accounts?.bonus_lookups ?? 0)} used
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                {(() => {
+                  const used = (user?.accounts?.ai_lookups_this_month ?? 0) + (user?.accounts?.bonus_lookups_used ?? 0)
+                  const total = 200 + (user?.accounts?.bonus_lookups ?? 0)
+                  const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
+                  return (
+                    <div
+                      className={`h-2 rounded-full transition-all ${pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-indigo-500'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  )
+                })()}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                {200 + (user?.accounts?.bonus_lookups ?? 0) - (user?.accounts?.ai_lookups_this_month ?? 0) - (user?.accounts?.bonus_lookups_used ?? 0)} lookups remaining
+                {user?.accounts?.ai_lookups_reset_at && (
+                  <> &middot; Resets {new Date(new Date(user.accounts.ai_lookups_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                )}
+              </p>
+            </div>
+
+            {/* Buy more lookups */}
+            <button
+              onClick={async () => {
+                setBillingLoading(true)
+                try {
+                  const res = await fetch('/api/billing/checkout', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product: 'topup_50' }),
+                  })
+                  const body = await res.json()
+                  if (body.url) window.location.href = body.url
+                  else alert(body.error || 'Failed to create checkout session')
+                } catch { alert('Failed to connect to billing') }
+                finally { setBillingLoading(false) }
+              }}
+              disabled={billingLoading}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors mb-4"
+            >
+              Buy 50 more lookups — $5
+            </button>
+
+            {/* Manage Billing */}
+            <div className="pt-4 border-t border-gray-100">
+              <button
+                onClick={handlePortal}
+                disabled={billingLoading}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                Manage Billing
+              </button>
+            </div>
+          </div>
+
+          {/* Upgrade CTA — only Starter */}
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-bold text-gray-900">Upgrade to Starter</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 mb-2">$49<span className="text-sm font-normal text-gray-500">/mo</span></p>
+            <ul className="text-xs text-gray-600 space-y-1 mb-3">
+              <li>Unlimited AI pricing lookups</li>
+              <li>Consignor management & lifecycle</li>
+              <li>Payouts, agreements, reports</li>
+              <li>Staff management & multi-location</li>
+            </ul>
+            <button
+              onClick={() => handleCheckout('starter')}
+              disabled={billingLoading}
+              className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Starter'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Solo Profile Tab ═══ */}
+      {activeTab === 'profile' && isSolo && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Your Profile</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
+                <p className="px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+                  {user?.full_name || '—'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                <p className="px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+                  {user?.email || '—'}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch('/api/auth/forgot-password', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: user?.email }),
+                    })
+                    alert('Check your email for a password reset link.')
+                  } catch {
+                    alert('Failed to send reset link.')
+                  }
+                }}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                Change Password
+              </button>
+              <p className="text-xs text-gray-400 mt-1">We&apos;ll send a password reset link to your email.</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ═══ Locations Tab (Owner only) ═══ */}

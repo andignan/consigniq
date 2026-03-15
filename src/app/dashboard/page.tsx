@@ -122,6 +122,12 @@ export default async function DashboardPage({
 
   const isSolo = accountTier === 'solo'
 
+  // Solo users get the SoloDashboard (client component with usage meter)
+  if (isSolo) {
+    const SoloDashboard = (await import('@/components/SoloDashboard')).default
+    return <SoloDashboard />
+  }
+
   const locationId = searchParams.location_id ?? process.env.DEFAULT_LOCATION_ID ?? ''
   const isAllLocations = !searchParams.location_id && userRole === 'owner'
 
