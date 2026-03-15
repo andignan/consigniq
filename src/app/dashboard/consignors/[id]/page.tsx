@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { getLifecycleStatus, COLOR_CLASSES, CONDITION_LABELS, type Item } from '@/types'
 import AgreementButton from '@/components/AgreementButton'
+import ConsignorActions from '@/components/ConsignorActions'
 import IntakeAgreementPrompt from '@/components/IntakeAgreementPrompt'
 
 // ============================================================
@@ -147,7 +148,7 @@ export default async function ConsignorDetailPage({
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${colors.bar}`}
-              style={{ width: `${lifecycle.progressPct}%` }}
+              style={{ width: `max(8px, ${lifecycle.progressPct}%)` }}
             />
           </div>
           <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -193,7 +194,8 @@ export default async function ConsignorDetailPage({
           lastSentAt={lastAgreementSentAt}
         />
         <div className="flex-1" />
-        <div className="text-xs text-gray-400 flex items-center">
+        <ConsignorActions consignor={{ id: consignor.id, name: consignor.name, phone: consignor.phone, email: consignor.email, notes: consignor.notes }} />
+        <div className="text-xs text-gray-400 flex items-center ml-2">
           {consignor.split_store}/{consignor.split_consignor} split
         </div>
       </div>

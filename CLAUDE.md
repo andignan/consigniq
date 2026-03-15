@@ -79,6 +79,8 @@ Three client factories:
 - `/api/labels/generate` — POST, takes `{ item_ids[], size: '2x1'|'4x2' }`. Returns PDF blob
 - `/api/trial/check-expiry` — POST cron. Auth via `Authorization: Bearer CRON_SECRET`. Excluded from middleware
 - `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST), `/api/settings/profile` (PATCH — update full_name)
+- `/api/settings/team/[userId]` — PATCH (change role), DELETE (remove member). Owner only. Cannot remove last owner or self
+- `/api/consignors/[id]` — GET, PATCH (edit name/phone/email/notes with field allowlisting), DELETE (blocks if consignor has sold items)
 
 ### Contexts
 

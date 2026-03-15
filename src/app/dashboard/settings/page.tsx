@@ -174,7 +174,7 @@ export default function SettingsPage() {
   }, [effectiveLocationId])
 
   // ─── Fetch account settings (owner only) ──────────────────
-  useEffect(() => {
+  function loadAccountSettings() {
     if (!isOwner) return
     setAccountLoading(true)
     fetch('/api/settings/account', { credentials: 'include' })
@@ -187,7 +187,9 @@ export default function SettingsPage() {
       })
       .catch(() => setAccountError('Failed to load account settings'))
       .finally(() => setAccountLoading(false))
-  }, [isOwner])
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadAccountSettings() }, [isOwner])
 
   // ─── Save location settings ───────────────────────────────
   async function saveLocation() {
@@ -707,7 +709,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleCheckout('pro')}
                       disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
                     </button>
@@ -732,7 +734,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleCheckout('pro')}
                       disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                     >
                       {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
                     </button>
@@ -771,6 +773,7 @@ export default function SettingsPage() {
                       <th className="text-left px-4 py-2">Name</th>
                       <th className="text-left px-4 py-2">Email</th>
                       <th className="text-left px-4 py-2">Role</th>
+                      <th className="text-right px-4 py-2"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -779,11 +782,46 @@ export default function SettingsPage() {
                         <td className="px-4 py-2.5 font-medium text-gray-900">{u.full_name || '—'}</td>
                         <td className="px-4 py-2.5 text-gray-500">{u.email}</td>
                         <td className="px-4 py-2.5">
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${
-                            u.role === 'owner' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
-                          }`}>
-                            {u.role}
-                          </span>
+                          <select
+                            value={u.role}
+                            onChange={async (e) => {
+                              const newRole = e.target.value
+                              try {
+                                const res = await fetch(`/api/settings/team/${u.id}`, {
+                                  method: 'PATCH', credentials: 'include',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ role: newRole }),
+                                })
+                                if (res.ok) { setAccountError('Role updated'); loadAccountSettings() }
+                                else { const d = await res.json(); setAccountError(d.error || 'Failed') }
+                              } catch { setAccountError('Failed to update role') }
+                              setTimeout(() => setAccountError(''), 3000)
+                            }}
+                            className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="owner">Owner</option>
+                            <option value="staff">Staff</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {u.id !== user?.id && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Remove ${u.full_name || u.email} from your team?`)) return
+                                try {
+                                  const res = await fetch(`/api/settings/team/${u.id}`, {
+                                    method: 'DELETE', credentials: 'include',
+                                  })
+                                  if (res.ok) { setAccountError('Member removed'); loadAccountSettings() }
+                                  else { const d = await res.json(); setAccountError(d.error || 'Failed') }
+                                } catch { setAccountError('Failed to remove') }
+                                setTimeout(() => setAccountError(''), 3000)
+                              }}
+                              className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              Remove
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -1016,7 +1054,7 @@ function LocationsTab({
   activeLocationId,
   onLocationSelect,
 }: {
-  locations: { id: string; name: string }[]
+  locations: { id: string; name: string; address?: string; phone?: string }[]
   activeLocationId: string | null
   onLocationSelect: (id: string) => void
 }) {
@@ -1033,7 +1071,21 @@ function LocationsTab({
   const [newMarkdownEnabled, setNewMarkdownEnabled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [allLocations, setAllLocations] = useState(locations)
+  const [allLocations, setAllLocations] = useState<{ id: string; name: string; address?: string; phone?: string }[]>(locations)
+
+  // Fetch full location details (address, phone)
+  useEffect(() => {
+    fetch('/api/locations', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : { locations: [] })
+      .then(d => {
+        if (d.locations?.length) {
+          setAllLocations(d.locations.map((l: { id: string; name: string; address?: string; phone?: string }) => ({
+            id: l.id, name: l.name, address: l.address, phone: l.phone,
+          })))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const newSplitValid = newSplitStore + newSplitConsignor === 100
 
@@ -1116,10 +1168,15 @@ function LocationsTab({
             >
               <div className="flex items-center gap-3">
                 <MapPin className={`w-4 h-4 ${loc.id === activeLocationId ? 'text-indigo-500' : 'text-gray-400'}`} />
-                <span className="text-sm font-medium text-gray-900">{loc.name}</span>
-                {loc.id === activeLocationId && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">Active</span>
-                )}
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{loc.name}</span>
+                  {loc.id === activeLocationId && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600 ml-2">Active</span>
+                  )}
+                  {(loc.address || loc.phone) && (
+                    <p className="text-xs text-gray-400">{[loc.address, loc.phone].filter(Boolean).join(' · ')}</p>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => onLocationSelect(loc.id)}

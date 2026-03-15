@@ -1138,7 +1138,7 @@ export default function ReportsPage() {
               </button>
               <button
                 onClick={exportItemDetail}
-                disabled={soldInPeriod.length === 0}
+                disabled={items.length === 0}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -1357,15 +1357,15 @@ export default function ReportsPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                       <div>
                         <p className="text-xs text-gray-400">Intake Date</p>
-                        <p className="font-medium text-gray-900">{selectedConsignor.intake_date}</p>
+                        <p className="font-medium text-gray-900">{new Date(selectedConsignor.intake_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Expiry Date</p>
-                        <p className="font-medium text-gray-900">{selectedConsignor.expiry_date}</p>
+                        <p className="font-medium text-gray-900">{new Date(selectedConsignor.expiry_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Grace End</p>
-                        <p className="font-medium text-gray-900">{selectedConsignor.grace_end_date}</p>
+                        <p className="font-medium text-gray-900">{new Date(selectedConsignor.grace_end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Split</p>

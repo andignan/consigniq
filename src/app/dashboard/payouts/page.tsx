@@ -167,11 +167,11 @@ export default function PayoutsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-500">Total Owed (Unpaid)</p>
-          <p className="text-2xl font-bold text-red-600">${totalUnpaid.toFixed(2)}</p>
+          <p className={`text-2xl font-bold ${totalUnpaid > 0 ? 'text-red-600' : 'text-gray-400'}`}>${totalUnpaid.toFixed(2)}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-500">Total Paid Out</p>
-          <p className="text-2xl font-bold text-emerald-600">${totalPaidOut.toFixed(2)}</p>
+          <p className={`text-2xl font-bold ${totalPaidOut > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>${totalPaidOut.toFixed(2)}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-500">Consignors with Balance</p>
@@ -225,8 +225,9 @@ export default function PayoutsPage() {
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading payouts...</div>
       ) : payouts.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No {filter !== 'all' ? filter : ''} payouts found
+        <div className="text-center py-12">
+          <p className="text-sm text-gray-500">No payouts due yet.</p>
+          <p className="text-xs text-gray-400 mt-1">Mark items as sold to track what you owe each consignor.</p>
         </div>
       ) : (
         <div className="space-y-3">
