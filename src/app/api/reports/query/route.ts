@@ -77,6 +77,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'question is required' }, { status: 400 })
   }
 
+  // Validate location_id is a UUID if provided (prevent SQL injection)
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (location_id && location_id !== 'all' && !UUID_RE.test(location_id)) {
+    return NextResponse.json({ error: 'Invalid location_id' }, { status: 400 })
+  }
+
+  // Validate profile IDs are UUIDs (defense-in-depth)
+  if (!UUID_RE.test(profile.account_id)) {
+    return NextResponse.json({ error: 'Invalid account' }, { status: 400 })
+  }
+  if (profile.location_id && !UUID_RE.test(profile.location_id)) {
+    return NextResponse.json({ error: 'Invalid location' }, { status: 400 })
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY is not set' }, { status: 500 })
   }

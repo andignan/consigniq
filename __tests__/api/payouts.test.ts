@@ -58,9 +58,9 @@ beforeEach(() => {
   mockNot.mockReturnValue(defaultChain)
   mockOrder.mockReturnValue(defaultChain)
 
-  // Profile lookup
+  // Profile lookup (includes tier for tier gate checks)
   mockSingle.mockResolvedValue({
-    data: { account_id: 'acc-1', role: 'owner' },
+    data: { account_id: 'acc-1', role: 'owner', accounts: { tier: 'starter' } },
     error: null,
   })
 

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
 import { buildAgreementEmail } from '@/lib/email-templates'
 import { CONDITION_LABELS } from '@/types'
+import { canUseFeature } from '@/lib/feature-gates'
+import type { Tier } from '@/lib/tier-limits'
 
 export async function POST(request: NextRequest) {
   const supabase = createServerClient()
@@ -15,12 +17,18 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('account_id')
+    .select('account_id, accounts(tier)')
     .eq('id', user.id)
     .single()
 
   if (!profile) {
     return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+  }
+
+  // Tier check: agreements required
+  const tier = ((profile.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  if (!canUseFeature(tier, 'agreements')) {
+    return NextResponse.json({ error: 'Upgrade required — agreements are not available on your plan' }, { status: 403 })
   }
 
   const body = await request.json()

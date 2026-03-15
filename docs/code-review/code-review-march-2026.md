@@ -7,39 +7,35 @@
 
 ---
 
-## CRITICAL ISSUES (Must fix before real customers)
+## CRITICAL ISSUES (Must fix before real customers) — ALL RESOLVED
 
-### C1. SQL Injection in Reports Query Route
-- **File:** `src/app/api/reports/query/route.ts`, lines 90, 93, 118-119
-- **Issue:** `location_id` and `account_id` are directly interpolated into SQL strings without UUID validation:
-  ```typescript
-  locationFilter = ` AND location_id = '${profile.location_id}'`
-  sql = sql.replace(/'\[ACCOUNT_ID_PLACEHOLDER\]'/g, `'${profile.account_id}'`)
-  ```
-- **Attack:** `POST /api/reports/query { "question": "...", "location_id": "' OR '1'='1" }` bypasses location scoping
-- **Fix:** Validate that `location_id` and `account_id` are valid UUIDs before interpolation
+### C1. SQL Injection in Reports Query Route — RESOLVED
+- **File:** `src/app/api/reports/query/route.ts`
+- **Fix applied:** UUID regex validation (`/^[0-9a-f]{8}-...$/i`) on `location_id` and `account_id` before any SQL interpolation. Rejects requests with invalid UUIDs with 400 status.
+- **Regression test:** `critical-security.test.ts` — SQL injection payload, non-UUID string, empty string all rejected; valid UUIDs and "all" accepted.
 
-### C2. Missing Authentication on `/api/pricing/comps`
+### C2. Missing Authentication on `/api/pricing/comps` — RESOLVED
 - **File:** `src/app/api/pricing/comps/route.ts`
-- **Issue:** No `supabase.auth.getUser()` check. Middleware protects `/api/*` routes, but this route has no explicit auth verification after middleware passes the request.
-- **Risk:** If middleware is bypassed or misconfigured, unauthenticated users can make unlimited SerpApi requests
-- **Fix:** Add auth check at top of handler
+- **Fix applied:** Added explicit `supabase.auth.getUser()` check at top of handler, returns 401 if no valid session.
 
-### C3. Missing Authentication on `/api/pricing/identify`
+### C3. Missing Authentication on `/api/pricing/identify` — RESOLVED
 - **File:** `src/app/api/pricing/identify/route.ts`
-- **Issue:** Same as C2 — no auth check. Unauthenticated photo identification via Anthropic API.
-- **Fix:** Add auth check at top of handler
+- **Fix applied:** Added explicit `supabase.auth.getUser()` check at top of handler, returns 401 if no valid session.
 
-### C4. No Server-Side Route Guards for Solo Tier
-- **Files:** `src/app/dashboard/consignors/page.tsx`, `src/app/dashboard/reports/page.tsx`, `src/app/dashboard/payouts/page.tsx`
-- **Issue:** Solo users can navigate directly to `/dashboard/consignors`, `/dashboard/reports`, `/dashboard/payouts` via URL. Sidebar hides these links (client-side only), but there's no server-side check.
-- **Risk:** Solo users can access Starter+ features by knowing the URL
-- **Fix:** Add tier check in each page's server component — redirect to `/dashboard` if solo
+### C4. No Server-Side Route Guards for Solo Tier — RESOLVED
+- **Fix applied:** Created `src/lib/tier-guard.ts` with `requireFeature()` utility. Added guards:
+  - `src/app/dashboard/consignors/page.tsx` — `requireFeature('consignor_mgmt')` at top of page
+  - `src/app/dashboard/reports/layout.tsx` — `requireFeature('reports')` in route layout
+  - `src/app/dashboard/payouts/layout.tsx` — `requireFeature('payouts')` in route layout
+- Solo users navigating to these URLs are redirected to `/dashboard`.
 
-### C5. No Tier Enforcement on API Routes
-- **Files:** `/api/consignors`, `/api/agreements/send`, `/api/payouts`, `/api/locations` (POST)
-- **Issue:** These API routes check role (owner/staff) but NOT tier. A solo user who crafts API requests can create consignors, send agreements, process payouts.
-- **Fix:** Add `canUseFeature(tier, 'consignor_mgmt')` checks to these routes
+### C5. No Tier Enforcement on API Routes — RESOLVED
+- **Fix applied:** Added `canUseFeature(tier, feature)` checks to:
+  - `/api/consignors` GET + POST — checks `consignor_mgmt`
+  - `/api/agreements/send` POST — checks `agreements`
+  - `/api/payouts` GET + PATCH — checks `payouts`
+- Solo tier returns 403 with "Upgrade required" message.
+- **Regression test:** `critical-security.test.ts` — solo blocked from consignor_mgmt, payouts, agreements, reports, lifecycle, staff_management; starter allowed.
 
 ---
 

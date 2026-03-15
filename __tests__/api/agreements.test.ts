@@ -113,9 +113,9 @@ beforeEach(() => {
 
   mockSendEmail.mockResolvedValue({ id: 'email-1' })
 
-  // Default: authenticated user with profile
+  // Default: authenticated user with profile (includes tier for tier gate checks)
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
-  mockSingle.mockResolvedValue({ data: { account_id: 'acc-1' }, error: null })
+  mockSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'starter' } }, error: null })
 })
 
 // ==================== /api/agreements/send ====================

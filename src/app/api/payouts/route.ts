@@ -1,6 +1,8 @@
 // app/api/payouts/route.ts
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { canUseFeature } from '@/lib/feature-gates'
+import type { Tier } from '@/lib/tier-limits'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
@@ -10,15 +12,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get user profile for account_id
+  // Get user profile for account_id + tier
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('account_id, role')
+    .select('account_id, role, accounts(tier)')
     .eq('id', user.id)
     .single()
 
   if (profileError || !profile) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  }
+
+  // Tier check: payouts required
+  const tier = ((profile.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  if (!canUseFeature(tier, 'payouts')) {
+    return NextResponse.json({ error: 'Upgrade required — payouts are not available on your plan' }, { status: 403 })
   }
 
   const { searchParams } = new URL(request.url)
@@ -111,6 +119,17 @@ export async function PATCH(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Tier check: payouts required
+  const { data: patchProfile } = await supabase
+    .from('users')
+    .select('accounts(tier)')
+    .eq('id', user.id)
+    .single()
+  const patchTier = ((patchProfile?.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  if (!canUseFeature(patchTier, 'payouts')) {
+    return NextResponse.json({ error: 'Upgrade required — payouts are not available on your plan' }, { status: 403 })
   }
 
   const body = await request.json()

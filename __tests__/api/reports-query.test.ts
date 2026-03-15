@@ -50,7 +50,7 @@ beforeEach(() => {
   mockSelect.mockReturnValue({ eq: mockEq })
   mockEq.mockReturnValue({ single: mockSingle })
   mockSingle.mockResolvedValue({
-    data: { account_id: 'acct-1', role: 'owner', location_id: 'loc-1' },
+    data: { account_id: '00000000-0000-0000-0000-000000000001', role: 'owner', location_id: '00000000-0000-0000-0000-000000000002' },
     error: null,
   })
 
@@ -167,7 +167,7 @@ describe('POST /api/reports/query', () => {
 
   it('adds location_id filter for staff users', async () => {
     mockSingle.mockResolvedValue({
-      data: { account_id: 'acct-1', role: 'staff', location_id: 'loc-42' },
+      data: { account_id: '00000000-0000-0000-0000-000000000001', role: 'staff', location_id: '00000000-0000-0000-0000-000000000042' },
       error: null,
     })
     const req = makeRequest({ question: 'Top items' })
@@ -175,7 +175,7 @@ describe('POST /api/reports/query', () => {
     // Check that the SQL passed to RPC includes the location filter
     if (res.status === 200) {
       const rpcCall = mockRpc.mock.calls[0]
-      expect(rpcCall[1].query_text).toContain("location_id = 'loc-42'")
+      expect(rpcCall[1].query_text).toContain("location_id = '00000000-0000-0000-0000-000000000042'")
     }
   })
 
@@ -193,7 +193,7 @@ describe('POST /api/reports/query', () => {
     const res = await POST(req)
     if (res.status === 200) {
       const rpcCall = mockRpc.mock.calls[0]
-      expect(rpcCall[1].query_text).toContain("'acct-1'")
+      expect(rpcCall[1].query_text).toContain("'00000000-0000-0000-0000-000000000001'")
       expect(rpcCall[1].query_text).not.toContain('ACCOUNT_ID_PLACEHOLDER')
     }
   })

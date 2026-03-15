@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { ConsignorCard, ConsignorCardSkeleton } from '@/components/ConsignorCard'
 import { getLifecycleStatus } from '@/types'
 import { Suspense } from 'react'
+import { requireFeature } from '@/lib/tier-guard'
 
 // Alerts banner shown at top of consignors page
 async function LifecycleAlerts({ locationId, accountId }: { locationId: string; accountId?: string }) {
@@ -135,6 +136,7 @@ export default async function ConsignorsPage({
 }: {
   searchParams: { location_id?: string }
 }) {
+  await requireFeature('consignor_mgmt')
   const supabase = createServerClient()
   const locationId = searchParams.location_id ?? process.env.DEFAULT_LOCATION_ID ?? ''
 

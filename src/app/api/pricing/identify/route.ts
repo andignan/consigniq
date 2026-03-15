@@ -2,6 +2,7 @@
 // Photo-based item identification using Claude vision
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createServerClient } from '@/lib/supabase/server'
 
 export interface IdentifyResult {
   name: string
@@ -11,6 +12,13 @@ export interface IdentifyResult {
 }
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const supabase = createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: 'ANTHROPIC_API_KEY is not set' },

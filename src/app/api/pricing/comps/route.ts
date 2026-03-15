@@ -2,6 +2,7 @@
 // SerpApi eBay sold comp lookup
 import { NextRequest, NextResponse } from 'next/server'
 import { getCategoryConfig } from '@/lib/pricing/categories'
+import { createServerClient } from '@/lib/supabase/server'
 
 export interface CompResult {
   title: string
@@ -12,6 +13,13 @@ export interface CompResult {
 }
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const supabase = createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { name, category, description } = await request.json()
 
   if (!name) {

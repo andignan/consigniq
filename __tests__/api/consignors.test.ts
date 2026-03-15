@@ -11,10 +11,15 @@ const mockOrder = jest.fn()
 const mockSingle = jest.fn()
 const mockGetUser = jest.fn()
 
-const mockFrom = jest.fn(() => ({
-  select: mockSelect,
-  insert: mockInsert,
-}))
+// Users table mock for tier check
+const mockUsersSingle = jest.fn()
+const mockUsersEq = jest.fn(() => ({ single: mockUsersSingle }))
+const mockUsersSelect = jest.fn(() => ({ eq: mockUsersEq }))
+
+const mockFrom = jest.fn((table: string) => {
+  if (table === 'users') return { select: mockUsersSelect }
+  return { select: mockSelect, insert: mockInsert }
+})
 
 jest.mock('@/lib/supabase/server', () => ({
   createServerClient: () => ({
@@ -40,6 +45,8 @@ beforeEach(() => {
   mockInsert.mockReturnValue({ select: jest.fn().mockReturnValue({ single: mockSingle }) })
   mockSingle.mockResolvedValue({ data: { id: 'new-id' }, error: null })
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+  // Default: starter tier (has consignor_mgmt access)
+  mockUsersSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'starter' } }, error: null })
 })
 
 describe('GET /api/consignors', () => {

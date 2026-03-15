@@ -11,7 +11,7 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (260 tests across unit + API)
+- `npm test` — Jest test suite (272 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -340,7 +340,8 @@ __tests__/
 │   ├── agreements.test.ts      — POST /api/agreements/send + notify-expiring, auth, validation, email templates
 │   ├── admin-users.test.ts     — GET/POST /api/admin/users, superadmin enforcement, search, create account/user/location, invite email via Resend, invite failure warning
 │   ├── trial-check-expiry.test.ts — POST /api/trial/check-expiry, auth, reminder emails, expired count
-│   └── password-flow.test.ts    — POST /api/admin/users/reset-password (auth, validation, send), POST /api/auth/forgot-password (valid email, unknown email no-enum)
+│   ├── password-flow.test.ts    — POST /api/admin/users/reset-password (auth, validation, send), POST /api/auth/forgot-password (valid email, unknown email no-enum)
+│   └── critical-security.test.ts — C1 UUID validation (5 tests), C5 tier enforcement solo blocked from starter+ features (8 tests)
 ```
 
 ### Playwright E2E Tests
@@ -433,7 +434,7 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Billing route updates**: `/api/billing/checkout` now supports 4 tiers + topup, `/api/billing/webhook` handles topup_50 and trial→paid conversion
 - **Usage enforcement update**: `/api/pricing/suggest` checks bonus lookups when monthly quota exhausted, increments `bonus_lookups_used` when monthly is spent
 - Migration: `20260314080000_solo_tier_and_account_types.sql` — adds account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used to accounts table
-- Test suite: **260 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
+- Test suite: **272 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
 - Stripe products created in **test mode** with the following price IDs (also set as Vercel env vars for all environments):
   - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` (Solo Pricer, $9/mo)
   - `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` (Starter, $49/mo)
@@ -459,7 +460,7 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Forgot password on login**: Login page has "Forgot your password?" link that reveals inline email form. Submits to `/api/auth/forgot-password` (public, no auth). Always shows "Check your email for a reset link" regardless of whether email exists (prevents user enumeration).
 - **Forgot password API** (`/api/auth/forgot-password`): POST public endpoint under `/api/auth/*` (excluded from middleware auth). Looks up user, generates recovery link, sends email via Resend. Returns 200 for all inputs to prevent enumeration.
 - **Password reset email template**: `buildPasswordResetEmail()` in `src/lib/email-templates.ts` — ConsignIQ-branded HTML with "Reset Password" CTA button, 24-hour expiry note.
-- Test suite: **260 Jest tests passing**, 26 manual test plans
+- Test suite: **272 Jest tests passing**, 26 manual test plans
 
 ### Solo Pricer UX Fixes (Done)
 - **Welcome message on setup-password**: Shows "Welcome, [first name]!" above the password form, pulled from `user_metadata.full_name` once session is established from hash token.
@@ -473,12 +474,12 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Settings subtitle**: Changes from "Manage your location and account settings" to "Manage your account and billing" for solo users.
 - **Sidebar upgrade CTA**: Changed from link to `/dashboard/settings?tab=account` to direct Stripe checkout for Starter tier via `/api/billing/checkout`. Falls back to settings on error.
 - **No shop owner content**: Solo users cannot see: Location Settings, Locations, Consignment Terms, split percentages, Agreement Duration, Grace Period, Markdown Schedule, Team Members, Invite User, or any Standard/Pro upgrade CTAs.
-- Test suite: **260 Jest tests passing**
+- Test suite: **272 Jest tests passing**
 
 ### Billing Lifecycle & Lookup Limits Fix (Done)
 - **Lookup limits corrected**: Solo tier: 200/month. Starter/Standard/Pro: unlimited (`aiPricingLimit: null`). Settings billing UI shows "Unlimited" badge for non-solo tiers instead of a usage meter with hardcoded "50" limit.
 - **Billing lifecycle emails**: Three new email templates in `src/lib/email-templates.ts`: `buildUpgradeEmail()` (plan name, price, features list, dashboard CTA), `buildCancellationEmail()` (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` (update payment method CTA). Webhook at `/api/billing/webhook` sends these via Resend on `checkout.session.completed`, `customer.subscription.deleted`, and `invoice.payment_failed` events. All email sends are non-critical (caught, logged, webhook still returns 200).
-- Test suite: **260 Jest tests passing**
+- Test suite: **272 Jest tests passing**
 
 ### Starter Tier UX Fixes (Done)
 - **"Free plan" text removed**: Settings billing section no longer shows "Free plan — no credit card required" for any paid tier. Replaced with "Manage Subscription" button (Stripe portal) for all tiers.
@@ -493,15 +494,22 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
   - `markdown_schedule`: Starter (correct, confirmed)
   - Starter `features` array: removed `repeat_item_history` and `email_notifications`
 - All test expectations updated to match authoritative matrix.
-- Test suite: **260 Jest tests passing**
+- Test suite: **272 Jest tests passing**
 
 ### Code Review — March 2026
 - **Full audit report at** `docs/code-review/code-review-march-2026.md`
-- **5 critical issues** (SQL injection in reports query, missing auth on comps/identify, no server-side solo route guards, no tier enforcement on API routes)
+- **5 critical issues — ALL RESOLVED:**
+  - C1: SQL injection in reports query → UUID validation on location_id and account_id before SQL interpolation
+  - C2: Missing auth on /api/pricing/comps → explicit `getUser()` auth check added
+  - C3: Missing auth on /api/pricing/identify → explicit `getUser()` auth check added
+  - C4: No server-side solo route guards → `requireFeature()` tier guard utility + layout/page guards on consignors, reports, payouts
+  - C5: No tier enforcement on API routes → `canUseFeature()` checks added to consignors (GET/POST), agreements/send, payouts (GET/PATCH)
 - **7 important issues** (N+1 sidebar fetch, reports page perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth)
 - **18 minor issues** (duplicate patterns, error message inconsistency, fire-and-forget ops, unused params)
 - **~30-40 component tests missing** (SoloDashboard, TrialBanner, SetupPasswordPage, Sidebar tier nav)
 - **3 spec features not yet implemented** (Community Pricing Feed, API Access, Advanced Markdown Schedules)
+- **12 regression tests added** in `critical-security.test.ts` (UUID validation, tier enforcement)
+- Test suite: **272 Jest tests passing**
 
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.
