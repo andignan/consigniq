@@ -76,7 +76,7 @@ export default function AdminUsersPage() {
   const [formAccountName, setFormAccountName] = useState('')
   const [formTier, setFormTier] = useState('starter')
   const [formAccountType, setFormAccountType] = useState('paid')
-  const [formComplimentaryTier, setFormComplimentaryTier] = useState('starter')
+  // formComplimentaryTier removed — Tier dropdown value is used for complimentary_tier
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -128,7 +128,7 @@ export default function AdminUsersPage() {
           account_name: formAccountName,
           tier: formTier,
           account_type: formAccountType,
-          complimentary_tier: formAccountType === 'complimentary' ? formComplimentaryTier : undefined,
+          complimentary_tier: formAccountType === 'complimentary' ? formTier : undefined,
         }),
       })
 
@@ -139,7 +139,6 @@ export default function AdminUsersPage() {
         setFormAccountName('')
         setFormTier('starter')
         setFormAccountType('paid')
-        setFormComplimentaryTier('starter')
         loadUsers()
         setTimeout(() => {
           setShowModal(false)
@@ -162,7 +161,6 @@ export default function AdminUsersPage() {
     setFormAccountName('')
     setFormTier('starter')
     setFormAccountType('paid')
-    setFormComplimentaryTier('starter')
     setFormError('')
     setFormSuccess('')
   }
@@ -334,22 +332,6 @@ export default function AdminUsersPage() {
                   </select>
                 </div>
               </div>
-
-              {formAccountType === 'complimentary' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Complimentary Tier</label>
-                  <select
-                    value={formComplimentaryTier}
-                    onChange={e => setFormComplimentaryTier(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="solo">Solo</option>
-                    <option value="starter">Starter</option>
-                    <option value="standard">Standard</option>
-                    <option value="pro">Pro</option>
-                  </select>
-                </div>
-              )}
 
               {formError && <p className="text-xs text-red-600">{formError}</p>}
               {formSuccess && <p className="text-xs text-emerald-600">{formSuccess}</p>}
