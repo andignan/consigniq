@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Loader2, Save, MapPin, Building2, Mail, Shield,
   ChevronDown, X, Plus, ExternalLink, AlertCircle, Pencil,
-  Zap, Crown,
+  Zap, Crown, Check,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
@@ -922,45 +922,7 @@ export default function SettingsPage() {
 
       {/* ═══ Solo Profile Tab ═══ */}
       {activeTab === 'profile' && isSolo && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Your Profile</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
-                <p className="px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
-                  {user?.full_name || '—'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
-                <p className="px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
-                  {user?.email || '—'}
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <button
-                onClick={async () => {
-                  try {
-                    await fetch('/api/auth/forgot-password', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email: user?.email }),
-                    })
-                    alert('Check your email for a password reset link.')
-                  } catch {
-                    alert('Failed to send reset link.')
-                  }
-                }}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-              >
-                Change Password
-              </button>
-              <p className="text-xs text-gray-400 mt-1">We&apos;ll send a password reset link to your email.</p>
-            </div>
-          </div>
-        </div>
+        <ProfileTab user={user} />
       )}
 
       {/* ═══ Locations Tab (Owner only) ═══ */}
@@ -1341,6 +1303,106 @@ function LocationsTab({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Profile Tab (Solo) ──────────────────────────────────
+function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
+  const [editName, setEditName] = useState(user?.full_name || '')
+  const [saving, setSaving] = useState(false)
+  const [profileMsg, setProfileMsg] = useState<string | null>(null)
+  const [passwordMsg, setPasswordMsg] = useState<string | null>(null)
+
+  async function handleSaveName() {
+    if (!editName.trim() || saving) return
+    setSaving(true)
+    setProfileMsg(null)
+    try {
+      const res = await fetch('/api/settings/profile', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: editName.trim() }),
+      })
+      if (res.ok) {
+        setProfileMsg('Profile updated')
+        setTimeout(() => setProfileMsg(null), 3000)
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleChangePassword() {
+    setPasswordMsg(null)
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user?.email }),
+      })
+      setPasswordMsg(`Password reset link sent to ${user?.email}`)
+      setTimeout(() => setPasswordMsg(null), 5000)
+    } catch {
+      setPasswordMsg('Failed to send reset link')
+      setTimeout(() => setPasswordMsg(null), 5000)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Your Profile</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <p className="px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-700">
+              {user?.email || '—'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            onClick={handleSaveName}
+            disabled={saving || editName.trim() === (user?.full_name || '')}
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save
+          </button>
+          {profileMsg && (
+            <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
+              <Check className="w-4 h-4" />
+              {profileMsg}
+            </span>
+          )}
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <button
+            onClick={handleChangePassword}
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            Change Password
+          </button>
+          {passwordMsg ? (
+            <p className="text-xs text-emerald-600 mt-1">{passwordMsg}</p>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">We&apos;ll send a password reset link to your email.</p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

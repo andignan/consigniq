@@ -62,7 +62,7 @@ export default function LoginPage() {
         {/* Logo / brand */}
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-stone-900">ConsignIQ</h1>
-          <p className="mt-1 text-sm text-stone-500">Consignment & Estate Sale Platform</p>
+          <p className="mt-1 text-sm text-stone-500">AI-Powered Pricing & Inventory</p>
         </div>
 
         {/* Form */}
@@ -170,7 +170,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-stone-400 mt-6">
-          ConsignIQ · Mokena, IL · v1.0
+          ConsignIQ · v1.0
         </p>
       </div>
     </div>

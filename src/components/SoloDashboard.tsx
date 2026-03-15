@@ -52,7 +52,9 @@ export default function SoloDashboard() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-xl font-bold text-gray-900">
+          Welcome back{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!
+        </h1>
         <p className="text-sm text-gray-400">
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
@@ -67,7 +69,7 @@ export default function SoloDashboard() {
           </span>
         </div>
         <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-2">
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.max(pct, 2)}%` }} />
         </div>
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">

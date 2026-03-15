@@ -288,32 +288,6 @@ export default function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      {/* Solo upgrade CTA */}
-      {isSolo && (
-        <div className="px-3 pb-2">
-          <button
-            onClick={async () => {
-              try {
-                const res = await fetch('/api/billing/checkout', {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ tier: 'starter' }),
-                })
-                const data = await res.json()
-                if (data.url) window.location.href = data.url
-              } catch {
-                // Fall back to settings page
-                router.push('/dashboard/settings?tab=billing')
-              }
-            }}
-            className="w-full block px-3 py-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-medium hover:bg-indigo-600/30 transition-colors text-center"
-          >
-            Upgrade to Starter — full shop management. $49/month
-          </button>
-        </div>
-      )}
-
       {/* User + sign out */}
       <div className="px-3 py-4 border-t border-stone-800">
         <div className="px-3 py-2 mb-1">

@@ -11,6 +11,8 @@ import { getDescriptionHint } from '@/lib/description-hints'
 import { compressImage } from '@/lib/compress-image'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
+import { useUser } from '@/contexts/UserContext'
+import { Check } from 'lucide-react'
 
 type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'error'
 
@@ -32,6 +34,11 @@ export default function PriceLookupPage() {
   const [suggestion, setSuggestion] = useState<PriceSuggestion | null>(null)
   const [stage, setStage] = useState<Stage>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const contextUser = useUser()
+  const isSolo = (contextUser?.accounts?.tier ?? 'starter') === 'solo'
 
   async function handlePhoto(file: File) {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -155,19 +162,53 @@ export default function PriceLookupPage() {
     setSuggestion(null)
     setStage('idle')
     setError(null)
+    setSaved(false)
+    setSaving(false)
     clearPhoto()
+  }
+
+  async function saveToInventory() {
+    if (!suggestion || !name.trim() || saving || saved) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_id: contextUser?.account_id,
+          location_id: contextUser?.location_id,
+          name: name.trim(),
+          category,
+          condition,
+          description: description || null,
+          consignor_id: null,
+          price: suggestion.price,
+          low_price: suggestion.low,
+          high_price: suggestion.high,
+          ai_reasoning: suggestion.reasoning,
+        }),
+      })
+      if (res.ok) {
+        setSaved(true)
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setSaving(false)
+    }
   }
 
   const isRunning = stage === 'identifying' || stage === 'fetching-comps' || stage === 'pricing'
   const hasResults = stage === 'comps-ready' || stage === 'ready'
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Price Lookup</h1>
         <p className="text-sm text-gray-400">
-          Quick pricing tool — nothing saved to the database
+          {isSolo ? 'Price items and save to your inventory' : 'Quick pricing tool — nothing saved to the database'}
         </p>
       </div>
 
@@ -304,6 +345,7 @@ export default function PriceLookupPage() {
           <button
             onClick={() => runFullPricing()}
             disabled={!name.trim() || isRunning}
+            title={!name.trim() ? 'Enter an item name to get AI pricing' : undefined}
             className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
             {isRunning && (stage === 'pricing' || (stage === 'fetching-comps' && !suggestion)) ? (
@@ -368,13 +410,31 @@ export default function PriceLookupPage() {
                 <p className="text-sm text-gray-700 leading-relaxed">{suggestion.reasoning}</p>
               </div>
 
-              <button
-                onClick={() => runFullPricing()}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Re-run
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => runFullPricing()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Re-run
+                </button>
+                {isSolo && !saved && (
+                  <button
+                    onClick={saveToInventory}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Save to My Inventory
+                  </button>
+                )}
+                {saved && (
+                  <span className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
+                    <Check className="w-4 h-4" />
+                    Saved to your inventory
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
@@ -435,6 +495,15 @@ export default function PriceLookupPage() {
               Get AI Suggestion
             </button>
           )}
+
+          {/* Price Another Item */}
+          <button
+            onClick={reset}
+            className="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-600 font-medium py-3 rounded-xl transition-colors text-sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Price Another Item
+          </button>
         </div>
       )}
 

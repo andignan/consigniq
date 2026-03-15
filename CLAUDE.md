@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (335 tests across unit + API)
+- `npm test` — Jest test suite (353 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -77,7 +77,7 @@ Three client factories:
 - `/api/reports/query` — POST, takes `{ question, location_id? }`. Claude generates read-only SQL, validated (SELECT-only, account_id scoping, forbidden tables blocked, UUID validation on all interpolated IDs), executed via `execute_readonly_query` RPC. Allowed: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements
 - `/api/labels/generate` — POST, takes `{ item_ids[], size: '2x1'|'4x2' }`. Returns PDF blob
 - `/api/trial/check-expiry` — POST cron. Auth via `Authorization: Bearer CRON_SECRET`. Excluded from middleware
-- `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST)
+- `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST), `/api/settings/profile` (PATCH — update full_name)
 
 ### Contexts
 
@@ -272,7 +272,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**335 Jest tests passing.** 5 Playwright E2E specs. 29 manual test plans at `/docs/test-plans/`.
+**353 Jest tests passing.** 5 Playwright E2E specs. 30 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -292,7 +292,8 @@ __tests__/
 │   ├── trial-banner.test.ts       — Days remaining calc, color thresholds
 │   ├── trial-expired.test.ts      — Tier display, pricing, config
 │   ├── sidebar-tier-nav.test.ts   — Solo vs full nav, feature access
-│   └── compress-image.test.ts     — Dimension calc, aspect ratio, file size validation
+│   ├── compress-image.test.ts     — Dimension calc, aspect ratio, file size validation
+│   └── solo-ui-fixes.test.ts     — Solo inventory tabs, progress bar min width, welcome msg
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -315,7 +316,8 @@ __tests__/
 │   ├── password-flow.test.ts      — reset-password, forgot-password
 │   ├── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
 │   ├── expiring-count.test.ts     — GET /api/consignors/expiring-count, auth, scoping, counting
-│   └── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
+│   ├── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
+│   └── settings-profile.test.ts  — PATCH /api/settings/profile auth, validation, name update
 ```
 
 ### Playwright E2E

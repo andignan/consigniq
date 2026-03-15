@@ -27,6 +27,13 @@ const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[]
   { value: 'donated', label: 'Donated', color: 'bg-gray-100 text-gray-500' },
 ]
 
+const SOLO_STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
+  { value: 'all', label: 'All', color: 'bg-gray-100 text-gray-700' },
+  { value: 'priced', label: 'Priced', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'sold', label: 'Sold', color: 'bg-emerald-100 text-emerald-700' },
+  { value: 'archived' as ItemStatus, label: 'Archived', color: 'bg-gray-100 text-gray-500' },
+]
+
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-600',
   priced: 'bg-indigo-50 text-indigo-600',
@@ -48,6 +55,8 @@ export default function InventoryPage() {
   const searchParams = useSearchParams()
   const user = useUser()
   const { activeLocationId } = useLocation()
+  const isSolo = (user?.accounts?.tier ?? 'starter') === 'solo'
+  const statusTabs = isSolo ? SOLO_STATUS_TABS : STATUS_TABS
 
   const [items, setItems] = useState<ItemWithConsignor[]>([])
   const [loading, setLoading] = useState(true)
@@ -320,7 +329,7 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Inventory</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isSolo ? 'My Inventory' : 'Inventory'}</h1>
           <p className="text-sm text-gray-400">
             {items.length} item{items.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
@@ -371,7 +380,7 @@ export default function InventoryPage() {
 
       {/* Status tabs */}
       <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
-        {STATUS_TABS.map(tab => (
+        {statusTabs.map(tab => (
           <button
             key={tab.value}
             onClick={() => setStatusFilter(tab.value)}
@@ -407,19 +416,21 @@ export default function InventoryPage() {
           )}
         </div>
 
-        <div className="relative">
-          <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
-          <select
-            value={consignorFilter}
-            onChange={e => setConsignorFilter(e.target.value)}
-            className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">All Consignors</option>
-            {consignors.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
+        {!isSolo && (
+          <div className="relative">
+            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
+            <select
+              value={consignorFilter}
+              onChange={e => setConsignorFilter(e.target.value)}
+              className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">All Consignors</option>
+              {consignors.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
@@ -444,7 +455,23 @@ export default function InventoryPage() {
       ) : items.length === 0 ? (
         <div className="text-center py-16">
           <Package className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-          <p className="text-sm text-gray-400">No items found</p>
+          {isSolo ? (
+            <>
+              <p className="text-sm font-medium text-gray-700 mb-1">No items yet</p>
+              <p className="text-sm text-gray-400 mb-4">Price an item and save it here to build your inventory</p>
+              <Link
+                href="/dashboard/pricing"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Price an Item
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">No items found</p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
