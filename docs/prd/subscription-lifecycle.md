@@ -1,6 +1,6 @@
 # Subscription Lifecycle — Product Requirements Document
 
-**Status:** Specification (not yet implemented)
+**Status:** Implemented
 **Date:** 2026-03-15
 **Scope:** Account states, cancellation flows, grace periods, resubscription, webhook handling
 

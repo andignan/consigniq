@@ -1,6 +1,6 @@
 export type Tier = 'solo' | 'starter' | 'standard' | 'pro'
 
-export type AccountType = 'paid' | 'trial' | 'complimentary'
+export type AccountType = 'paid' | 'trial' | 'complimentary' | 'cancelled_grace' | 'cancelled_limited'
 
 export type Feature =
   | 'ai_pricing'

@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import HelpWidget from '@/components/HelpWidget'
 import TrialBanner from '@/components/TrialBanner'
 import TrialExpiredPage from '@/components/TrialExpiredPage'
+import CancellationBanner from '@/components/CancellationBanner'
 import { UserProvider } from '@/contexts/UserContext'
 import { LocationProvider } from '@/contexts/LocationContext'
 
@@ -38,11 +39,9 @@ export default async function DashboardLayout({
     if (adminProfile?.is_superadmin) {
       redirect('/admin')
     }
-    // Non-superadmin with no profile — use whatever we got
     profile = adminProfile
   }
 
-  // Superadmin users always belong in /admin, even if RLS returned a profile
   if (profile?.is_superadmin) {
     redirect('/admin')
   }
@@ -61,14 +60,31 @@ export default async function DashboardLayout({
     }
   }
 
-  // Check if account is suspended/cancelled
+  // Check if account is suspended/cancelled/deleted — show lockout
   const accountStatus = profile?.accounts?.status
-  if (accountStatus === 'suspended' || accountStatus === 'cancelled') {
+  if (accountStatus === 'suspended' || accountStatus === 'cancelled' || accountStatus === 'deleted') {
     return (
       <UserProvider user={profile}>
         <TrialExpiredPage />
       </UserProvider>
     )
+  }
+
+  // Auto-transition: cancelled_grace → cancelled_limited when period_end is reached
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const accountData = profile?.accounts as any
+  if (accountType === 'cancelled_grace' && accountData?.subscription_period_end) {
+    const periodEnd = new Date(accountData.subscription_period_end)
+    if (periodEnd <= new Date()) {
+      // Transition to cancelled_limited
+      await supabase
+        .from('accounts')
+        .update({ account_type: 'cancelled_limited' })
+        .eq('id', profile.account_id)
+
+      // Update the in-memory profile so the banner renders correctly
+      accountData.account_type = 'cancelled_limited'
+    }
   }
 
   // Load all locations for this account (for location switcher)
@@ -92,6 +108,7 @@ export default async function DashboardLayout({
             <Sidebar user={profile} />
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
               <TrialBanner />
+              <CancellationBanner />
               <main className="flex-1 overflow-y-auto pt-14 md:pt-0 pb-20 md:pb-0">
                 {children}
               </main>

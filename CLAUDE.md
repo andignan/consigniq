@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (377 tests across unit + API)
+- `npm test` — Jest test suite (396 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -102,7 +102,7 @@ Three client factories:
 - Supabase email/password auth. Login: `/auth/login`. Password setup: `/auth/setup-password` (invite + recovery links)
 - Setup-password manually parses `access_token`/`refresh_token` from URL hash → `setSession()` (required because `@supabase/ssr` uses cookie storage, doesn't auto-detect hash fragments)
 - Dashboard layout: auth check → load profile (with service role fallback) → redirect superadmins to `/admin` → wrap in `<UserProvider>` + `<LocationProvider>`
-- Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/trial/*`, `/api/agreements/notify-expiring`
+- Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/billing/check-grace-periods`, `/api/trial/*`, `/api/agreements/notify-expiring`
 - Post-login: calls `/api/auth/check-superadmin` → superadmins go to `/admin`, others to `/dashboard`
 
 ### Superadmin Access
@@ -255,7 +255,7 @@ Always audit actual column names before writing queries:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable)
+- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable)
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
@@ -278,7 +278,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**377 Jest tests passing.** 5 Playwright E2E specs. 33 manual test plans at `/docs/test-plans/`.
+**396 Jest tests passing.** 5 Playwright E2E specs. 34 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -301,7 +301,8 @@ __tests__/
 │   ├── compress-image.test.ts     — Dimension calc, aspect ratio, file size validation
 │   ├── solo-ui-fixes.test.ts     — Solo inventory tabs, progress bar min width, welcome msg
 │   ├── solo-pricing-prompt.test.ts — Solo vs consignment AI prompt language
-│   └── help-widget-tier.test.ts   — Tier-aware quick links, page ordering, cache logic
+│   ├── help-widget-tier.test.ts   — Tier-aware quick links, page ordering, cache logic
+│   └── subscription-lifecycle.test.ts — All state transitions, cancelled_grace/limited access
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -352,6 +353,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260314080000` — solo tier + account types (account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used)
 - `20260315000000` — performance indexes: items (3), consignors (2), price_history (1), users (1), locations (1), accounts (1)
 - `20260315010000` — add deleted_at (timestamptz) and deletion_reason (text) to accounts
+- `20260315020000` — add subscription_cancelled_at, subscription_period_end, cancelled_tier to accounts
 
 ## Security
 

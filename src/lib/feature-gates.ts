@@ -20,6 +20,7 @@ export interface AccountInfo {
   trial_ends_at?: string | null
   is_complimentary?: boolean
   complimentary_tier?: Tier | null
+  cancelled_tier?: string | null
   status?: string
 }
 
@@ -29,7 +30,7 @@ export interface AccountInfo {
  * Trial accounts are active only before trial_ends_at.
  */
 export function isAccountActive(account: AccountInfo): boolean {
-  if (account.status === 'suspended' || account.status === 'cancelled') return false
+  if (account.status === 'suspended' || account.status === 'cancelled' || account.status === 'deleted') return false
 
   if (account.account_type === 'paid' || account.account_type === 'complimentary') {
     return true
@@ -40,6 +41,12 @@ export function isAccountActive(account: AccountInfo): boolean {
     return new Date(account.trial_ends_at) > new Date()
   }
 
+  // cancelled_grace: active with full tier access until period_end
+  if (account.account_type === 'cancelled_grace') return true
+
+  // cancelled_limited: active but with solo-only access
+  if (account.account_type === 'cancelled_limited') return true
+
   return false
 }
 
@@ -49,6 +56,14 @@ export function isAccountActive(account: AccountInfo): boolean {
 export function getEffectiveTier(account: AccountInfo): Tier {
   if (account.account_type === 'complimentary' && account.complimentary_tier) {
     return account.complimentary_tier
+  }
+  // cancelled_grace: full access at previous tier
+  if (account.account_type === 'cancelled_grace' && account.cancelled_tier) {
+    return account.cancelled_tier as Tier
+  }
+  // cancelled_limited: solo-only access
+  if (account.account_type === 'cancelled_limited') {
+    return 'solo'
   }
   return account.tier
 }

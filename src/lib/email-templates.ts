@@ -580,3 +580,39 @@ The ConsignIQ Team`
   const subject = data.isPaid ? 'Your ConsignIQ subscription has been cancelled' : 'Your ConsignIQ account has been closed'
   return { subject, text, html }
 }
+
+// ─── Grace Period Reminder ──────────────────────────────
+interface GraceReminderEmailData { fullName: string; tierLabel: string; periodEndDate: string; resubscribeUrl: string }
+
+export function buildGraceReminderEmail(data: GraceReminderEmailData) {
+  const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}. After that date, you'll be limited to basic pricing features only.\n\nResubscribe now to keep full access to your consignors, reports, payouts, and all your data: ${data.resubscribeUrl}\n\nYour data is safe and will be preserved.\n\nThanks,\nThe ConsignIQ Team`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your access ends soon</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> access ends on <strong>${data.periodEndDate}</strong>. After that date, you'll be limited to basic pricing features only.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><p style="font-size:13px;color:#6b7280;">Your data is safe and will be preserved.</p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  return { subject: `Your ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}`, text, html }
+}
+
+// ─── Access Ended ──────────────────────────────────────
+interface AccessEndedEmailData { fullName: string; tierLabel: string; resubscribeUrl: string }
+
+export function buildAccessEndedEmail(data: AccessEndedEmailData) {
+  const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} subscription period has ended. You now have access to basic pricing features only.\n\nAll your data (consignors, items, reports) is preserved and waiting for you. Resubscribe anytime to restore full access: ${data.resubscribeUrl}\n\nThanks,\nThe ConsignIQ Team`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your subscription period has ended</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription period has ended. You now have access to basic pricing features only.</p><p>All your data (consignors, items, reports) is preserved and waiting for you.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  return { subject: 'Your ConsignIQ subscription period has ended', text, html }
+}
+
+// ─── Payment Final Warning ──────────────────────────────
+interface PaymentFinalWarningEmailData { fullName: string; portalUrl: string }
+
+export function buildPaymentFinalWarningEmail(data: PaymentFinalWarningEmailData) {
+  const text = `Hi ${data.fullName},\n\nThis is a final warning — we've been unable to process your payment after multiple attempts. Your ConsignIQ subscription will be cancelled if payment is not resolved.\n\nPlease update your payment method immediately: ${data.portalUrl}\n\nThanks,\nThe ConsignIQ Team`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;color:#dc2626;margin-bottom:16px;">Final payment warning</h2><p>Hi ${data.fullName},</p><p>This is a final warning — we've been unable to process your payment after multiple attempts. Your ConsignIQ subscription will be cancelled if payment is not resolved.</p><p><a href="${data.portalUrl}" style="display:inline-block;background:#dc2626;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Update Payment Method</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  return { subject: 'Final warning — update your ConsignIQ payment method', text, html }
+}
+
+// ─── Welcome Back (Resubscribe) ────────────────────────
+interface WelcomeBackEmailData { fullName: string; tierLabel: string; dashboardUrl: string }
+
+export function buildWelcomeBackEmail(data: WelcomeBackEmailData) {
+  const text = `Hi ${data.fullName},\n\nWelcome back! Your ConsignIQ ${data.tierLabel} subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.\n\nHead to your dashboard: ${data.dashboardUrl}\n\nThanks,\nThe ConsignIQ Team`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Welcome back!</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.</p><p><a href="${data.dashboardUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  return { subject: 'Welcome back to ConsignIQ!', text, html }
+}

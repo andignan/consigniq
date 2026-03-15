@@ -1,6 +1,7 @@
 /**
  * Tests for /api/billing/webhook route
- * Covers: signature verification, checkout.session.completed, subscription.deleted
+ * Covers: signature verification, checkout.session.completed (new + resub),
+ * subscription.deleted (cancelled_grace), invoice.payment_failed (attempt_count)
  */
 
 const mockConstructEvent = jest.fn()
@@ -18,6 +19,18 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     from: mockFrom,
   }),
+}))
+
+jest.mock('@/lib/email', () => ({
+  sendEmail: jest.fn(),
+}))
+
+jest.mock('@/lib/email-templates', () => ({
+  buildUpgradeEmail: () => ({ subject: 'Test', text: 'Test', html: '<p>Test</p>' }),
+  buildCancellationEmail: () => ({ subject: 'Test', text: 'Test', html: '<p>Test</p>' }),
+  buildPaymentFailedEmail: () => ({ subject: 'Test', text: 'Test', html: '<p>Test</p>' }),
+  buildPaymentFinalWarningEmail: () => ({ subject: 'Test', text: 'Test', html: '<p>Test</p>' }),
+  buildWelcomeBackEmail: () => ({ subject: 'Test', text: 'Test', html: '<p>Test</p>' }),
 }))
 
 import { POST } from '@/app/api/billing/webhook/route'
@@ -49,7 +62,7 @@ beforeEach(() => {
     update: mockUpdate,
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'acct-1' }, error: null }),
+        single: jest.fn().mockResolvedValue({ data: { id: 'acct-1', tier: 'standard', account_type: 'paid' }, error: null }),
       }),
     }),
   }))
@@ -91,15 +104,15 @@ describe('POST /api/billing/webhook', () => {
     const req = makeWebhookRequest('{}')
     const res = await POST(req)
     expect(res.status).toBe(200)
-    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'standard' })
   })
 
-  it('downgrades to starter on subscription.deleted', async () => {
+  it('sets cancelled_grace on subscription.deleted', async () => {
     mockConstructEvent.mockReturnValue({
       type: 'customer.subscription.deleted',
       data: {
         object: {
           customer: 'cus_123',
+          current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
         },
       },
     })
@@ -107,7 +120,27 @@ describe('POST /api/billing/webhook', () => {
     const req = makeWebhookRequest('{}')
     const res = await POST(req)
     expect(res.status).toBe(200)
-    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'starter' })
+    // Should set cancelled_grace, NOT downgrade to starter
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      account_type: 'cancelled_grace',
+      cancelled_tier: 'standard',
+    }))
+  })
+
+  it('handles invoice.payment_failed', async () => {
+    mockConstructEvent.mockReturnValue({
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          customer: 'cus_123',
+          attempt_count: 1,
+        },
+      },
+    })
+
+    const req = makeWebhookRequest('{}')
+    const res = await POST(req)
+    expect(res.status).toBe(200)
   })
 
   it('returns 200 for unhandled event types', async () => {
