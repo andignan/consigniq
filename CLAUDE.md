@@ -120,6 +120,11 @@ Three client factories:
 **Spec: `/docs/prd/subscription-lifecycle.md`**
 **IMPORTANT: Read this file before modifying any subscription, cancellation, webhook, or account state code. It is the source of truth for all subscription behavior.**
 
+### Account Deletion & Suspension
+
+**Spec: `/docs/prd/account-deletion.md`**
+**Read before modifying deletion, suspension, or account closure code.**
+
 ### Stripe Billing & Tier Enforcement
 
 #### Definitive Tier Feature Matrix
