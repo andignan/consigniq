@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (359 tests across unit + API)
+- `npm test` — Jest test suite (372 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -236,7 +236,7 @@ intake_date → expiry_date → grace_end_date. `getLifecycleStatus()` in `src/t
 - **Settings** (`/dashboard/settings`): tier-aware tabs. Solo: Billing+Profile. Starter+: Location Settings, Locations (owner), Account Settings (owner)
 - **Sidebar**: tier-aware nav, location switcher (owner), expiring consignor badge, role/tier label
 - **Admin** (`/admin`): Overview stats, Users (CRUD + invite), Accounts (detail + tier/status/type management, reset password)
-- **Help**: Tooltips, floating widget (`HelpWidget`), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
+- **Help**: Tooltips, floating widget (`HelpWidget` — tier-aware quick links, page-aware ordering, client+server response caching with 24h TTL), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
 
 ## Critical Patterns
 
@@ -272,7 +272,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**359 Jest tests passing.** 5 Playwright E2E specs. 31 manual test plans at `/docs/test-plans/`.
+**372 Jest tests passing.** 5 Playwright E2E specs. 32 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -294,7 +294,8 @@ __tests__/
 │   ├── sidebar-tier-nav.test.ts   — Solo vs full nav, feature access
 │   ├── compress-image.test.ts     — Dimension calc, aspect ratio, file size validation
 │   ├── solo-ui-fixes.test.ts     — Solo inventory tabs, progress bar min width, welcome msg
-│   └── solo-pricing-prompt.test.ts — Solo vs consignment AI prompt language
+│   ├── solo-pricing-prompt.test.ts — Solo vs consignment AI prompt language
+│   └── help-widget-tier.test.ts   — Tier-aware quick links, page ordering, cache logic
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression

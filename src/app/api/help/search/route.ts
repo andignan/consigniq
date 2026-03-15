@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { HELP_KNOWLEDGE_BASE } from '@/lib/help-knowledge-base'
 import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
 
+// Server-side response cache (24h TTL)
+const responseCache = new Map<string, { answer: string; timestamp: number }>()
+const CACHE_TTL = 24 * 60 * 60 * 1000
+
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const { question } = body as { question?: string }
@@ -16,6 +20,13 @@ export async function POST(request: NextRequest) {
       { error: 'ANTHROPIC_API_KEY is not set' },
       { status: 500 }
     )
+  }
+
+  // Check server-side cache
+  const cacheKey = question.trim().toLowerCase()
+  const cached = responseCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return NextResponse.json({ answer: cached.answer, cached: true })
   }
 
   try {
@@ -35,6 +46,11 @@ Keep answers concise (2-4 sentences). Use plain language.`,
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
+
+    // Cache the response
+    if (text) {
+      responseCache.set(cacheKey, { answer: text, timestamp: Date.now() })
+    }
 
     return NextResponse.json({ answer: text })
   } catch (err) {
