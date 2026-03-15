@@ -115,6 +115,11 @@ Three client factories:
 - **Critical**: every Supabase Auth user MUST have a `users` table row. Auth alone is not enough.
 - All superadmin checks MUST use service role client (superadmin may not satisfy RLS)
 
+### Subscription Lifecycle
+
+**Spec: `/docs/prd/subscription-lifecycle.md`**
+**IMPORTANT: Read this file before modifying any subscription, cancellation, webhook, or account state code. It is the source of truth for all subscription behavior.**
+
 ### Stripe Billing & Tier Enforcement
 
 #### Definitive Tier Feature Matrix
