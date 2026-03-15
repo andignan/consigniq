@@ -13,7 +13,11 @@ const GRACE_DAYS = 3
 function addDays(date: Date, days: number): string {
   const result = new Date(date)
   result.setDate(result.getDate() + days)
-  return result.toISOString().split('T')[0]
+  // Use local date parts to avoid UTC timezone shift
+  const y = result.getFullYear()
+  const m = String(result.getMonth() + 1).padStart(2, '0')
+  const d = String(result.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 interface FormState {
@@ -48,7 +52,7 @@ export function NewConsignorForm({
   const [showSplitCustom, setShowSplitCustom] = useState(false)
 
   const today = new Date()
-  const intakeDate = today.toISOString().split('T')[0]
+  const intakeDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const expiryDate = addDays(today, agreementDays)
   const graceEndDate = addDays(today, agreementDays + graceDays)
 
@@ -270,6 +274,7 @@ export function NewConsignorForm({
       <button
         type="submit"
         disabled={loading || !form.name.trim()}
+        title={!form.name.trim() ? 'Enter consignor name to continue' : undefined}
         className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
       >
         {loading ? (

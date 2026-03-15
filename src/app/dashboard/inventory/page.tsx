@@ -25,6 +25,7 @@ const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[]
   { value: 'priced', label: 'Priced', color: 'bg-indigo-100 text-indigo-700' },
   { value: 'sold', label: 'Sold', color: 'bg-emerald-100 text-emerald-700' },
   { value: 'donated', label: 'Donated', color: 'bg-gray-100 text-gray-500' },
+  { value: 'archived' as ItemStatus, label: 'Archived', color: 'bg-gray-100 text-gray-500' },
 ]
 
 const SOLO_STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
@@ -542,7 +543,7 @@ export default function InventoryPage() {
                       Price
                     </Link>
                   )}
-                  {(item.status === 'pending' || item.status === 'priced') && (
+                  {item.status === 'priced' && (
                     <>
                       <button
                         onClick={() => openSell(item)}
@@ -553,6 +554,7 @@ export default function InventoryPage() {
                       </button>
                       <button
                         onClick={() => openDonate(item)}
+                        title="Donate item"
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <Gift className="w-3.5 h-3.5" />
@@ -570,6 +572,7 @@ export default function InventoryPage() {
                   )}
                   <button
                     onClick={() => openEdit(item)}
+                    title="Edit item"
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />

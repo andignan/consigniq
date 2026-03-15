@@ -560,7 +560,7 @@ export default function SettingsPage() {
 
               {locationDraft.markdown_enabled && (
                 <div className="mt-4 bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Schedule (hardcoded for now)</p>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Schedule</p>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Day 31</span>

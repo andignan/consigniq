@@ -2,7 +2,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import {
-  Users, Package, Clock, AlertTriangle, TrendingUp, ArrowRight, Plus, MapPin
+  Users, Package, Clock, AlertTriangle, TrendingUp, ArrowRight, Plus, MapPin, DollarSign
 } from 'lucide-react'
 import { getLifecycleStatus } from '@/types'
 
@@ -121,6 +121,7 @@ export default async function DashboardPage({
   }
 
   const isSolo = accountTier === 'solo'
+  const firstName = (authUser?.user_metadata?.full_name as string | undefined)?.split(' ')[0]
 
   // Solo users get the SoloDashboard (client component with usage meter)
   if (isSolo) {
@@ -255,7 +256,7 @@ export default async function DashboardPage({
             icon={Package}
             label="Needs Pricing"
             value={pendingItems}
-            sub={`${pricedItems} priced, on floor`}
+            sub={`${pendingItems} need pricing, ${pricedItems} already priced`}
             color="amber"
           />
           <StatCard
@@ -338,7 +339,9 @@ export default async function DashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl font-bold text-gray-900">
+            {firstName ? `Welcome back, ${firstName}!` : 'Dashboard'}
+          </h1>
           <p className="text-sm text-gray-400">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
@@ -410,7 +413,7 @@ export default async function DashboardPage({
           icon={Package}
           label="Needs Pricing"
           value={pendingItems}
-          sub={`${pricedItems} priced, on floor`}
+          sub={`${pendingItems} need pricing, ${pricedItems} already priced`}
           color="amber"
           href="/dashboard/inventory?status=pending"
         />
@@ -423,7 +426,7 @@ export default async function DashboardPage({
           href="/dashboard/inventory"
         />
         <StatCard
-          icon={Clock}
+          icon={DollarSign}
           label="Sold This Period"
           value={soldItems}
           sub="mark items sold in inventory"

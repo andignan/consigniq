@@ -155,11 +155,11 @@ export async function POST(request: NextRequest) {
     let columns: string[] = []
 
     if (queryError) {
-      // RPC might not exist yet — return the SQL for reference
+      console.error('Report query RPC failed:', queryError.message)
       return NextResponse.json({
         question: question.trim(),
         sql,
-        summary: 'The query was generated but could not be executed. The `execute_readonly_query` RPC function needs to be created in Supabase. The generated SQL is shown below for manual execution.',
+        summary: 'Unable to process your question right now. Please try again.',
         rows: [],
         columns: [],
       })
