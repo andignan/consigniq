@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { APP } from '@/lib/constants'
 
 const EyeIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,6 +29,7 @@ export default function SetupPasswordPage() {
   const [ready, setReady] = useState(false)
   const [expired, setExpired] = useState(false)
   const [userName, setUserName] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>
@@ -51,6 +53,7 @@ export default function SetupPasswordPage() {
             window.history.replaceState(null, '', window.location.pathname)
             const fullName = data.user.user_metadata?.full_name as string | undefined
             if (fullName) setUserName(fullName.split(' ')[0])
+            if (data.user.email) setUserEmail(data.user.email)
             setReady(true)
             return
           }
@@ -62,6 +65,7 @@ export default function SetupPasswordPage() {
       if (session) {
         const fullName = session.user.user_metadata?.full_name as string | undefined
         if (fullName) setUserName(fullName.split(' ')[0])
+        if (session.user.email) setUserEmail(session.user.email)
         setReady(true)
         return
       }
@@ -72,6 +76,7 @@ export default function SetupPasswordPage() {
           if (session?.user.user_metadata?.full_name) {
             setUserName((session.user.user_metadata.full_name as string).split(' ')[0])
           }
+          if (session?.user.email) setUserEmail(session.user.email)
           setReady(true)
         }
       })
@@ -121,13 +126,20 @@ export default function SetupPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-50">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">ConsignIQ</h1>
-          <p className="mt-1 text-sm text-stone-500">Consignment & Estate Sale Platform</p>
+          <h1 className="text-3xl font-bold tracking-tight text-stone-900">{APP.name}</h1>
+          <p className="mt-1 text-sm text-stone-500">{APP.tagline}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          {userName && ready && (
-            <p className="text-sm text-amber-600 font-medium mb-1">Welcome, {userName}!</p>
+          {ready && (
+            <div className="mb-3">
+              <p className="text-sm text-amber-600 font-medium">
+                {userName ? `Welcome to ${APP.name}, ${userName}!` : `Welcome to ${APP.name}!`}
+              </p>
+              {userEmail && (
+                <p className="text-xs text-stone-400">{userEmail}</p>
+              )}
+            </div>
           )}
           <h2 className="text-lg font-semibold text-stone-900 mb-2">Set Your Password</h2>
           <p className="text-sm text-stone-500 mb-6">Create a password to access your account.</p>
@@ -206,7 +218,7 @@ export default function SetupPasswordPage() {
         </div>
 
         <p className="text-center text-xs text-stone-400 mt-6">
-          ConsignIQ &middot; Mokena, IL &middot; v1.0
+          {APP.name} &middot; {APP.version}
         </p>
       </div>
     </div>

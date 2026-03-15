@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { APP } from '@/lib/constants'
 
 const EyeIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,8 +62,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">ConsignIQ</h1>
-          <p className="mt-1 text-sm text-stone-500">AI-Powered Pricing & Inventory</p>
+          <h1 className="text-3xl font-bold tracking-tight text-stone-900">{APP.name}</h1>
+          <p className="mt-1 text-sm text-stone-500">{APP.tagline}</p>
         </div>
 
         {/* Form */}
@@ -170,7 +171,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-stone-400 mt-6">
-          ConsignIQ · v1.0
+          {APP.name} · {APP.version}
         </p>
       </div>
     </div>

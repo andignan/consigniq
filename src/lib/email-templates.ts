@@ -567,6 +567,10 @@ The ConsignIQ Team`
   const html = `<!DOCTYPE html>
 <html>
 <body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <h1 style="font-size:24px;font-weight:bold;color:#1f2937;margin:0;">ConsignIQ</h1>
+    <p style="font-size:12px;color:#9ca3af;margin:4px 0 0 0;">AI-Powered Consignment Management</p>
+  </div>
   <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Account Closed</h2>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">Hi ${data.ownerName},</p>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">${data.isPaid ? paidText : freeText}</p>

@@ -180,7 +180,7 @@ export default function AccountDetailPage() {
   }
 
   async function handleDelete() {
-    if (!account || deleteConfirmName !== account.name) return
+    if (!account || deleteConfirmName.trim().toLowerCase() !== account.name.trim().toLowerCase()) return
     setDeleting(true)
     setSaveMsg('')
     try {
@@ -587,7 +587,7 @@ export default function AccountDetailPage() {
               </button>
               <button
                 onClick={handleDelete}
-                disabled={deleteConfirmName !== account.name || deleting}
+                disabled={deleteConfirmName.trim().toLowerCase() !== account.name.trim().toLowerCase() || deleting}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 rounded-lg transition-colors"
               >
                 {deleting ? 'Deleting...' : 'Delete Account'}
