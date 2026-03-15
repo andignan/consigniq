@@ -543,3 +543,40 @@ This is an automated message from ConsignIQ.
   const subject = 'Action required — payment failed for ConsignIQ'
   return { subject, text, html }
 }
+
+// ─── Account Deleted / Scheduled for Deletion ────────────
+interface AccountDeletedEmailData {
+  accountName: string
+  ownerName: string
+  isPaid: boolean
+}
+
+export function buildAccountDeletedEmail(data: AccountDeletedEmailData) {
+  const paidText = `Your ConsignIQ subscription for "${data.accountName}" has been cancelled and your account has been scheduled for deletion. Your data will be retained for 30 days in case you change your mind.`
+  const freeText = `Your ConsignIQ account "${data.accountName}" has been closed and all associated data has been deleted.`
+
+  const text = `Hi ${data.ownerName},
+
+${data.isPaid ? paidText : freeText}
+
+If you believe this was done in error, please contact support immediately.
+
+Thanks,
+The ConsignIQ Team`
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;">
+  <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Account Closed</h2>
+  <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">Hi ${data.ownerName},</p>
+  <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">${data.isPaid ? paidText : freeText}</p>
+  <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">If you believe this was done in error, please contact support immediately.</p>
+  <p style="font-size:14px;line-height:1.6;">Thanks,<br>The ConsignIQ Team</p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+</body>
+</html>`
+
+  const subject = data.isPaid ? 'Your ConsignIQ subscription has been cancelled' : 'Your ConsignIQ account has been closed'
+  return { subject, text, html }
+}

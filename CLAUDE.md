@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (372 tests across unit + API)
+- `npm test` — Jest test suite (377 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -60,6 +60,7 @@ Three client factories:
 - `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates account+location+auth user+users row (upsert for trigger compat), sends invite email via Resend (non-critical)
 - `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
 - `/api/admin/network-stats` — cross-account pricing intelligence stats
+- `/api/admin/accounts/delete` — POST, takes `{ account_id, reason? }`. Complimentary/trial: hard deletes all data + auth users. Paid with Stripe: cancels subscription, soft deletes (status='deleted', deleted_at set). Sends notification email
 
 **Billing:**
 - `/api/billing/checkout` — POST, takes `{ tier }` or `{ product: 'topup_50' }`. Owner only. Returns `{ url }`
@@ -249,7 +250,7 @@ Always audit actual column names before writing queries:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer)
+- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable)
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
@@ -272,7 +273,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**372 Jest tests passing.** 5 Playwright E2E specs. 32 manual test plans at `/docs/test-plans/`.
+**377 Jest tests passing.** 5 Playwright E2E specs. 33 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -319,7 +320,8 @@ __tests__/
 │   ├── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
 │   ├── expiring-count.test.ts     — GET /api/consignors/expiring-count, auth, scoping, counting
 │   ├── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
-│   └── settings-profile.test.ts  — PATCH /api/settings/profile auth, validation, name update
+│   ├── settings-profile.test.ts  — PATCH /api/settings/profile auth, validation, name update
+│   └── account-delete.test.ts   — POST /api/admin/accounts/delete, auth, hard/soft delete
 ```
 
 ### Playwright E2E
@@ -344,6 +346,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260314070000` — ensure superadmin user row
 - `20260314080000` — solo tier + account types (account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used)
 - `20260315000000` — performance indexes: items (3), consignors (2), price_history (1), users (1), locations (1), accounts (1)
+- `20260315010000` — add deleted_at (timestamptz) and deletion_reason (text) to accounts
 
 ## Security
 

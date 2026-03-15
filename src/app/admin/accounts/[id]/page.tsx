@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ChevronLeft, Loader2, Save, MapPin, Users, Package } from 'lucide-react'
+import { ChevronLeft, Loader2, Save, MapPin, Users, Package, AlertTriangle, ShieldX } from 'lucide-react'
 
 interface AccountDetail {
   id: string
@@ -62,6 +62,11 @@ export default function AccountDetailPage() {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
   const [actionSaving, setActionSaving] = useState(false)
+  const [showSuspendModal, setShowSuspendModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [deleteReason, setDeleteReason] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -167,6 +172,57 @@ export default function AccountDetailPage() {
   function getTrialDaysRemaining(): number | null {
     if (!account?.trial_ends_at) return null
     return Math.ceil((new Date(account.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  }
+
+  async function handleSuspend() {
+    setShowSuspendModal(false)
+    await patchAccount({ status: 'suspended' })
+  }
+
+  async function handleDelete() {
+    if (!account || deleteConfirmName !== account.name) return
+    setDeleting(true)
+    setSaveMsg('')
+    try {
+      const res = await fetch('/api/admin/accounts/delete', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: account.id, reason: deleteReason || undefined }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.deleted) {
+          router.push('/admin/accounts')
+        } else {
+          setAccount({ ...account, status: 'deleted' })
+          setEditStatus('deleted')
+          setSaveMsg(data.message)
+          setShowDeleteModal(false)
+        }
+      } else {
+        const err = await res.json()
+        setSaveMsg(err.error || 'Delete failed')
+      }
+    } catch {
+      setSaveMsg('Delete failed')
+    } finally {
+      setDeleting(false)
+      setDeleteConfirmName('')
+      setDeleteReason('')
+      setTimeout(() => setSaveMsg(''), 5000)
+    }
+  }
+
+  function getDeleteDescription(): string {
+    if (!account) return ''
+    if (account.account_type === 'complimentary' || account.account_type === 'trial') {
+      return 'This will permanently delete all data immediately.'
+    }
+    if (account.stripe_customer_id) {
+      return 'This will cancel their Stripe subscription and schedule data deletion in 30 days.'
+    }
+    return 'This will schedule data deletion in 30 days.'
   }
 
   if (loading) {
@@ -329,6 +385,22 @@ export default function AccountDetailPage() {
           >
             {account.status === 'active' ? 'Disable Account' : 'Enable Account'}
           </button>
+          {account.status === 'active' && (
+            <button
+              onClick={() => setShowSuspendModal(true)}
+              disabled={actionSaving}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+            >
+              Suspend Account
+            </button>
+          )}
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            disabled={actionSaving || deleting}
+            className="px-3 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            Delete Account
+          </button>
         </div>
       </div>
 
@@ -444,6 +516,86 @@ export default function AccountDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Suspend Modal */}
+      {showSuspendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <ShieldX className="w-5 h-5 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Suspend Account</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Suspend <strong>{account.name}</strong>? Users will lose access immediately but all data is preserved.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowSuspendModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSuspend}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
+              >
+                Suspend
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              {getDeleteDescription()}
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Type <strong>{account.name}</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={e => setDeleteConfirmName(e.target.value)}
+              placeholder={account.name}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <input
+              type="text"
+              value={deleteReason}
+              onChange={e => setDeleteReason(e.target.value)}
+              placeholder="Reason (optional)"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmName(''); setDeleteReason('') }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteConfirmName !== account.name || deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 rounded-lg transition-colors"
+              >
+                {deleting ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
