@@ -69,7 +69,7 @@ export default function SoloDashboard() {
           </span>
         </div>
         <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-2">
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.max(pct, 2)}%` }} />
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `max(8px, ${pct}%)` }} />
         </div>
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">

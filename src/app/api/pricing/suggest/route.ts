@@ -38,29 +38,8 @@ export async function POST(request: NextRequest) {
     ? `\nRecent eBay sold comparables:\n${comps.map((c, i) => `${i + 1}. "${c.title}" — sold for $${c.price.toFixed(2)}${c.condition ? ` (${c.condition})` : ''}`).join('\n')}`
     : '\nNo comparable sales data available. Use your knowledge of typical resale values.'
 
-  const prompt = `You are a consignment shop pricing expert. Price this item for a brick-and-mortar consignment store.
-
-Item: ${name}
-Category: ${config.label}
-Condition: ${condition}
-${description ? `Description: ${description}` : ''}
-${compsSection}
-
-Category pricing notes: ${config.priceGuidance}
-
-Respond with ONLY a JSON object (no markdown, no code fences):
-{
-  "price": <recommended price as a number>,
-  "low": <low end of fair range>,
-  "high": <high end of fair range>,
-  "reasoning": "<2-3 sentences explaining your pricing rationale, referencing comps if available>"
-}
-
-Important:
-- Price for a consignment store, not eBay (stores typically price 10-20% below eBay sold prices to account for no shipping and immediate sale)
-- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
-- The reasoning should be concise and helpful for the store owner
-- If comps suggest a wide range, lean toward the middle-low end for faster turnover`
+  // Detect tier for prompt customization — solo users are individual resellers, not shop owners
+  let detectedTier = 'starter'
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
@@ -89,6 +68,7 @@ Important:
 
       if (account) {
         const tier = (account.tier || 'starter') as Tier
+        detectedTier = tier
         const tierConfig = TIER_CONFIGS[tier]
 
         if (tierConfig.aiPricingLimit !== null) {
@@ -118,6 +98,44 @@ Important:
       }
     }
   }
+
+  // Build prompt — Solo users are individual resellers, Starter+ are consignment shops
+  const isSoloTier = detectedTier === 'solo'
+  const roleDesc = isSoloTier
+    ? 'You are a resale pricing expert. Price this item for resale on platforms like eBay, Poshmark, or Facebook Marketplace.'
+    : 'You are a consignment shop pricing expert. Price this item for a brick-and-mortar consignment store.'
+
+  const pricingGuidance = isSoloTier
+    ? `- Price for resale — suggest what a buyer would pay on eBay or similar platforms
+- Factor in condition, demand, and typical resale margins
+- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
+- The reasoning should reference comparable sales and market demand
+- If comps suggest a wide range, lean toward competitive pricing for faster sale`
+    : `- Price for a consignment store, not eBay (stores typically price 10-20% below eBay sold prices to account for no shipping and immediate sale)
+- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
+- The reasoning should be concise and helpful for the store owner
+- If comps suggest a wide range, lean toward the middle-low end for faster turnover`
+
+  const prompt = `${roleDesc}
+
+Item: ${name}
+Category: ${config.label}
+Condition: ${condition}
+${description ? `Description: ${description}` : ''}
+${compsSection}
+
+Category pricing notes: ${config.priceGuidance}
+
+Respond with ONLY a JSON object (no markdown, no code fences):
+{
+  "price": <recommended price as a number>,
+  "low": <low end of fair range>,
+  "high": <high end of fair range>,
+  "reasoning": "<2-3 sentences explaining your pricing rationale, referencing comps if available>"
+}
+
+Important:
+${pricingGuidance}`
 
   try {
     const anthropic = getAnthropicClient()

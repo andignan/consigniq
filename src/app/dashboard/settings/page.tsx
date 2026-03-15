@@ -847,7 +847,7 @@ export default function SettingsPage() {
                   return (
                     <div
                       className={`h-2 rounded-full transition-all ${pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-indigo-500'}`}
-                      style={{ width: `${pct}%` }}
+                      style={{ width: `max(8px, ${pct}%)` }}
                     />
                   )
                 })()}
