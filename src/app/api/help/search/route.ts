@@ -41,7 +41,7 @@ Use the following knowledge base to answer:
 
 ${HELP_KNOWLEDGE_BASE}
 
-Keep answers concise (2-4 sentences). Use plain language.`,
+Keep answers concise (2-4 sentences). Use plain language. Always end your response with a helpful statement or summary. Never end with a question — the user cannot reply to this message and a question creates a confusing dead end.`,
       messages: [{ role: 'user', content: question.trim() }],
     })
 
