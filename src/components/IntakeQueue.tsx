@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import { getDescriptionHint } from '@/lib/description-hints'
+import { compressImage } from '@/lib/compress-image'
 
 // ============================================================
 // Types
@@ -360,15 +361,15 @@ function IntakeRow({
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!validTypes.includes(file.type)) return
 
-    // Show preview
-    const reader = new FileReader()
-    reader.onload = () => setPhotoPreview(reader.result as string)
-    reader.readAsDataURL(file)
-
     setIdentifying(true)
     try {
+      // Compress image client-side before sending
+      const compressed = await compressImage(file)
+      setPhotoPreview(compressed.previewUrl)
+
+      const compressedFile = new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('photo', compressedFile)
       const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) return
       const { result } = await res.json()

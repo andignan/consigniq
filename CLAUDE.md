@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (327 tests across unit + API)
+- `npm test` — Jest test suite (335 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -51,7 +51,7 @@ Three client factories:
 **Pricing:**
 - `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check. No debug console.logs
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton
-- `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton
+- `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton. All callers compress images client-side via `src/lib/compress-image.ts` (max 1200px, JPEG 0.8 quality)
 - `/api/pricing/cross-account` — Pro-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
 **Admin (superadmin only):**
@@ -272,7 +272,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**327 Jest tests passing.** 5 Playwright E2E specs. 28 manual test plans at `/docs/test-plans/`.
+**335 Jest tests passing.** 5 Playwright E2E specs. 29 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -291,7 +291,8 @@ __tests__/
 │   ├── auth-helpers.test.ts       — Error constants validation
 │   ├── trial-banner.test.ts       — Days remaining calc, color thresholds
 │   ├── trial-expired.test.ts      — Tier display, pricing, config
-│   └── sidebar-tier-nav.test.ts   — Solo vs full nav, feature access
+│   ├── sidebar-tier-nav.test.ts   — Solo vs full nav, feature access
+│   └── compress-image.test.ts     — Dimension calc, aspect ratio, file size validation
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression

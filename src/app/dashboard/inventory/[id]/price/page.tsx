@@ -10,6 +10,7 @@ import {
   History, TrendingUp, Printer, Globe,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
+import { compressImage } from '@/lib/compress-image'
 import Tooltip from '@/components/Tooltip'
 import UpgradePrompt from '@/components/UpgradePrompt'
 import { useUser } from '@/contexts/UserContext'
@@ -198,21 +199,19 @@ export default function PricingPage() {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => setPhotoPreview(reader.result as string)
-    reader.readAsDataURL(file)
-
-    const bytes = await file.arrayBuffer()
-    const base64 = Buffer.from(bytes).toString('base64')
-    setPhotoBase64(base64)
-    setPhotoMediaType(file.type)
-
     // Call identify API to update item details
     setStage('identifying')
     setError(null)
     try {
+      // Compress image client-side before sending
+      const compressed = await compressImage(file)
+      setPhotoPreview(compressed.previewUrl)
+      setPhotoBase64(compressed.base64)
+      setPhotoMediaType(compressed.mediaType)
+
+      const compressedFile = new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('photo', compressedFile)
       const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) {
         const data = await res.json()
