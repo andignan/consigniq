@@ -1,10 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## What is ConsignIQ
 
-ConsignIQ is an AI-powered consignment and estate sale management platform. It tracks consignors, their items, pricing, lifecycle status (active/grace/donation-eligible), and store/consignor revenue splits. Built for brick-and-mortar consignment shops with franchise support (multi-location, owner vs staff roles).
+AI-powered consignment and estate sale management platform. Tracks consignors, items, pricing, lifecycle status (active/grace/donation-eligible), and store/consignor revenue splits. Multi-location franchise support (owner vs staff roles).
 
 ## Commands
 
@@ -15,97 +13,105 @@ ConsignIQ is an AI-powered consignment and estate sale management platform. It t
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
-- `/consigniq [task description]` — Claude Code slash command. Reads CLAUDE.md, audits schema before DB changes, writes tests + manual test plan, runs full suite, updates CLAUDE.md, commits and pushes. File: `.claude/commands/consigniq.md`
+- `/consigniq [task description]` — Claude Code slash command. File: `.claude/commands/consigniq.md`
 
 ## Tech Stack
 
-- **Playwright** for E2E browser testing (chromium)
 - **Next.js 14** (App Router, React 18, TypeScript, `src/` directory)
-- **Supabase** for auth, database, and RLS — accessed via `@supabase/ssr`
-- **Tailwind CSS 3** for styling (responsive: `md:` breakpoint for desktop)
+- **Supabase** for auth, database, RLS — via `@supabase/ssr`
+- **Tailwind CSS 3** (responsive: `md:` breakpoint for desktop)
 - **lucide-react** for icons
-- **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing and photo identification (vision)
-- **SerpApi** for eBay sold comp lookups (engine: ebay, `LH_Sold=1`, `LH_Complete=1`, `LH_ItemCondition=3000` for pre-owned only)
-- **pdf-lib** for PDF label generation (no browser dependency)
-- **Stripe** (`stripe`) for subscription billing and payment processing
-- **Resend** (`resend`) for transactional email (agreement emails, expiry notifications)
+- **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing + photo ID (vision)
+- **SerpApi** for eBay sold comp lookups (`LH_Sold=1`, `LH_Complete=1`, `LH_ItemCondition=3000`)
+- **pdf-lib** for PDF label generation
+- **Stripe** (`stripe`) for subscription billing
+- **Resend** (`resend`) for transactional email
+- **Playwright** for E2E browser testing (chromium)
 - Path alias: `@/*` maps to `./src/*`
 
 ## Architecture
 
 ### Supabase Client Pattern
 
-Three Supabase client factories:
-- `src/lib/supabase/client.ts` — browser client (`createBrowserClient`), used in `'use client'` components
-- `src/lib/supabase/server.ts` — server client (`createServerClient`), uses `cookies()` from `next/headers`. Used in Server Components and API routes. Exported as both `createServerClient` and `createClient`
-- `src/lib/supabase/admin.ts` — service role client (`createAdminClient`), bypasses RLS. Used only in admin routes and superadmin checks. Also exports `checkSuperadmin()` helper that authenticates via the regular client then verifies `is_superadmin` via service role (needed because superadmin users may not satisfy RLS policies on the users table)
+Three client factories:
+- `src/lib/supabase/client.ts` — browser client (`createBrowserClient`), `'use client'` components
+- `src/lib/supabase/server.ts` — server client (`createServerClient`), Server Components + API routes. Exported as both `createServerClient` and `createClient`
+- `src/lib/supabase/admin.ts` — service role client (`createAdminClient`), bypasses RLS. Exports `checkSuperadmin()` helper (authenticates via regular client, verifies `is_superadmin` via service role — needed because superadmin may not satisfy RLS)
 
-### Data Layer
+### API Routes
 
-- **API routes** (`src/app/api/`) — RESTful endpoints for consignors, items, pricing (comps, suggest, identify), locations, settings. Use the server Supabase client, validate required fields, and attach `created_by` from the authenticated user.
-- `/api/locations` — GET (list all account locations), POST (create new location, owner only)
-- `/api/items` supports query params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`. Also supports `POST` (create), `PATCH` (update with auto-timestamps for sold/donated/priced). PATCH with `status: 'sold'` also writes a `price_history` record automatically.
-- `/api/price-history` — GET similar sold items from `price_history` table. Requires `category` param, optional `name` (ilike search), `exclude_item_id`, `limit` (max 50, default 10). Falls back to broader category search if name search returns few results.
-- `/api/admin/stats` — GET cross-account platform stats (accounts by tier/status, locations, users, items by status, consignors by status). Superadmin only.
-- `/api/admin/accounts` — GET list/detail accounts with location/user counts. PATCH to update tier (solo/starter/standard/pro), status (active/suspended/cancelled/inactive), account_type, is_complimentary, complimentary_tier, extend_trial. Superadmin only. Supports `?id=`, `?tier=`, `?status=` filters.
-- `/api/admin/users` — GET list all users across accounts with account join. Supports `?search=`, `?account_type=`, `?tier=` filters. POST creates a new user with account, location, auth user (email_confirm: false), and users table row (upsert for trigger compat), then generates invite link via `auth.admin.generateLink()` and sends branded invite email via Resend. Invite email is non-critical — returns `invite_warning` if it fails. Superadmin only.
-- `/api/help/search` — POST AI-powered help search. Takes `{ question: string }`, calls Claude with the help knowledge base as system context. Returns `{ answer: string }`. Scoped to ConsignIQ questions only.
-- `/api/reports/query` — POST natural-language report queries. Takes `{ question, location_id? }`. Uses Claude to generate read-only SQL, validates (SELECT-only, account_id scoping, forbidden tables blocked), executes via Supabase RPC `execute_readonly_query`, generates AI summary. Allowed tables: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements. Staff users auto-scoped to their location.
-- `/api/labels/generate` — POST PDF label generation. Takes `{ item_ids: string[], size: '2x1' | '4x2' }`. Fetches items with consignor/location joins, scoped by account_id. Returns PDF blob. Labels include item name (2-line max), category, condition, price (with strikethrough for markdowns), consignor (first name + last initial), location, short item ID, ConsignIQ branding.
-- `/api/billing/checkout` — POST creates Stripe Checkout session. Takes `{ tier: 'solo' | 'starter' | 'standard' | 'pro' }` for subscriptions or `{ product: 'topup_50' }` for one-time 50-lookup top-up. Creates Stripe customer if needed. Owner only. Returns `{ url }` to redirect. Gracefully handles missing Stripe keys (returns 503).
-- `/api/billing/portal` — POST creates Stripe Customer Portal session. Requires existing stripe_customer_id. Owner only. Returns `{ url }`.
-- `/api/billing/webhook` — POST Stripe webhook handler. Excluded from auth middleware. Handles: `checkout.session.completed` (update tier, handle topup_50 bonus lookups, convert trial→paid), `customer.subscription.updated` (sync tier), `customer.subscription.deleted` (downgrade to starter), `invoice.payment_failed` (log warning only).
-- `/api/trial/check-expiry` — POST cron endpoint. Finds trials expiring in 1 day and sends reminder emails. Reports expired trial counts. Auth via `Authorization: Bearer CRON_SECRET` header. Excluded from middleware auth.
-- `/api/pricing/comps` — SerpApi eBay sold comp lookup. Filters: sold listings only (`LH_Sold=1`, `LH_Complete=1`), pre-owned condition only (`LH_ItemCondition=3000`). Also client-side filters out any remaining new-condition results (Brand New, New with tags, etc.).
-- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision)
-- `/api/pricing/identify` — Claude vision item identification from photos
-- `/api/pricing/cross-account` — Cross-account pricing intelligence (Pro-tier only). Three-level match: exact name+category+condition → fuzzy name+category → category fallback. Requires ≥3 samples. Optional Claude insight text.
-- `/api/payouts` — GET consignor payout data (sold items grouped by consignor with split calculations). Supports `location_id`, `status` (`unpaid`/`paid`/`all`) filters. PATCH marks items as paid (takes `item_ids[]`, optional `payout_note`).
-- `/api/agreements/send` — POST sends consignment agreement email. Takes `{ consignor_id }`. Fetches consignor + items + location, creates `agreements` record, sends email via Resend, updates `email_sent_at`. Returns 400 if no email on consignor.
-- `/api/agreements/notify-expiring` — POST finds consignors with `expiry_date` = today + 3 days, skips already-notified ones, sends reminder emails. Designed for cron job invocation. Returns `{ sent, skipped, errors? }`.
-- `/api/auth/check-superadmin` — GET returns `{ is_superadmin: boolean }`. Uses service role to bypass RLS. Called by login page to determine redirect destination. Excluded from middleware auth protection (under `/api/auth/*`).
-- `/api/auth/forgot-password` — POST public endpoint (no auth required, under `/api/auth/*`). Takes `{ email }`. Looks up user, generates recovery link via `auth.admin.generateLink({ type: 'recovery' })`, sends branded reset email via Resend. Always returns 200 to prevent user enumeration.
-- `/api/admin/users/reset-password` — POST superadmin-only. Takes `{ user_id }`. Generates recovery link and sends branded reset email to the user. Returns `{ sent: true }` on success.
+**Items & Consignors:**
+- `/api/items` — GET (params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`), POST, PATCH (auto-timestamps for sold/donated/priced; `status: 'sold'` writes `price_history` record)
+- `/api/consignors` — GET/POST with location scoping
+- `/api/price-history` — GET similar sold items. Requires `category`, optional `name`, `exclude_item_id`, `limit` (max 50, default 10)
+- `/api/locations` — GET (all account locations), POST (owner only)
+- `/api/payouts` — GET (sold items grouped by consignor with split calcs, `location_id`/`status` filters), PATCH (mark items paid, `item_ids[]`, optional `payout_note`)
 
-### UserContext
+**Pricing:**
+- `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results
+- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits.
+- `/api/pricing/identify` — Claude vision item identification
+- `/api/pricing/cross-account` — Pro-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
-`src/contexts/UserContext.tsx` provides `UserProvider` and `useUser()` hook. The dashboard layout wraps children in `<UserProvider>` with the authenticated user's profile (id, account_id, location_id, role, joined accounts/locations). Client components use `useUser()` to access account_id, role, etc.
+**Admin (superadmin only):**
+- `/api/admin/stats` — cross-account platform stats
+- `/api/admin/accounts` — GET list/detail, PATCH tier/status/account_type. Filters: `?id=`, `?tier=`, `?status=`
+- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates account+location+auth user+users row (upsert for trigger compat), sends invite email via Resend (non-critical)
+- `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
+- `/api/admin/network-stats` — cross-account pricing intelligence stats
 
-### LocationContext (Multi-Location)
+**Billing:**
+- `/api/billing/checkout` — POST, takes `{ tier }` or `{ product: 'topup_50' }`. Owner only. Returns `{ url }`
+- `/api/billing/portal` — POST, creates Stripe Portal session. Owner only
+- `/api/billing/webhook` — POST, excluded from auth middleware. Handles: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Sends lifecycle emails via Resend (non-critical)
 
-`src/contexts/LocationContext.tsx` provides `LocationProvider` and `useLocation()` hook. Manages the active location across the app:
-- **Staff**: locked to their assigned `location_id`, cannot switch
-- **Owner**: can switch between any location on their account + "All Locations" view
-- Active location persists in `localStorage` (key: `consigniq_active_location`)
-- When switching, updates both context state AND URL (`?location_id=xxx`) so server components also react
-- Exposes: `activeLocationId` (null when "All Locations"), `activeLocationName`, `locations[]`, `isAllLocations`, `canSwitchLocations`, `setActiveLocation()`
-- Dashboard layout loads all account locations and passes to LocationProvider
-- Client components should use `useLocation().activeLocationId` instead of `useUser().location_id` for data queries
+**Auth (excluded from middleware):**
+- `/api/auth/check-superadmin` — GET, returns `{ is_superadmin }`. Uses service role
+- `/api/auth/forgot-password` — POST public. Always returns 200 (prevents enumeration)
+
+**Other:**
+- `/api/agreements/send` — POST, takes `{ consignor_id }`. Creates agreement record, sends email
+- `/api/agreements/notify-expiring` — POST cron. Finds consignors expiring in 3 days, sends reminders
+- `/api/help/search` — POST, takes `{ question }`. Claude with help knowledge base context
+- `/api/reports/query` — POST, takes `{ question, location_id? }`. Claude generates read-only SQL, validated (SELECT-only, account_id scoping, forbidden tables blocked), executed via `execute_readonly_query` RPC. Allowed: items, consignors, price_history, locations, markdowns. Forbidden: users, accounts, invitations, agreements
+- `/api/labels/generate` — POST, takes `{ item_ids[], size: '2x1'|'4x2' }`. Returns PDF blob
+- `/api/trial/check-expiry` — POST cron. Auth via `Authorization: Bearer CRON_SECRET`. Excluded from middleware
+- `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST)
+
+### Contexts
+
+**UserContext** (`src/contexts/UserContext.tsx`): `UserProvider` + `useUser()` hook. Provides id, account_id, location_id, role, joined accounts/locations.
+
+**LocationContext** (`src/contexts/LocationContext.tsx`): `LocationProvider` + `useLocation()` hook.
+- Staff: locked to assigned `location_id`
+- Owner: can switch locations + "All Locations" view
+- Persists in `localStorage` (key: `consigniq_active_location`)
+- Updates both context state AND URL (`?location_id=xxx`)
+- Exposes: `activeLocationId`, `activeLocationName`, `locations[]`, `isAllLocations`, `canSwitchLocations`, `setActiveLocation()`
 
 ### Type System
 
-Two type files exist with overlapping but divergent definitions:
-- `src/types/database.ts` — mirrors the Supabase schema closely, includes the `Database` generic interface
-- `src/types/index.ts` — application-level types with UI helpers (`getLifecycleStatus`, `COLOR_CLASSES`, `ITEM_CATEGORIES`, `CONDITION_LABELS`). This is what most components import from `@/types`
-
-Note: these files have some mismatches (e.g., field names like `split_pct_store` vs `split_store`, `grace_period_days` vs `grace_days`). The `types/index.ts` version reflects the actual app usage.
+- `src/types/database.ts` — mirrors Supabase schema, `Database` generic interface
+- `src/types/index.ts` — app-level types with UI helpers (`getLifecycleStatus`, `COLOR_CLASSES`, `ITEM_CATEGORIES`, `CONDITION_LABELS`). Most components import from `@/types`
+- Note: field name mismatches exist (e.g., `split_pct_store` vs `split_store`). `types/index.ts` reflects actual usage.
 
 ### Auth & Middleware
 
-- Auth: Supabase email/password auth. Login at `/auth/login`. Password setup at `/auth/setup-password` (handles both invite and recovery links).
-- Dashboard layout (`src/app/dashboard/layout.tsx`) checks auth server-side, redirects to login if unauthenticated, loads user profile with joined account/location data, loads all account locations, wraps children in `<Suspense>`, `<UserProvider>`, and `<LocationProvider>`.
-- Middleware (`middleware.ts`) protects `/dashboard/:path*`, `/admin/:path*` (redirect to login), and `/api/:path*` (return 401 JSON). `/api/auth/*`, `/api/billing/webhook`, and `/api/trial/*` are excluded from protection.
-- Post-login redirect: login page calls `/api/auth/check-superadmin` after successful auth — superadmins go to `/admin`, regular users go to `/dashboard`.
+- Supabase email/password auth. Login: `/auth/login`. Password setup: `/auth/setup-password` (invite + recovery links)
+- Setup-password manually parses `access_token`/`refresh_token` from URL hash → `setSession()` (required because `@supabase/ssr` uses cookie storage, doesn't auto-detect hash fragments)
+- Dashboard layout: auth check → load profile (with service role fallback) → redirect superadmins to `/admin` → wrap in `<UserProvider>` + `<LocationProvider>`
+- Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/trial/*`
+- Post-login: calls `/api/auth/check-superadmin` → superadmins go to `/admin`, others to `/dashboard`
 
 ### Superadmin Access
 
-- The `is_superadmin` boolean on the `users` table gates access to `/admin` routes
-- Admin layout (`src/app/admin/layout.tsx`) checks `is_superadmin` server-side using service role client (bypasses RLS); non-superadmins redirect to `/dashboard`
-- Admin API routes (`/api/admin/stats`, `/api/admin/accounts`, `/api/admin/network-stats`) use `checkSuperadmin()` from `@/lib/supabase/admin` and `createAdminClient()` for all queries — return 403 for non-superadmins
-- All admin queries are cross-account (no `account_id` scoping) — superadmin sees all data
-- Admin has its own sidebar with red/Shield branding, separate from the dashboard sidebar. No "Back to App" link — superadmins live in `/admin` only. Sign Out button at bottom uses same Supabase signOut() pattern as dashboard sidebar, redirects to `/auth/login`.
-- **Login redirect**: after successful login, `/api/auth/check-superadmin` is called (uses service role to bypass RLS). If `is_superadmin` is true, user is redirected to `/admin` instead of `/dashboard`
-- **Important**: all superadmin checks must use the service role client because the superadmin user may not have an `account_id` that satisfies RLS policies on the users table
+- `is_superadmin` on `users` table gates `/admin` routes
+- Admin layout checks via service role client (bypasses RLS)
+- All admin API routes use `checkSuperadmin()` + `createAdminClient()` → 403 for non-superadmins
+- All admin queries are cross-account (no `account_id` scoping)
+- Admin has own sidebar (red/Shield branding). No "Back to App" link — superadmins live in `/admin` only
+- **Critical**: every Supabase Auth user MUST have a `users` table row. Auth alone is not enough.
+- All superadmin checks MUST use service role client (superadmin may not satisfy RLS)
 
 ### Stripe Billing & Tier Enforcement
 
@@ -134,148 +140,96 @@ Note: these files have some mismatches (e.g., field names like `split_pct_store`
 | All Locations dashboard | - | - | - | Y |
 | API access | - | - | - | Y |
 
-- **Tier limits** defined in `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
-- **Feature gates** in `src/lib/feature-gates.ts` — `canUseFeature(tier, feature)`, `getUpgradeMessage(feature)`
-- **Stripe client** singleton in `src/lib/stripe.ts` — `getStripe()`
-- **UpgradePrompt** component (`src/components/UpgradePrompt.tsx`) — shown in place of locked features with "Upgrade to [tier]" CTA
-- **AI pricing usage tracking**: `accounts.ai_lookups_this_month` + `accounts.ai_lookups_reset_at` columns. Checked in `/api/pricing/suggest` — solo tier limited to 200/month, starter/standard/pro unlimited (`aiPricingLimit: null`). Counter resets after 30 days. Incremented via `increment_ai_lookups` RPC.
-- **Webhook** at `/api/billing/webhook` — excluded from auth middleware, uses service role Supabase client, verifies Stripe signature. Sends branded lifecycle emails via Resend: upgrade confirmation, cancellation notice, payment failure alert.
-- **Feature gating in UI**: consignor management (starter+), markdown schedules (starter+), payouts (starter+), reports (starter+), "Priced Before" panel (standard+), email notifications (standard+), multi-location (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro)
-- **Bonus lookups**: Solo/starter accounts can purchase 50-lookup top-up packs ($5). Tracked via `accounts.bonus_lookups` (purchased) and `accounts.bonus_lookups_used` (consumed). Monthly reset clears `ai_lookups_this_month` only; bonus lookups persist until used.
-- **Settings billing UI**: Solo tier shows usage meter (X of 200); Starter/Standard/Pro show "Unlimited" badge. Pricing cards for upgrade, "Manage Billing" button for paid tiers via Stripe Portal
-- **Billing lifecycle emails** via Resend (sent from webhook): `buildUpgradeEmail()` on checkout.session.completed (plan name, price, features, dashboard CTA), `buildCancellationEmail()` on subscription.deleted (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` on invoice.payment_failed (update payment method CTA to Stripe portal). All non-critical — webhook returns 200 even if email fails.
+**Key files:**
+- `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
+- `src/lib/feature-gates.ts` — `canUseFeature()`, `getUpgradeMessage()`, `isAccountActive()`, `getEffectiveTier()`, `canAccountUseFeature()`, `isLookupLimitReached()`
+- `src/lib/stripe.ts` — `getStripe()` singleton
+- `src/components/UpgradePrompt.tsx` — shown for locked features
+
+**AI lookup tracking:** `accounts.ai_lookups_this_month` + `ai_lookups_reset_at`. Solo: 200/mo, others: unlimited. Incremented via `increment_ai_lookups` RPC. Monthly reset clears `ai_lookups_this_month` only.
+
+**Bonus lookups:** `accounts.bonus_lookups` (purchased) + `bonus_lookups_used` (consumed). 50-lookup top-up packs ($5). Persist until used (not cleared on monthly reset).
+
+**UI feature gating:** consignor management (starter+), markdown schedules (starter+), payouts (starter+), reports (starter+), "Priced Before" panel (standard+), email notifications (standard+), multi-location (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro)
+
+**Server-side tier guards:** `requireFeature()` in `src/lib/tier-guard.ts` — used in dashboard layouts/pages for consignors, reports, payouts. API routes check `canUseFeature()` on consignors (GET/POST), agreements/send, payouts (GET/PATCH).
+
+**Billing lifecycle emails** via Resend (from webhook): `buildUpgradeEmail()`, `buildCancellationEmail()`, `buildPaymentFailedEmail()`. All non-critical.
+
+**Stripe price IDs (test mode):**
+- `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` ($9/mo)
+- `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` ($49/mo)
+- `STRIPE_STANDARD_PRICE_ID=price_1TB07NRoBkkefSr8kQX1pXxL` ($79/mo)
+- `STRIPE_PRO_PRICE_ID=price_1TB07ORoBkkefSr8TjMEohzi` ($129/mo)
+- `STRIPE_TOPUP_50_PRICE_ID=price_1TB07ORoBkkefSr8Ey050TZt` ($5 one-time)
 
 ### Account Type System
 
-Three account types tracked via `accounts.account_type`:
-- **paid** (default): Normal paying customers. Tier determines features.
-- **trial**: 30-day free trial. Full access to assigned tier until `trial_ends_at`. After expiry, locked out with full-screen upgrade page. Cron at `/api/trial/check-expiry` sends reminder 1 day before expiry.
-- **complimentary**: Free forever. `is_complimentary = true`, `complimentary_tier` overrides the account's tier for feature access checks.
+Three types via `accounts.account_type`:
+- **paid** (default): tier determines features
+- **trial**: 30-day free trial → full-screen lockout after `trial_ends_at`. Cron sends reminder 1 day before
+- **complimentary**: `is_complimentary = true`, `complimentary_tier` overrides tier for feature checks
 
-Key functions in `src/lib/feature-gates.ts`:
-- `isAccountActive(account)` — true if paid, complimentary, or trial not expired. False if suspended/cancelled.
-- `getEffectiveTier(account)` — returns `complimentary_tier` for complimentary accounts, otherwise `account.tier`.
-- `canAccountUseFeature(account, feature)` — combines active check + tier check.
-- `isLookupLimitReached(tier, usedThisMonth, bonusLookups, bonusUsed)` — checks total usage vs total capacity.
+Key functions in `src/lib/feature-gates.ts`: `isAccountActive()`, `getEffectiveTier()`, `canAccountUseFeature()`, `isLookupLimitReached()`
 
 ### Solo Pricer Tier
 
-Solo ($9/mo, 200 AI lookups/mo) is a simplified pricing-only experience:
-- **Features**: AI pricing, price lookup, save to inventory, CSV export, photo identification
-- **Blocked**: consignor management, lifecycle, payouts, agreements, multi-location, staff, reports, repeat item history, markdowns
-- **Sidebar**: Dashboard, Price Lookup, My Inventory, Settings (billing only). Upgrade CTA in footer.
-- **Dashboard**: Usage meter (green/yellow/red), "Buy 50 more — $5" button, "Price an Item" quick action, upgrade CTA card
-- **Inventory**: Items saved without `consignor_id` (nullable). Mark as Sold, Archive actions.
-- **Settings**: Billing tab only. Current plan, lookups remaining, reset date, buy more button, Stripe portal.
-- Component: `src/components/SoloDashboard.tsx` (client component, rendered when tier is 'solo')
+Solo ($9/mo, 200 AI lookups/mo) — pricing-only experience:
+- **Sidebar**: Dashboard, Price Lookup, My Inventory, Settings. "Solo Pricer" label. Upgrade CTA → direct Stripe checkout
+- **Dashboard**: `SoloDashboard` component (usage meter, quick actions, upgrade CTA). No consignor/location content
+- **Settings**: Billing + Profile tabs only. Usage meter, buy top-up, manage billing, upgrade to Starter CTA
+- **Inventory**: Items without `consignor_id` (nullable). Mark as Sold, Archive
+- Component: `src/components/SoloDashboard.tsx`
 
-### Trial Account Experience
+### Trial Experience
 
-- **TrialBanner** (`src/components/TrialBanner.tsx`): Shown on all dashboard pages for trial accounts. Days remaining with color coding (green >14, yellow 7-14, orange <7). Links to upgrade.
-- **TrialExpiredPage** (`src/components/TrialExpiredPage.tsx`): Full-screen lockout showing all tier options with Stripe checkout links. Dashboard layout renders this when `trial_ends_at` has passed.
-- **Expiry cron**: `/api/trial/check-expiry` — finds trials expiring tomorrow, sends reminder emails to account owners. Auth: `Authorization: Bearer CRON_SECRET` or open if no CRON_SECRET set.
+- `TrialBanner` (`src/components/TrialBanner.tsx`): color-coded days remaining (green >14, yellow 7-14, orange <7)
+- `TrialExpiredPage` (`src/components/TrialExpiredPage.tsx`): full-screen lockout with tier selection
+- Cron: `/api/trial/check-expiry` sends reminders for trials expiring tomorrow
 
-### Multi-tenancy Model
+### Multi-tenancy
 
-Data is scoped by `account_id` and `location_id`. Staff users are locked to their assigned location (cannot switch). Owner users can switch between locations via the sidebar location switcher and see "All Locations" aggregate views. When "All Locations" is selected, queries use `account_id` instead of `location_id`. RLS policies in Supabase handle row-level access control.
+Data scoped by `account_id` + `location_id`. Staff locked to assigned location. Owner can switch via sidebar. "All Locations" uses `account_id` instead of `location_id`. RLS handles row-level access.
 
 ### Consignor Lifecycle
 
-Core domain concept: consignors go through intake_date -> expiry_date -> grace_end_date. The `getLifecycleStatus()` function in `src/types/index.ts` computes lifecycle state (days remaining, color coding, grace/donation eligibility) used throughout the UI.
+intake_date → expiry_date → grace_end_date. `getLifecycleStatus()` in `src/types/index.ts` computes state (days remaining, color, grace/donation eligibility). Timezone fix: parses dates as local time (appends `T00:00:00`).
 
 ### Email Infrastructure
 
-- `src/lib/email.ts` — `sendEmail({ to, subject, text, html })` wrapper around Resend SDK. From address: `ConsignIQ <${RESEND_FROM_EMAIL}>` (defaults to `noreply@consigniq.com`).
-- `src/lib/email-templates.ts` — `buildAgreementEmail()` and `buildExpiryReminderEmail()`. Both return `{ subject, text, html }` (dual plain-text + HTML). Agreement email includes: store header, consignor greeting, agreement details (dates, splits), items table (name/category/condition — NO prices ever shown to consignor), "How It Works" section, pickup instructions, contact info. Expiry reminder includes: store name, expiry date, grace end date, store phone.
-- `src/components/AgreementButton.tsx` — client component with "Send Agreement"/"Resend Agreement" button, confirmation modal, success/error handling, last-sent date display.
-- `src/components/IntakeAgreementPrompt.tsx` — client component showing amber prompt "Ready to send the agreement email?" with Send/Skip buttons after intake completion.
-- Agreements table: `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`.
+- `src/lib/email.ts` — `sendEmail()` wrapper around Resend. From: `ConsignIQ <${RESEND_FROM_EMAIL}>`
+- `src/lib/email-templates.ts` — templates (all dual plain-text + HTML):
+  - `buildAgreementEmail()` — store header, dates, splits, items (NO prices), pickup instructions
+  - `buildExpiryReminderEmail()` — store name, expiry date, grace end, phone
+  - `buildInviteEmail()` — user name, account name, tier, setup link
+  - `buildPasswordResetEmail()` — reset CTA, 24-hour expiry
+  - `buildUpgradeEmail()`, `buildCancellationEmail()`, `buildPaymentFailedEmail()` — billing lifecycle
+- `AgreementButton` + `IntakeAgreementPrompt` components on consignor detail page
 
 ### Category-Aware Pricing
 
-12 item categories defined in `src/lib/pricing/categories.ts`, each with `searchTerms()`, `priceGuidance`, and `typicalMargin`. Used by both the eBay comps search and AI pricing prompt.
+12 categories in `src/lib/pricing/categories.ts`, each with `searchTerms()`, `priceGuidance`, `typicalMargin`. Description hints for high-variance categories shown when description empty or <20 chars.
 
-## Key Pages & Features
+## Key Pages
 
-### Dashboard (`/dashboard`)
-Server component. Shows stats (active consignors, pending items, inventory value, sold count), lifecycle alerts (expiring, grace, donation-eligible), quick actions.
-
-### Consignors (`/dashboard/consignors`)
-List, detail, and new consignor form. Detail page shows lifecycle progress bar, item stats, agreement button (Send/Resend with last-sent date), and post-intake agreement prompt. Intake form (`/dashboard/consignors/[id]/intake`) with multi-item queue and photo-based AI identification per row.
-
-### Inventory (`/dashboard/inventory`)
-Client component with status tabs, search, category filter, consignor filter dropdown, edit/sell/donate modals, CSV export. Filters persist in URL params. Checkboxes on each item for bulk selection; bulk action bar with label size picker and "Print Labels" button. Individual "Print" button on priced items.
-
-### Pricing (`/dashboard/inventory/[id]/price` and `/dashboard/pricing`)
-Two pricing UIs: inventory item pricing (for specific items) and price lookup (scratch pad). Both support:
-- Photo upload with AI identification (Claude vision)
-- "eBay Comps Only" and "Full AI Pricing" split buttons
-- "Get AI Suggestion" escalation after comps-only
-- Inline editing of item details (inventory pricing only)
-- Manual price override with apply
-- Item name auto-capitalize on blur (first letter of each word capitalized when user leaves the field)
-- Category-specific description hints for high-variance categories (China & Crystal, Jewelry & Silver, Collectibles & Art, Furniture, Electronics, Clothing & Shoes) — shown below description field when description is empty or under 20 chars
-- "Priced Before" panel (inventory pricing only) — shows similar previously-sold items from `price_history` with avg sold price and avg days to sell
-- "Market Intelligence" panel (inventory pricing only, Pro tier) — cross-account pricing data from the entire ConsignIQ network with avg/median/range/days stats and optional AI insight text. Three-level matching: exact → fuzzy → category fallback. Shows UpgradePrompt for non-Pro tiers.
-
-### Reports (`/dashboard/reports`)
-Full analytics page with time filter (7d/30d/90d/YTD/All Time), owner-role location toggle, 13 sections:
-1. **Store Performance** — revenue, store earnings, consignor payouts, items sold/donated + Payout Report & Item Detail CSV exports
-2. **Pricing Performance** — avg days to sell, avg sale price, sell-through rate, full price vs markdown breakdown
-3. **Inventory Snapshot** — active consignors, pending/priced counts, inventory value, expiring items + Donation Report CSV export
-4. **Activity Summary** — intake'd, priced, sold, donated, new consignors counts
-5. **Consignor Report** — searchable consignor dropdown, summary card with lifecycle status, item breakdown, full item table, Consignor Payout Slip CSV
-6. **Category Performance** — sortable table by category with items/sold/revenue/avg price/avg days/sell-through, CSV export
-7. **Aging Inventory** — active items oldest-first, color-coded expiry (red ≤0d, amber ≤14d, green >14d), CSV export, capped at 50 rows in UI
-8. **Consignor Performance Rankings** — sortable comparative table (items/sold/revenue/avg days/earned/sell-through), CSV export
-9. **Weekly Operations Summary** — fixed 7-day window, week-over-week comparison with % change arrows, no CSV
-10. **Markdown Effectiveness** — stat cards (markdown vs full-price sales/revenue/rate), breakdown table by markdown %, CSV export
-11. **Pricing Accuracy (AI vs Actual)** — stat cards (within/above/below AI range), detail table with variance %, CSV export. Requires `low_price`/`high_price` on items
-12. **Payout Reconciliation (All Time)** — all-time per-consignor ledger with total sold/share/paid(stubbed $0)/balance, totals footer, CSV export
-13. **Donation & Tax Report** — donated items grouped by consignor with FMV (original asking price), subtotals, CSV export
-
-Uses browser Supabase client with client-side date filtering. All data fetched once per location change, filtered client-side by period. Items query includes `ai_reasoning`, `current_markdown_pct`, `low_price`, `high_price`. Consignor join includes `intake_date`, `expiry_date`, `grace_end_date`.
-
-**AI Report Prompt Bar** — natural language query bar at top of Reports page. User types a question, Claude generates read-only SQL, validated for safety (SELECT-only, account_id scoping, no forbidden tables), executed via Supabase RPC, results displayed in data table with AI summary. 6 suggested prompt chips for common queries. Staff auto-scoped to their location. Requires `execute_readonly_query` RPC function in Supabase.
-
-### Settings (`/dashboard/settings`)
-Tier-aware settings page:
-- **Solo tier** sees 2 tabs: Billing (plan badge, usage meter, buy top-up, manage billing, upgrade to Starter CTA) and Profile (name, email, change password). No location/team/consignment settings shown.
-- **Starter+ tiers** see 3 tabs with role-based access:
-  - **Location Settings** (visible to owner + staff, only owner can edit): location name/address/city/state/phone, default split % (store + consignor, must add to 100 with live validation), agreement_days, grace_days, markdown_enabled toggle with hardcoded schedule display (Day 31 → 25% off, Day 46 → 50% off). Shows settings for the currently active location from LocationContext.
-  - **Locations** (owner only): list all locations on account with active badge, "Add Location" form with full settings (name, address, splits, agreement/grace days, markdown toggle). Click "Edit" to switch to that location's settings.
-  - **Account Settings** (owner only): account name (editable), tier badge (read-only), Manage Billing link (placeholder `/api/billing/portal`), team member list, invite user modal (email + role → writes to invitations table)
-
-API routes: `/api/settings/location` (GET + PATCH), `/api/settings/account` (GET + PATCH), `/api/settings/invite` (POST), `/api/locations` (GET + POST). All enforce role checks — owner for edits, staff gets read-only location settings.
-
-### Payouts (`/dashboard/payouts`)
-Client component. Shows consignors with sold items, split calculations (store/consignor shares), Mark as Paid functionality, filter tabs (Unpaid/Paid/All), CSV export. Summary cards: Total Owed, Total Paid Out, Consignors with Balance. Expandable consignor rows with item checkboxes for bulk "Mark as Paid" with optional payout note.
-
-### Sidebar (`/dashboard` layout)
-Responsive sidebar: desktop always visible, mobile hamburger menu with overlay. Auto-closes on route change. Main content has `pt-14 md:pt-0` for mobile header offset. **Tier-aware navigation**: Solo users see simplified nav (Dashboard, Price Lookup, My Inventory, Settings) with "Solo Pricer" subtitle and upgrade CTA in footer. Full tiers see: Dashboard, Consignors, Inventory, Price Lookup, Reports, Payouts, Settings. Consignors nav item shows amber badge with count of consignors expiring within 7 days or in grace period (scoped by active location). Location switcher dropdown below brand (owners can switch locations, staff sees static location name, hidden for solo). Mobile header shows active location name. User display at bottom shows `full_name` with fallback to `email` if name is null/empty/whitespace.
-
-### Admin (`/admin`) — Superadmin Only
-Platform administration for `admin@getconsigniq.com`. Separate layout with own sidebar (red/Shield branding).
-- **Overview** (`/admin`): Cross-account stats — accounts by tier/status, total locations/users/items/consignors with breakdowns. Network Pricing Intelligence card: total records, sold items, sell-through %, avg days to sell, top 5 categories.
-- **Users** (`/admin/users`): Cross-account user management. Search by email/name, filter by account_type and tier. Add User modal creates account + location + auth user + users row with 3 account type options: Paid (immediate active access), Trial (30-day then locked), Complimentary (free forever). Account type badges (Paid/Trial/Complimentary) with days remaining for trials.
-- **Accounts** (`/admin/accounts`): Filterable table (tier, status) of all accounts with location/user counts. Click row for detail.
-- **Account Detail** (`/admin/accounts/[id]`): Tier change dropdown (incl. solo), status toggle (incl. inactive), account_type badge, trial_ends_at display. Action buttons: Extend Trial (+30d), Convert to Complimentary, Convert to Paid, Disable/Enable Account. Locations list, users list with roles, item counts by status.
-
-### Help System (Three Layers)
-
-**Layer 1 — Tooltips**: Reusable `Tooltip` component (`src/components/Tooltip.tsx`) with `?` icon that shows content on hover/click. Used on settings fields (split %, agreement days, grace days, markdown toggle), pricing page (AI range), and consignor card (donate badge). Usage: `<Tooltip content="Explanation text" />`.
-
-**Layer 2 — Floating Help Widget**: `HelpWidget` component (`src/components/HelpWidget.tsx`) renders a persistent `?` button on all `/dashboard` pages (excluded from `/admin`). Opens a panel with search box and 9 quick links across 3 sections (Getting Started, Pricing Help, Account & Settings). Quick links expand/collapse inline answers. Mobile: full-screen panel.
-
-**Layer 3 — AI Help Search**: When user types in the widget search box, calls `/api/help/search` which sends the question to Claude with the help knowledge base (`src/lib/help-knowledge-base.ts`) as system context. Response shown in the widget with "Powered by AI" label. System prompt scopes answers to ConsignIQ only.
+- **Dashboard** (`/dashboard`): stats, lifecycle alerts, quick actions. Solo → `SoloDashboard`
+- **Consignors** (`/dashboard/consignors`): list, detail (lifecycle bar, agreement button), intake form with photo AI
+- **Inventory** (`/dashboard/inventory`): status tabs, search, filters, edit/sell/donate modals, CSV export, bulk label printing
+- **Pricing** (`/dashboard/inventory/[id]/price` + `/dashboard/pricing`): photo upload, eBay comps, AI pricing, "Priced Before" panel (standard+), "Market Intelligence" panel (pro), auto-capitalize, description hints
+- **Reports** (`/dashboard/reports`): 13 sections (Store Performance, Pricing Performance, Inventory Snapshot, Activity Summary, Consignor Report, Category Performance, Aging Inventory, Consignor Rankings, Weekly Ops, Markdown Effectiveness, Pricing Accuracy, Payout Reconciliation, Donation & Tax). Time filter, CSV exports, AI query bar
+- **Payouts** (`/dashboard/payouts`): consignor split calcs, mark as paid, filter tabs, CSV export
+- **Settings** (`/dashboard/settings`): tier-aware tabs. Solo: Billing+Profile. Starter+: Location Settings, Locations (owner), Account Settings (owner)
+- **Sidebar**: tier-aware nav, location switcher (owner), expiring consignor badge, role/tier label
+- **Admin** (`/admin`): Overview stats, Users (CRUD + invite), Accounts (detail + tier/status/type management, reset password)
+- **Help**: Tooltips, floating widget (`HelpWidget`), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
 
 ## Critical Patterns
 
 ### fetch() calls must include `credentials: 'include'`
-All client-side `fetch()` calls to `/api/` routes MUST include `credentials: 'include'` for mobile Safari to send session cookies through the middleware. This applies to every fetch in every client component.
+All client-side `fetch()` to `/api/` routes MUST include `credentials: 'include'` for mobile Safari cookie forwarding.
 
 ### Supabase schema column names
-Always audit actual column names before writing queries. Key fields:
+Always audit actual column names before writing queries:
 - Consignors: `split_store`, `split_consignor` (integers, not `split_pct_*`)
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
@@ -283,235 +237,99 @@ Always audit actual column names before writing queries. Key fields:
 - Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer)
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
-- Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price` (added Phase 5). Note: `priced_at` and `sold_at` were originally numeric columns; migration `20260314050000` converts them to `timestamptz` to match what the items route writes (ISO strings).
+- Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
 - Agreements: `id`, `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`
 
 ### Never hardcode location_id
-Client components: use `useLocation().activeLocationId` from LocationContext (not `useUser().location_id`).
-Server components: read from `searchParams.location_id` (LocationContext updates the URL when switching).
-API routes: read from request query params or body.
+- Client components: `useLocation().activeLocationId` (not `useUser().location_id`)
+- Server components: `searchParams.location_id`
+- API routes: request query params or body
+
+### Admin users POST pattern
+Uses `upsert` (onConflict: 'id') for public.users row because Supabase trigger on auth.users auto-creates partial row.
+
+### Invite/reset link redirect workaround
+`redirect_to` param in generated action links explicitly rewritten to `{NEXT_PUBLIC_APP_URL}/auth/setup-password` — Supabase ignores `redirectTo` when URL isn't in dashboard Redirect URLs allowlist.
 
 ## Environment Variables
 
-See `.env.example` for the full list. Key services: Supabase, Anthropic (AI pricing), SerpApi (eBay comps), Resend (email), Stripe (billing). Additional: `STRIPE_SOLO_PRICE_ID`, `STRIPE_TOPUP_50_PRICE_ID`, `CRON_SECRET` (for trial expiry cron auth). See `DEPLOYMENT.md` for Vercel deployment instructions and env var reference.
+See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Resend, Stripe. Additional: `STRIPE_SOLO_PRICE_ID`, `STRIPE_STARTER_PRICE_ID`, `STRIPE_STANDARD_PRICE_ID`, `STRIPE_PRO_PRICE_ID`, `STRIPE_TOPUP_50_PRICE_ID`, `CRON_SECRET`. See `DEPLOYMENT.md` for Vercel deployment guide.
 
 ## Testing
 
-Full test baseline established for Phases 1–6 + sidebar improvements + agreement emails + solo tier + admin user management + invite emails + password flow. Test suite: **260 tests, all passing**.
-
-### Test Count History
-- **Phase 5 complete**: 116 tests (unit: lifecycle 13, categories 5 = 18; api: consignors 7, items 15, pricing 6, settings 7, locations 8, price-history 10, admin 15, help 6, reports-query 12, labels 8 = 94; total = 18 + 94 + 4 help-components = 116)
-- **Phase 6 additions** (+40): feature-gates 14, billing 8, billing-webhook 5, cross-account-pricing 9, admin-network-stats 4 = 156
-- **Timestamp regression** (+2): items.test.ts +1 (priced_at/sold_at ISO string regression), cross-account-pricing.test.ts +1 (view shape validation) = 158
-- **Sidebar improvements** (+12): payouts.test.ts 12 (GET auth/404/empty/splits/location filter/unpaid filter/paid filter, PATCH auth/400 missing/400 empty/mark with note/mark without note) = 170
-- **eBay comps fix + auto-capitalize** (+10): pricing.test.ts +2 (SerpApi params, new-condition filtering), auto-capitalize.test.ts 8 (word capitalization, edge cases) = 180
-- **Description hints** (+12): description-hints.test.ts 12 (per-category hints, threshold, no-hint categories) = 192
-- **Agreement emails** (+11): agreements.test.ts 11 (send auth/validation/creation/email-sent-at, agreement template content/missing phone, expiry reminder template, notify-expiring auth/empty/query) = 203
-- **Solo tier + admin users** (+43): feature-gates.test.ts +28 (solo feature blocking, account type helpers, lookup limits, complimentary bypass, trial active/expired), admin-users.test.ts 11 (GET auth/search/list, POST auth/validation/create/complimentary/invite-email/invite-warning), trial-check-expiry.test.ts 4 (auth/reminder/expired count) = 246
-- **Password flow** (+14): password-validation.test.ts 6 (min length, empty, mismatch, valid), password-flow.test.ts 8 (reset-password auth/validation/404/send, forgot-password missing/valid/no-enum) = 260
+**272 Jest tests passing.** 5 Playwright E2E specs. 26 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
 __tests__/
 ├── unit/
-│   ├── lifecycle.test.ts      — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
-│   ├── categories.test.ts     — getCategoryConfig(), search terms, fallback behavior
-│   ├── help-components.test.ts — Knowledge base content and topic coverage
-│   ├── feature-gates.test.ts  — canUseFeature(), getUpgradeMessage(), tier configs, feature mapping, isAccountActive(), getEffectiveTier(), canAccountUseFeature(), isLookupLimitReached()
-│   ├── auto-capitalize.test.ts — Item name auto-capitalize on blur behavior
-│   ├── description-hints.test.ts — Category-specific description hints, threshold, coverage
-│   └── password-validation.test.ts — Password setup form validation (min length, mismatch, valid)
+│   ├── lifecycle.test.ts          — getLifecycleStatus(), CONDITION_LABELS, ITEM_CATEGORIES, COLOR_CLASSES
+│   ├── categories.test.ts         — getCategoryConfig(), search terms, fallback
+│   ├── help-components.test.ts    — Knowledge base content/topics
+│   ├── feature-gates.test.ts      — canUseFeature(), tier configs, account type helpers, lookup limits
+│   ├── auto-capitalize.test.ts    — Item name auto-capitalize
+│   ├── description-hints.test.ts  — Category-specific description hints
+│   └── password-validation.test.ts — Password form validation
 ├── api/
-│   ├── consignors.test.ts     — GET/POST validation, auth, location scoping
-│   ├── items.test.ts          — GET/POST/PATCH, filters, auto-timestamps, price_history writes, timestamp type regression
-│   ├── pricing.test.ts        — comps/identify/suggest validation, missing API keys, sold/pre-owned filters, new-condition exclusion
-│   ├── settings.test.ts       — role enforcement (owner vs staff) across all settings endpoints
-│   ├── locations.test.ts      — GET/POST /api/locations, validation, role enforcement
-│   ├── price-history.test.ts  — GET /api/price-history, auth, validation, search
-│   ├── admin.test.ts          — GET/PATCH /api/admin/stats + accounts, superadmin enforcement
-│   ├── help.test.ts           — POST /api/help/search validation, AI scoping, knowledge base
-│   ├── reports-query.test.ts  — POST /api/reports/query SQL validation, role scoping, security
-│   ├── labels.test.ts         — POST /api/labels/generate validation, account scoping, PDF output
-│   ├── billing.test.ts        — POST /api/billing/checkout + portal, auth, role, Stripe session
-│   ├── billing-webhook.test.ts — POST /api/billing/webhook signature, tier updates, downgrade
-│   ├── cross-account-pricing.test.ts — GET /api/pricing/cross-account tier enforcement, matching
-│   ├── admin-network-stats.test.ts — GET /api/admin/network-stats superadmin enforcement
-│   ├── payouts.test.ts         — GET/PATCH /api/payouts, auth, filters, split calcs, mark as paid
-│   ├── agreements.test.ts      — POST /api/agreements/send + notify-expiring, auth, validation, email templates
-│   ├── admin-users.test.ts     — GET/POST /api/admin/users, superadmin enforcement, search, create account/user/location, invite email via Resend, invite failure warning
-│   ├── trial-check-expiry.test.ts — POST /api/trial/check-expiry, auth, reminder emails, expired count
-│   ├── password-flow.test.ts    — POST /api/admin/users/reset-password (auth, validation, send), POST /api/auth/forgot-password (valid email, unknown email no-enum)
-│   └── critical-security.test.ts — C1 UUID validation (5 tests), C5 tier enforcement solo blocked from starter+ features (8 tests)
+│   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
+│   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
+│   ├── pricing.test.ts            — comps/identify/suggest, SerpApi params, new-condition exclusion
+│   ├── settings.test.ts           — role enforcement (owner vs staff)
+│   ├── locations.test.ts          — GET/POST, validation, role enforcement
+│   ├── price-history.test.ts      — GET, auth, validation, search
+│   ├── admin.test.ts              — GET/PATCH admin stats + accounts, superadmin enforcement
+│   ├── help.test.ts               — POST help/search, AI scoping
+│   ├── reports-query.test.ts      — SQL validation, role scoping, security
+│   ├── labels.test.ts             — validation, account scoping, PDF output
+│   ├── billing.test.ts            — checkout + portal, auth, role, Stripe session
+│   ├── billing-webhook.test.ts    — signature, tier updates, downgrade
+│   ├── cross-account-pricing.test.ts — tier enforcement, matching
+│   ├── admin-network-stats.test.ts — superadmin enforcement
+│   ├── payouts.test.ts            — GET/PATCH, auth, filters, split calcs, mark as paid
+│   ├── agreements.test.ts         — send + notify-expiring, auth, validation, templates
+│   ├── admin-users.test.ts        — GET/POST, superadmin enforcement, invite email
+│   ├── trial-check-expiry.test.ts — auth, reminder emails, expired count
+│   ├── password-flow.test.ts      — reset-password, forgot-password
+│   └── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
 ```
 
-### Playwright E2E Tests
+### Playwright E2E
 ```
 e2e/
-├── auth.spec.ts           — Login page render, invalid credentials, valid login redirect
-├── navigation.spec.ts     — 7 sidebar nav items, active state, mobile hamburger
-├── data-isolation.spec.ts — /admin redirects non-superadmin, unauthenticated access blocked
-├── help-widget.spec.ts    — Widget visible on /dashboard, opens on click, absent on /admin
-└── labels.spec.ts         — Checkboxes on inventory, bulk action bar, print button on priced items
+├── auth.spec.ts           — Login render, invalid creds, valid redirect
+├── navigation.spec.ts     — 7 nav items, active state, mobile hamburger
+├── data-isolation.spec.ts — Admin redirect, unauth blocked
+├── help-widget.spec.ts    — Widget on dashboard, absent on admin
+└── labels.spec.ts         — Checkboxes, bulk actions, print button
 ```
+E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_USER_PASSWORD` env vars. `npx playwright install chromium`.
 
-**Important:** E2E tests require a running dev server (`npm run dev`) and seeded test data in Supabase. They will not run in CI without additional setup (test database seeding, environment variables). Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars for auth tests. Install browsers with `npx playwright install chromium`.
+## Migrations
 
-### Manual Test Plans
-Located at `/docs/test-plans/`. 26 test plans covering: authentication, consignor management, item intake, AI pricing engine, 60-day lifecycle, inventory management, markdown schedule, reporting & export, agreement emails, settings page, dashboard home, multi-tenancy & data isolation, sidebar & navigation, multi-location support, repeat item history, admin page, help system, AI report prompts, label printing, Stripe billing, cross-customer pricing, payouts.
+- `20260314023405` — add sold_price to price_history
+- `20260314030000` — add ai_lookups to accounts
+- `20260314030001` — add increment_ai_lookups RPC
+- `20260314040000` — create cross_account_pricing view
+- `20260314050000` — fix price_history timestamp columns (numeric → timestamptz)
+- `20260314060000` — add payout fields (paid_at, payout_note) to items
+- `20260314070000` — ensure superadmin user row
+- `20260314080000` — solo tier + account types (account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used)
 
-## Phase Status
+## Code Review — March 2026
 
-**Phase 5 — COMPLETE.** All features implemented, tested, and documented.
+Full report: `docs/code-review/code-review-march-2026.md`
 
-### Phase 5 Feature List (Done)
-- Settings page at `/dashboard/settings` (Location Settings, Locations, Account Settings tabs)
-- Multi-location support (LocationContext, sidebar switcher, owner cross-location dashboard, `/api/locations`)
-- Repeat Item History (price_history auto-write on sold, `/api/price-history`, "Priced Before" panel)
-- Admin Page (superadmin `/admin` route: overview stats, accounts list, account detail with tier/status)
-- Help System (tooltips, floating widget, AI search via `/api/help/search` + knowledge base)
-- AI Report Prompts (natural language query bar, Claude-generated SQL, `/api/reports/query`)
-- Label Printing (PDF via pdf-lib, single/bulk print, 2 sizes, `/api/labels/generate`)
-- Playwright E2E test setup (5 specs: auth, navigation, data-isolation, help-widget, labels)
-- `sold_price` column on `price_history` (migration at `supabase/migrations/20260314023405_add_sold_price_to_price_history.sql`)
-- Timezone bugfix: `getLifecycleStatus()` parses date strings as local time (appends `T00:00:00`)
-- Test suite: **116 Jest tests passing**, 5 Playwright E2E specs, 19 manual test plans
+**5 critical issues — ALL RESOLVED:**
+- C1: SQL injection in reports query → UUID validation on location_id/account_id
+- C2: Missing auth on /api/pricing/comps → `getUser()` check added
+- C3: Missing auth on /api/pricing/identify → `getUser()` check added
+- C4: No server-side solo route guards → `requireFeature()` tier guard + layout guards
+- C5: No tier enforcement on API routes → `canUseFeature()` checks added
 
-**Phase 6 — COMPLETE.** All planned features implemented, tested, and documented.
+**Open issues:** 7 important (N+1 sidebar fetch, reports perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth), 18 minor, ~30-40 component tests missing.
 
-### Phase 6 Feature List (Done)
-- Stripe Billing & Tier Enforcement — subscription checkout, portal, webhook, tier-based feature gating, AI pricing usage tracking (50/mo starter limit), UpgradePrompt component, billing UI in Settings
-- Cross-Customer Pricing Intelligence — `/api/pricing/cross-account` (Pro-only, three-level matching: exact → fuzzy → category fallback, Claude insight text), Market Intelligence panel on pricing page, admin Network Pricing Intelligence card, `/api/admin/network-stats`, seed script at `scripts/seed-cross-account-data.ts`
-- Bugfix: `price_history.priced_at` and `sold_at` converted from numeric to `timestamptz` (migration `20260314050000`), regression tests added
-- Migrations: `20260314030000_add_ai_lookups_to_accounts.sql`, `20260314030001_add_increment_ai_lookups_rpc.sql`, `20260314040000_create_cross_account_pricing_view.sql`, `20260314050000_fix_price_history_timestamp_columns.sql`
-- Test suite: **158 Jest tests passing**, 5 Playwright E2E specs, 21 manual test plans
+## Deferred to Phase 7+
 
-### Sidebar Navigation Improvements (Done)
-- Removed "Pending Items" from sidebar (already a filter tab in Inventory)
-- Added "Payouts" page (`/dashboard/payouts`) between Reports and Settings
-- Payouts API (`/api/payouts`) — GET payout list with split calculations, PATCH mark as paid
-- Expiring consignor badge on Consignors nav item (amber, count of consignors expiring ≤7 days or in grace)
-- Migration `20260314060000_add_payout_fields.sql` — adds `paid_at` (timestamptz) and `payout_note` (text) to items table
-- Updated E2E navigation spec (replaced Pending Items with Payouts)
-- Test suite: **170 Jest tests passing**, 5 Playwright E2E specs, 22 manual test plans
-
-### Production Deployment Preparation (Done)
-- Fixed all build errors: unused imports/vars, JSX fragment issues, Stripe API version, pdf-lib types, Supabase PromiseLike `.catch()` pattern
-- Created `DEPLOYMENT.md` — Vercel deployment guide with env var reference, Supabase setup, Stripe webhook config, post-deploy checklist
-- Build passes cleanly (`npm run build` succeeds with only warnings, no errors)
-- Test suite: **192 Jest tests passing**
-
-### Superadmin Bugfixes (Done)
-- **Root cause**: `admin@getconsigniq.com` existed in Supabase Auth but had no corresponding row in the `users` table. All profile queries returned null, causing: redirect to /dashboard (no `is_superadmin` to check), "Unknown" in sidebar (null profile), and admin API routes returning 403.
-- Created migration `20260314070000_ensure_superadmin_user.sql` to insert superadmin user row (uses `auth.users` lookup + first available account, with `ON CONFLICT DO UPDATE SET is_superadmin = true`)
-- Admin layout and all admin API routes now use service role client (`createAdminClient`) to bypass RLS
-- Dashboard layout: added fallback — if RLS blocks profile query, retries with service role; if user is superadmin, redirects to `/admin`. Also redirects superadmins even when RLS returns a profile (covers direct URL, back button, etc.)
-- Login redirect: superadmin users redirect to `/admin` after login via `/api/auth/check-superadmin` endpoint
-- Sidebar name fallback: displays email when `full_name` is null/empty (also applied to admin sidebar)
-- Created shared `src/lib/supabase/admin.ts` with `createAdminClient()` and `checkSuperadmin()` helpers
-- Updated admin test mocks to use `@/lib/supabase/admin` mock
-- **Critical lesson**: every Supabase Auth user that logs in MUST have a corresponding row in the `users` table — auth alone is not enough. The `users` table row provides `account_id`, `role`, `is_superadmin`, and `full_name`.
-- Test suite: **192 Jest tests passing**
-
-### Agreement Emails (Done)
-- Email sending infrastructure: `src/lib/email.ts` (Resend wrapper), `src/lib/email-templates.ts` (agreement + expiry reminder templates with dual plain-text/HTML)
-- `/api/agreements/send` — creates agreement record, sends email with store info, dates, splits, item list (no prices), pickup instructions
-- `/api/agreements/notify-expiring` — finds consignors expiring in 3 days, sends reminders, skips already-notified, designed for cron
-- `AgreementButton` component — Send/Resend Agreement with confirmation modal, last-sent date
-- `IntakeAgreementPrompt` component — post-intake amber prompt with Send/Skip buttons
-- Consignor detail page updated with agreement button in actions bar and intake prompt
-- Full manual test plan at `docs/test-plans/agreement-emails.md`
-- Env vars: `RESEND_API_KEY` (required), `RESEND_FROM_EMAIL` (optional, defaults to `noreply@consigniq.com`)
-- Test suite: **203 Jest tests passing**
-
-### Solo Pricer Tier + Admin User Management + Trial & Complimentary Accounts (Done)
-- **Solo tier** ($9/mo, 200 AI lookups/mo): pricing-only experience with simplified sidebar (Dashboard, Price Lookup, My Inventory, Settings), solo dashboard with usage meter and upgrade CTA, no consignor/lifecycle/reports/payouts access
-- **Account type system**: `accounts.account_type` column with values 'paid', 'trial', 'complimentary'. Trial accounts get 30-day free trial with banner countdown and lockout after expiry. Complimentary accounts bypass tier checks using `complimentary_tier`.
-- **Bonus lookups**: `bonus_lookups` and `bonus_lookups_used` columns on accounts. 50-lookup top-up packs purchasable via Stripe one-time checkout. Monthly reset clears `ai_lookups_this_month` only — bonus lookups persist until used.
-- **Trial experience**: TrialBanner component (color-coded days remaining), TrialExpiredPage (full-screen lockout with tier selection), `/api/trial/check-expiry` cron endpoint (sends reminder 1 day before expiry)
-- **Admin user management** (`/admin/users`): cross-account user list with search/filter, Add User modal (creates account + location + auth user + users row), account type badges
-- **Admin account actions**: Extend Trial (+30d), Convert to Complimentary, Convert to Paid, Disable/Enable Account, Solo tier in tier dropdown
-- **Stripe preparation**: `STRIPE_SOLO_PRICE_ID` and `STRIPE_TOPUP_50_PRICE_ID` env vars, checkout route handles solo tier + topup_50 one-time purchase, webhook handles topup bonus lookups and trial→paid conversion, graceful handling of missing Stripe keys (503)
-- **Billing route updates**: `/api/billing/checkout` now supports 4 tiers + topup, `/api/billing/webhook` handles topup_50 and trial→paid conversion
-- **Usage enforcement update**: `/api/pricing/suggest` checks bonus lookups when monthly quota exhausted, increments `bonus_lookups_used` when monthly is spent
-- Migration: `20260314080000_solo_tier_and_account_types.sql` — adds account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used to accounts table
-- Test suite: **272 Jest tests passing**, 5 Playwright E2E specs, 25 manual test plans
-- Stripe products created in **test mode** with the following price IDs (also set as Vercel env vars for all environments):
-  - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` (Solo Pricer, $9/mo)
-  - `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` (Starter, $49/mo)
-  - `STRIPE_STANDARD_PRICE_ID=price_1TB07NRoBkkefSr8kQX1pXxL` (Standard, $79/mo)
-  - `STRIPE_PRO_PRICE_ID=price_1TB07ORoBkkefSr8TjMEohzi` (Pro, $129/mo)
-  - `STRIPE_TOPUP_50_PRICE_ID=price_1TB07ORoBkkefSr8Ey050TZt` (50 Lookup Top-Up, $5 one-time)
-- All Stripe env vars configured in Vercel (production/preview/development): `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, plus all 5 price IDs above
-
-### Admin UX Fixes (Done)
-- **Superadmin /dashboard redirect**: Dashboard layout now redirects superadmin users to `/admin` in all cases — whether RLS blocks the profile query or not. Previously only redirected when `!profile`, which missed the case where the superadmin had a users table row that RLS could return.
-- **Admin sidebar "Back to App" removed**: The "Back to App" link is removed from the admin sidebar since superadmins live in `/admin` only and navigating to `/dashboard` would just redirect them back.
-- **Admin Add User public.users fix**: POST `/api/admin/users` now uses `upsert` (with `onConflict: 'id'`) instead of `insert` for the public.users row. Root cause: Supabase has a trigger on `auth.users` that auto-creates a partial row in `public.users` when `auth.admin.createUser()` is called, causing a primary key conflict on the subsequent insert. Upsert ensures all fields (account_id, location_id, role, email, full_name) are set correctly regardless of whether the trigger fired.
-- **Add User modal "Paid" option**: The Account Type dropdown now includes Paid as a third option (default), in addition to Trial and Complimentary.
-- **Invite email via Resend**: Replaced Supabase's built-in invite flow (which doesn't route through custom SMTP/Resend) with a two-step approach: `auth.admin.createUser({ email_confirm: false })` to create the auth user without sending email, then `auth.admin.generateLink({ type: 'invite', email })` to generate a one-time setup link, then send a branded invite email via Resend with `buildInviteEmail()` template. Email includes user name, account name, tier, and setup link. Invite email is non-critical — if it fails, the user/account are still created and the response includes an `invite_warning` field.
-- `src/lib/email-templates.ts` — added `buildInviteEmail()` template (HTML + plain text) with ConsignIQ branding, account details, and setup CTA button.
-- **Admin Sign Out button**: Added Sign Out to admin sidebar bottom. Uses `createClient()` + `supabase.auth.signOut()` + redirect to `/auth/login`, same pattern as dashboard sidebar.
-
-### Password Flow (Done)
-- **Setup password page** (`/auth/setup-password`): Handles both invite and recovery links. Manually parses `access_token` and `refresh_token` from URL hash and calls `supabase.auth.setSession()` (required because `@supabase/ssr`'s `createBrowserClient` uses cookie storage and does not auto-detect hash fragments like the vanilla JS client). Falls back to `getSession()` check and `onAuthStateChange` listener. Shows expiry error after 10-second timeout. Form validates min 8 chars and match, calls `supabase.auth.updateUser({ password })`, redirects to `/dashboard` on success. Branded ConsignIQ styling matching login page.
-- **Admin invite link redirect**: `generateLink()` in `/api/admin/users` POST now passes `options.redirectTo` pointing to `/auth/setup-password`. Additionally, the `redirect_to` query param in the generated action link is explicitly rewritten to `{NEXT_PUBLIC_APP_URL}/auth/setup-password` to work around Supabase ignoring `redirectTo` when the URL isn't in the dashboard's Redirect URLs allowlist. Same rewrite applied in reset-password and forgot-password routes.
-- **Admin reset password** (`/api/admin/users/reset-password`): POST superadmin-only. Takes `{ user_id }`, looks up user, generates recovery link via `auth.admin.generateLink({ type: 'recovery' })`, sends branded reset email via Resend with `buildPasswordResetEmail()` template.
-- **Account detail reset button**: `/admin/accounts/[id]` user list rows now have "Reset Password" button that calls the admin reset-password endpoint. Shows success/error message via existing saveMsg state.
-- **Forgot password on login**: Login page has "Forgot your password?" link that reveals inline email form. Submits to `/api/auth/forgot-password` (public, no auth). Always shows "Check your email for a reset link" regardless of whether email exists (prevents user enumeration).
-- **Forgot password API** (`/api/auth/forgot-password`): POST public endpoint under `/api/auth/*` (excluded from middleware auth). Looks up user, generates recovery link, sends email via Resend. Returns 200 for all inputs to prevent enumeration.
-- **Password reset email template**: `buildPasswordResetEmail()` in `src/lib/email-templates.ts` — ConsignIQ-branded HTML with "Reset Password" CTA button, 24-hour expiry note.
-- Test suite: **272 Jest tests passing**, 26 manual test plans
-
-### Solo Pricer UX Fixes (Done)
-- **Welcome message on setup-password**: Shows "Welcome, [first name]!" above the password form, pulled from `user_metadata.full_name` once session is established from hash token.
-- **Password show/hide toggle**: Eye/eye-off icon toggle on all password fields — `/auth/setup-password` (both fields) and `/auth/login` (password field). Toggles between `type="password"` and `type="text"`.
-- **Dashboard quick actions for solo**: Server component (`/dashboard/page.tsx`) now fetches account tier via `accounts(tier)` join. Solo users see "Price an Item" + "My Inventory" quick actions; consignor-related actions ("Add New Consignor", "View All Consignors") and lifecycle alerts are hidden. Header button changes from "New Consignor" to "Price an Item".
-- **Sidebar role label**: Solo tier users show "Solo Pricer" instead of "Owner" in the sidebar user section.
-
-### Solo Pricer Full Audit (Done)
-- **Dashboard renders SoloDashboard**: Solo users now get the `SoloDashboard` client component (usage meter, quick actions, upgrade CTA) via dynamic import — completely bypasses the consignor/location server component logic. No consignor stats, lifecycle alerts, location cards, or "New Consignor" button shown.
-- **Settings page solo-specific tabs**: Solo users see only Billing and Profile tabs (not Location Settings, Locations, or Account Settings). Billing tab shows: current plan badge ("Solo Pricer $9/mo"), usage meter with remaining/reset date, "Buy 50 more lookups — $5" button (direct Stripe checkout), "Manage Billing" portal link, and upgrade CTA for Starter only ($49/mo, no Standard/Pro cards). Profile tab shows: name, email (read-only), and "Change Password" link (sends reset via `/api/auth/forgot-password`).
-- **Settings subtitle**: Changes from "Manage your location and account settings" to "Manage your account and billing" for solo users.
-- **Sidebar upgrade CTA**: Changed from link to `/dashboard/settings?tab=account` to direct Stripe checkout for Starter tier via `/api/billing/checkout`. Falls back to settings on error.
-- **No shop owner content**: Solo users cannot see: Location Settings, Locations, Consignment Terms, split percentages, Agreement Duration, Grace Period, Markdown Schedule, Team Members, Invite User, or any Standard/Pro upgrade CTAs.
-- Test suite: **272 Jest tests passing**
-
-### Billing Lifecycle & Lookup Limits Fix (Done)
-- **Lookup limits corrected**: Solo tier: 200/month. Starter/Standard/Pro: unlimited (`aiPricingLimit: null`). Settings billing UI shows "Unlimited" badge for non-solo tiers instead of a usage meter with hardcoded "50" limit.
-- **Billing lifecycle emails**: Three new email templates in `src/lib/email-templates.ts`: `buildUpgradeEmail()` (plan name, price, features list, dashboard CTA), `buildCancellationEmail()` (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` (update payment method CTA). Webhook at `/api/billing/webhook` sends these via Resend on `checkout.session.completed`, `customer.subscription.deleted`, and `invoice.payment_failed` events. All email sends are non-critical (caught, logged, webhook still returns 200).
-- Test suite: **272 Jest tests passing**
-
-### Starter Tier UX Fixes (Done)
-- **"Free plan" text removed**: Settings billing section no longer shows "Free plan — no credit card required" for any paid tier. Replaced with "Manage Subscription" button (Stripe portal) for all tiers.
-- **Sidebar role label shows tier name**: Owner users show their tier label (Solo Pricer, Starter, Standard, Pro) instead of "Owner". Staff users still show "Staff".
-- **Markdown schedule gate fixed**: `markdown_schedule` moved to Starter-required. Starter users no longer see "Upgrade to Standard" on markdown settings.
-
-### Definitive Tier Matrix Applied (Done)
-- **Authoritative tier matrix added to CLAUDE.md** as a permanent reference table with explicit "DO NOT change without instruction" note.
-- **Tier gates fixed in `src/lib/tier-limits.ts`** to match matrix exactly:
-  - `repeat_item_history`: Standard (was incorrectly in Starter)
-  - `email_notifications`: Standard (was incorrectly in Starter)
-  - `markdown_schedule`: Starter (correct, confirmed)
-  - Starter `features` array: removed `repeat_item_history` and `email_notifications`
-- All test expectations updated to match authoritative matrix.
-- Test suite: **272 Jest tests passing**
-
-### Code Review — March 2026
-- **Full audit report at** `docs/code-review/code-review-march-2026.md`
-- **5 critical issues — ALL RESOLVED:**
-  - C1: SQL injection in reports query → UUID validation on location_id and account_id before SQL interpolation
-  - C2: Missing auth on /api/pricing/comps → explicit `getUser()` auth check added
-  - C3: Missing auth on /api/pricing/identify → explicit `getUser()` auth check added
-  - C4: No server-side solo route guards → `requireFeature()` tier guard utility + layout/page guards on consignors, reports, payouts
-  - C5: No tier enforcement on API routes → `canUseFeature()` checks added to consignors (GET/POST), agreements/send, payouts (GET/PATCH)
-- **7 important issues** (N+1 sidebar fetch, reports page perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth)
-- **18 minor issues** (duplicate patterns, error message inconsistency, fire-and-forget ops, unused params)
-- **~30-40 component tests missing** (SoloDashboard, TrialBanner, SetupPasswordPage, Sidebar tier nav)
-- **3 spec features not yet implemented** (Community Pricing Feed, API Access, Advanced Markdown Schedules)
-- **12 regression tests added** in `critical-security.test.ts` (UUID validation, tier enforcement)
-- Test suite: **272 Jest tests passing**
-
-### Deferred to Phase 7+
-- **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.
-- **API Access** — feature gate exists (`api_access`, Pro tier), but no public API endpoints or documentation.
-- **Advanced Markdown Schedules** — Standard tier mentions "advanced" markdowns but implementation is same as Starter (hardcoded schedule).
+- **Community Pricing Feed** — gate exists (`community_pricing_feed`, Pro), no implementation
+- **API Access** — gate exists (`api_access`, Pro), no endpoints
+- **Advanced Markdown Schedules** — Standard tier, currently same as Starter (hardcoded schedule)
