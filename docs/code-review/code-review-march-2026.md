@@ -75,40 +75,31 @@
 
 ---
 
-## MINOR ISSUES (Fix when convenient)
+## MINOR ISSUES (Fix when convenient) — ALL RESOLVED
 
-### M1. Duplicate Auth Check Pattern (15+ routes)
-- Every API route has the same 5 lines: `createServerClient()` → `auth.getUser()` → check error → return 401
-- **Fix:** Extract to a shared `getAuthenticatedUser()` helper
+### M1. Duplicate Auth Check Pattern — RESOLVED
+- **Fix applied:** Created `src/lib/auth-helpers.ts` with `getAuthenticatedUser()` and `getAuthenticatedProfile()`. Returns `{ user }` or `{ user, profile }` on success, `{ error: NextResponse }` on failure. Applied to 12+ routes.
 
-### M2. Duplicate Profile Lookup Pattern (8+ routes)
-- Every route fetches user profile the same way after auth
-- **Fix:** Extract to `getAuthenticatedProfile()` combining auth + profile lookup
+### M2. Duplicate Profile Lookup Pattern — RESOLVED
+- **Fix applied:** `getAuthenticatedProfile(supabase, select?)` combines auth + profile lookup. Accepts custom select string for routes needing role, tier, etc.
 
-### M3. Anthropic Client Created Per-Request (5 routes)
-- Each route creates `new Anthropic({ apiKey: ... })`
-- **Fix:** Create singleton in `src/lib/anthropic.ts` like `src/lib/stripe.ts`
+### M3. Anthropic Client Created Per-Request — RESOLVED
+- **Fix applied:** All 5 routes use `getAnthropicClient()` singleton from `src/lib/anthropic.ts`. Zero remaining `new Anthropic()` calls in route files.
 
-### M4. Inconsistent Error Messages
-- "Profile not found" vs "User profile not found" across routes
-- **Fix:** Centralize error message constants
+### M4. Inconsistent Error Messages — RESOLVED
+- **Fix applied:** Created `src/lib/errors.ts` with `ERRORS` constants. Applied `ERRORS.UNAUTHORIZED`, `ERRORS.PROFILE_NOT_FOUND`, `ERRORS.OWNER_REQUIRED`, `ERRORS.UPGRADE_REQUIRED` across routes.
 
-### M5. Fire-and-Forget DB Operations Without Error Handling
-- `src/app/api/agreements/send/route.ts` line 123: email_sent_at update has no error handling
-- `src/app/api/items/route.ts` line 124: price_history insert on sold has no error handling
-- **Fix:** Add `.catch()` or wrap in try/catch for these background ops
+### M5. Fire-and-Forget DB Operations — RESOLVED
+- **Fix applied:** Wrapped `email_sent_at` update in `/api/agreements/send` and `price_history` insert in `/api/items` PATCH in try/catch with `console.error` logging.
 
-### M6. Unused `request` Parameter
-- `src/app/api/billing/portal/route.ts` line 5: `request` param not used
-- **Fix:** Remove parameter
+### M6. Unused `request` Parameter — RESOLVED
+- **Fix applied:** Removed unused `request` parameter from `/api/billing/portal` POST.
 
-### M7. Network Stats Fetches All price_history Without Filter
-- `src/app/api/admin/network-stats/route.ts` line 17: Fetches all records, filters `sold === true` in JS
-- **Fix:** Add `.eq('sold', true)` to query
+### M7. Network Stats Full Fetch — RESOLVED
+- **Fix applied:** `/api/admin/network-stats` now runs two parallel queries: count-only for total records + `.eq('sold', true)` for sold records. No JS filtering.
 
-### M8. Payouts API Uses O(n*m) In-Memory Grouping
-- `src/app/api/payouts/route.ts` line 71: Loops over consignors and filters items array for each
-- **Fix:** Use database JOIN/GROUP BY instead
+### M8. Payouts O(n*m) In-Memory Grouping — RESOLVED
+- **Fix applied:** Replaced `consignorItems = items.filter(i => i.consignor_id === id)` with a pre-built `Map<consignor_id, items[]>` for O(n+m) grouping.
 
 ---
 

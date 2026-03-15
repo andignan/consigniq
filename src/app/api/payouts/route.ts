@@ -3,41 +3,30 @@ import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canUseFeature } from '@/lib/feature-gates'
 import type { Tier } from '@/lib/tier-limits'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await getAuthenticatedProfile<{ account_id: string; role: string; accounts: { tier?: string } | null }>(
+    supabase, 'account_id, role, accounts(tier)'
+  )
+  if (auth.error) return auth.error
 
-  // Get user profile for account_id + tier
-  const { data: profile, error: profileError } = await supabase
-    .from('users')
-    .select('account_id, role, accounts(tier)')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-  }
-
-  // Tier check: payouts required
-  const tier = ((profile.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  const tier = (auth.profile.accounts?.tier ?? 'starter') as Tier
   if (!canUseFeature(tier, 'payouts')) {
-    return NextResponse.json({ error: 'Upgrade required — payouts are not available on your plan' }, { status: 403 })
+    return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — payouts are not available on your plan` }, { status: 403 })
   }
 
   const { searchParams } = new URL(request.url)
   const locationId = searchParams.get('location_id')
-  const status = searchParams.get('status') // 'unpaid' | 'paid' | 'all'
+  const status = searchParams.get('status')
 
-  // Get consignors with their sold items
   let consignorQuery = supabase
     .from('consignors')
     .select('id, name, split_store, split_consignor, status, phone, email')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
 
   if (locationId) {
     consignorQuery = consignorQuery.eq('location_id', locationId)
@@ -53,7 +42,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ payouts: [] })
   }
 
-  // Get sold items for these consignors
   const consignorIds = consignors.map(c => c.id)
   let itemsQuery = supabase
     .from('items')
@@ -73,10 +61,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: itemsError.message }, { status: 500 })
   }
 
-  // Group items by consignor and calculate splits
+  // M8: Group items by consignor using Map instead of O(n*m) nested filter
+  const itemsByConsignor = new Map<string, typeof items>()
+  for (const item of items || []) {
+    const cid = item.consignor_id
+    if (!itemsByConsignor.has(cid)) itemsByConsignor.set(cid, [])
+    itemsByConsignor.get(cid)!.push(item)
+  }
+
   const payouts = consignors
     .map(consignor => {
-      const consignorItems = (items || []).filter(i => i.consignor_id === consignor.id)
+      const consignorItems = itemsByConsignor.get(consignor.id) || []
       if (consignorItems.length === 0) return null
 
       const totalSold = consignorItems.reduce((sum, i) => sum + (i.sold_price || 0), 0)
@@ -116,20 +111,14 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const supabase = createServerClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await getAuthenticatedProfile<{ accounts: { tier?: string } | null }>(
+    supabase, 'accounts(tier)'
+  )
+  if (auth.error) return auth.error
 
-  // Tier check: payouts required
-  const { data: patchProfile } = await supabase
-    .from('users')
-    .select('accounts(tier)')
-    .eq('id', user.id)
-    .single()
-  const patchTier = ((patchProfile?.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  const patchTier = (auth.profile.accounts?.tier ?? 'starter') as Tier
   if (!canUseFeature(patchTier, 'payouts')) {
-    return NextResponse.json({ error: 'Upgrade required — payouts are not available on your plan' }, { status: 403 })
+    return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — payouts are not available on your plan` }, { status: 403 })
   }
 
   const body = await request.json()

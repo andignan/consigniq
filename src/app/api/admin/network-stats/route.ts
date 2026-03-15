@@ -1,4 +1,5 @@
 // app/api/admin/network-stats/route.ts
+// M7: Queries sold records directly instead of fetching all and filtering in JS
 import { checkSuperadmin, createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
@@ -13,17 +14,19 @@ export async function GET() {
 
   const supabase = createAdminClient()
 
-  // Fetch all price_history records for network stats
-  const { data: records, error } = await supabase
-    .from('price_history')
-    .select('category, sold, sold_price, days_to_sell')
+  // M7: Two parallel queries — total count + sold records only
+  const [totalRes, soldRes] = await Promise.all([
+    supabase.from('price_history').select('*', { count: 'exact', head: true }),
+    supabase.from('price_history')
+      .select('category, sold_price, days_to_sell')
+      .eq('sold', true),
+  ])
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (soldRes.error) {
+    return NextResponse.json({ error: soldRes.error.message }, { status: 500 })
   }
 
-  const allRecords = records ?? []
-  const soldRecords = allRecords.filter(r => r.sold === true)
+  const soldRecords = soldRes.data ?? []
   const daysValues = soldRecords
     .map(r => r.days_to_sell)
     .filter((d): d is number => d != null)
@@ -32,9 +35,9 @@ export async function GET() {
     ? Math.round((daysValues.reduce((a, b) => a + b, 0) / daysValues.length) * 10) / 10
     : null
 
-  // Top 5 categories by record count
+  // Top 5 categories by record count (from sold records)
   const categoryCounts: Record<string, number> = {}
-  for (const r of allRecords) {
+  for (const r of soldRecords) {
     categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1
   }
   const topCategories = Object.entries(categoryCounts)
@@ -43,7 +46,7 @@ export async function GET() {
     .map(([category, count]) => ({ category, count }))
 
   return NextResponse.json({
-    total_records: allRecords.length,
+    total_records: totalRes.count ?? 0,
     sold_items: soldRecords.length,
     top_categories: topCategories,
     avg_days_to_sell: avgDays,

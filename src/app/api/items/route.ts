@@ -1,6 +1,7 @@
 // app/api/items/route.ts
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser } from '@/lib/auth-helpers'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
@@ -53,10 +54,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await getAuthenticatedUser(supabase)
+  if (auth.error) return auth.error
 
   const { data, error } = await supabase
     .from('items')
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       intake_date: new Date().toISOString().split('T')[0],
       current_markdown_pct: 0,
-      created_by: user.id,
+      created_by: auth.user.id,
     })
     .select()
     .single()
@@ -109,32 +108,36 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Write price_history record when item is marked sold
+  // M5: Write price_history record when item is marked sold (with error handling)
   if (updates.status === 'sold' && data) {
-    const item = data as Record<string, unknown>
-    const pricedAt = item.priced_at as string | null
-    const soldDate = item.sold_date as string | null
-    let daysToSell: number | null = null
-    if (pricedAt && soldDate) {
-      const priced = new Date(pricedAt)
-      const sold = new Date(soldDate + 'T00:00:00')
-      daysToSell = Math.max(0, Math.floor((sold.getTime() - priced.getTime()) / (1000 * 60 * 60 * 24)))
-    }
+    try {
+      const item = data as Record<string, unknown>
+      const pricedAt = item.priced_at as string | null
+      const soldDate = item.sold_date as string | null
+      let daysToSell: number | null = null
+      if (pricedAt && soldDate) {
+        const priced = new Date(pricedAt)
+        const sold = new Date(soldDate + 'T00:00:00')
+        daysToSell = Math.max(0, Math.floor((sold.getTime() - priced.getTime()) / (1000 * 60 * 60 * 24)))
+      }
 
-    await supabase.from('price_history').insert({
-      account_id: item.account_id,
-      location_id: item.location_id,
-      item_id: item.id,
-      category: item.category,
-      name: item.name,
-      description: item.description ?? null,
-      condition: item.condition,
-      priced_at: item.priced_at ?? null,
-      sold_at: item.sold_date ?? null,
-      sold_price: updates.sold_price ?? item.sold_price ?? item.price ?? null,
-      days_to_sell: daysToSell,
-      sold: true,
-    })
+      await supabase.from('price_history').insert({
+        account_id: item.account_id,
+        location_id: item.location_id,
+        item_id: item.id,
+        category: item.category,
+        name: item.name,
+        description: item.description ?? null,
+        condition: item.condition,
+        priced_at: item.priced_at ?? null,
+        sold_at: item.sold_date ?? null,
+        sold_price: updates.sold_price ?? item.sold_price ?? item.price ?? null,
+        days_to_sell: daysToSell,
+        sold: true,
+      })
+    } catch (err) {
+      console.error('Failed to write price_history:', err instanceof Error ? err.message : String(err))
+    }
   }
 
   return NextResponse.json({ item: data })

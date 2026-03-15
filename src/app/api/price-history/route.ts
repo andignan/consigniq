@@ -1,25 +1,13 @@
 // app/api/price-history/route.ts
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user profile for account_id
-  const { data: profile, error: profileError } = await supabase
-    .from('users')
-    .select('account_id')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-  }
+  const auth = await getAuthenticatedProfile(supabase)
+  if (auth.error) return auth.error
 
   const { searchParams } = new URL(request.url)
   const category = searchParams.get('category')
@@ -34,7 +22,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('price_history')
     .select('*')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
     .eq('category', category)
     .eq('sold', true)
     .order('sold_at', { ascending: false })
@@ -44,9 +32,7 @@ export async function GET(request: NextRequest) {
     query = query.neq('item_id', excludeItemId)
   }
 
-  // If name provided, search for similar items using ilike with each significant word
   if (name) {
-    // Use the full name for an ilike search
     query = query.ilike('name', `%${name}%`)
   }
 
@@ -61,7 +47,7 @@ export async function GET(request: NextRequest) {
     const broadQuery = supabase
       .from('price_history')
       .select('*')
-      .eq('account_id', profile.account_id)
+      .eq('account_id', auth.profile.account_id)
       .eq('category', category)
       .eq('sold', true)
       .order('sold_at', { ascending: false })
@@ -73,7 +59,6 @@ export async function GET(request: NextRequest) {
 
     const { data: broadData } = await broadQuery
 
-    // Merge: name-matched first, then category-only (deduplicated), up to limit
     const seenIds = new Set((data ?? []).map((r: Record<string, unknown>) => r.id))
     const merged = [...(data ?? [])]
     for (const row of broadData ?? []) {

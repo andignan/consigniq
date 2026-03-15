@@ -1,6 +1,8 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 
 function getTierPriceId(tier: string): string | undefined {
   if (tier === 'solo') return process.env.STRIPE_SOLO_PRICE_ID
@@ -13,20 +15,15 @@ function getTierPriceId(tier: string): string | undefined {
 export async function POST(request: NextRequest) {
   const supabase = createServerClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthenticatedProfile<{ account_id: string; role: string }>(supabase, 'account_id, role')
+  if (auth.error) return auth.error
+
+  if (auth.profile.role !== 'owner') {
+    return NextResponse.json({ error: ERRORS.OWNER_REQUIRED }, { status: 403 })
   }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('account_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.role !== 'owner') {
-    return NextResponse.json({ error: 'Only account owners can manage billing' }, { status: 403 })
-  }
+  const profile = auth.profile
+  const user = auth.user
 
   let stripe
   try {

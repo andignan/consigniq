@@ -3,18 +3,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canUseFeature } from '@/lib/feature-gates'
 import type { Tier } from '@/lib/tier-limits'
-
-async function getTier(supabase: ReturnType<typeof createServerClient>): Promise<{ tier: Tier; error?: NextResponse } | null> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return null
-  const { data: profile } = await supabase
-    .from('users')
-    .select('account_id, accounts(tier)')
-    .eq('id', user.id)
-    .single()
-  const tier = ((profile?.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
-  return { tier }
-}
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
@@ -26,9 +16,14 @@ export async function GET(request: NextRequest) {
   }
 
   // Tier check: consignor_mgmt required
-  const tierInfo = await getTier(supabase)
-  if (tierInfo && !canUseFeature(tierInfo.tier, 'consignor_mgmt')) {
-    return NextResponse.json({ error: 'Upgrade required — consignor management is not available on your plan' }, { status: 403 })
+  const auth = await getAuthenticatedProfile<{ account_id: string; accounts: { tier?: string } | null }>(
+    supabase, 'account_id, accounts(tier)'
+  )
+  if (!auth.error) {
+    const tier = (auth.profile.accounts?.tier ?? 'starter') as Tier
+    if (!canUseFeature(tier, 'consignor_mgmt')) {
+      return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — consignor management is not available on your plan` }, { status: 403 })
+    }
   }
 
   const { data, error } = await supabase
@@ -56,16 +51,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Get the current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await getAuthenticatedProfile<{ account_id: string; accounts: { tier?: string } | null }>(
+    supabase, 'account_id, accounts(tier)'
+  )
+  if (auth.error) return auth.error
 
-  // Tier check: consignor_mgmt required
-  const tierInfo = await getTier(supabase)
-  if (tierInfo && !canUseFeature(tierInfo.tier, 'consignor_mgmt')) {
-    return NextResponse.json({ error: 'Upgrade required — consignor management is not available on your plan' }, { status: 403 })
+  const tier = (auth.profile.accounts?.tier ?? 'starter') as Tier
+  if (!canUseFeature(tier, 'consignor_mgmt')) {
+    return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — consignor management is not available on your plan` }, { status: 403 })
   }
 
   const { data, error } = await supabase
@@ -83,7 +76,7 @@ export async function POST(request: NextRequest) {
       split_store: body.split_store,
       split_consignor: body.split_consignor,
       status: 'active',
-      created_by: user.id,
+      created_by: auth.user.id,
     })
     .select()
     .single()

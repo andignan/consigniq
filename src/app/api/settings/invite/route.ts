@@ -1,20 +1,17 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 import crypto from 'crypto'
 
 export async function POST(request: Request) {
   const supabase = createServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role, account_id')
-    .eq('id', user.id)
-    .single()
+  const auth = await getAuthenticatedProfile<{ account_id: string; role: string }>(supabase, 'role, account_id')
+  if (auth.error) return auth.error
 
-  if (!profile || profile.role !== 'owner') {
-    return NextResponse.json({ error: 'Owner access required' }, { status: 403 })
+  if (auth.profile.role !== 'owner') {
+    return NextResponse.json({ error: ERRORS.OWNER_REQUIRED }, { status: 403 })
   }
 
   const body = await request.json()
@@ -28,11 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'role must be owner or staff' }, { status: 400 })
   }
 
-  // Check if user already exists on this account
   const { data: existing } = await supabase
     .from('users')
     .select('id')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
     .eq('email', email)
     .limit(1)
 
@@ -42,12 +38,12 @@ export async function POST(request: Request) {
 
   const token = crypto.randomUUID()
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 7) // 7 day expiry
+  expiresAt.setDate(expiresAt.getDate() + 7)
 
   const { data, error } = await supabase
     .from('invitations')
     .insert({
-      account_id: profile.account_id,
+      account_id: auth.profile.account_id,
       email,
       role,
       token,

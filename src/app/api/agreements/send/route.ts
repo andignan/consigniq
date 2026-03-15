@@ -6,29 +6,21 @@ import { buildAgreementEmail } from '@/lib/email-templates'
 import { CONDITION_LABELS } from '@/types'
 import { canUseFeature } from '@/lib/feature-gates'
 import type { Tier } from '@/lib/tier-limits'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 
 export async function POST(request: NextRequest) {
   const supabase = createServerClient()
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await getAuthenticatedProfile<{ account_id: string; accounts: { tier?: string } | null }>(
+    supabase, 'account_id, accounts(tier)'
+  )
+  if (auth.error) return auth.error
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('account_id, accounts(tier)')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
-    return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
-  }
-
-  // Tier check: agreements required
-  const tier = ((profile.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  const profile = auth.profile
+  const tier = (profile.accounts?.tier ?? 'starter') as Tier
   if (!canUseFeature(tier, 'agreements')) {
-    return NextResponse.json({ error: 'Upgrade required — agreements are not available on your plan' }, { status: 403 })
+    return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — agreements are not available on your plan` }, { status: 403 })
   }
 
   const body = await request.json()
@@ -127,11 +119,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Agreement created but email failed: ' + msg }, { status: 500 })
   }
 
-  // Update email_sent_at
-  await supabase
-    .from('agreements')
-    .update({ email_sent_at: now })
-    .eq('id', agreement.id)
+  // M5: Update email_sent_at with error handling
+  try {
+    await supabase
+      .from('agreements')
+      .update({ email_sent_at: now })
+      .eq('id', agreement.id)
+  } catch (err) {
+    console.error('Failed to update email_sent_at:', err instanceof Error ? err.message : String(err))
+  }
 
   return NextResponse.json({
     success: true,

@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (309 tests across unit + API)
+- `npm test` — Jest test suite (327 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -146,6 +146,8 @@ Three client factories:
 - `src/lib/feature-gates.ts` — `canUseFeature()`, `getUpgradeMessage()`, `isAccountActive()`, `getEffectiveTier()`, `canAccountUseFeature()`, `isLookupLimitReached()`
 - `src/lib/stripe.ts` — `getStripe()` singleton
 - `src/lib/anthropic.ts` — `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton (used by all 5 AI routes)
+- `src/lib/auth-helpers.ts` — `getAuthenticatedUser()`, `getAuthenticatedProfile()` (shared auth pattern for all API routes)
+- `src/lib/errors.ts` — `ERRORS` constants (`UNAUTHORIZED`, `PROFILE_NOT_FOUND`, `OWNER_REQUIRED`, `UPGRADE_REQUIRED`)
 - `src/components/UpgradePrompt.tsx` — shown for locked features
 
 **AI lookup tracking:** `accounts.ai_lookups_this_month` + `ai_lookups_reset_at`. Solo: 200/mo, others: unlimited. Incremented via `increment_ai_lookups` RPC. Monthly reset clears `ai_lookups_this_month` only.
@@ -270,7 +272,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**309 Jest tests passing.** 5 Playwright E2E specs. 27 manual test plans at `/docs/test-plans/`.
+**327 Jest tests passing.** 5 Playwright E2E specs. 28 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -285,7 +287,11 @@ __tests__/
 │   ├── password-validation.test.ts — Password form validation
 │   ├── anthropic-config.test.ts   — ANTHROPIC_MODEL constant, singleton client
 │   ├── lookup-limits.test.ts      — Solo 200/mo limit, bonus exhaustion, unlimited tiers
-│   └── solo-dashboard.test.ts     — Usage meter math, bar colors, reset date calc
+│   ├── solo-dashboard.test.ts     — Usage meter math, bar colors, reset date calc
+│   ├── auth-helpers.test.ts       — Error constants validation
+│   ├── trial-banner.test.ts       — Days remaining calc, color thresholds
+│   ├── trial-expired.test.ts      — Tier display, pricing, config
+│   └── sidebar-tier-nav.test.ts   — Solo vs full nav, feature access
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -363,7 +369,16 @@ Full report: `docs/code-review/code-review-march-2026.md`
 - I6: Hardcoded Anthropic model → `src/lib/anthropic.ts` with `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton
 - I7: Inconsistent cron auth → CRON_SECRET pattern on `/api/agreements/notify-expiring`
 
-**Open issues:** 18 minor, ~20 component tests missing (TrialBanner, TrialExpiredPage, SetupPasswordPage, Sidebar tier nav).
+**18 MINOR issues — ALL RESOLVED:**
+- M1/M2: `getAuthenticatedUser()` + `getAuthenticatedProfile()` in `src/lib/auth-helpers.ts`, applied to 12+ routes
+- M3: Already fixed in I6 (Anthropic singleton)
+- M4: `ERRORS` constants in `src/lib/errors.ts`, consistent messages across all routes
+- M5: try/catch on fire-and-forget ops (agreements email_sent_at, items price_history)
+- M6: Removed unused `request` param from billing/portal
+- M7: Network stats queries sold records directly via `.eq('sold', true)` instead of JS filter
+- M8: Payouts uses Map for O(n+m) grouping instead of O(n*m) nested filter
+
+**Open issues:** ~5 component tests missing (SetupPasswordPage hash token parsing, expired token handling).
 
 ## Deferred to Phase 7+
 

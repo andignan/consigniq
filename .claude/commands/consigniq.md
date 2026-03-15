@@ -1,6 +1,6 @@
 Work autonomously. Do not stop for approval at any step.
 Read CLAUDE.md before writing any code.
-Audit the Supabase schema before any database changes:
+Before any database changes, audit the Supabase schema:
 SELECT table_name, column_name
 FROM information_schema.columns
 WHERE table_schema = 'public'

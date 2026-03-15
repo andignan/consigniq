@@ -1,45 +1,38 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
+import { ERRORS } from '@/lib/errors'
 
 export async function GET() {
   const supabase = createServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Verify owner role
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role, account_id')
-    .eq('id', user.id)
-    .single()
+  const auth = await getAuthenticatedProfile<{ account_id: string; role: string }>(supabase, 'role, account_id')
+  if (auth.error) return auth.error
 
-  if (!profile || profile.role !== 'owner') {
-    return NextResponse.json({ error: 'Owner access required' }, { status: 403 })
+  if (auth.profile.role !== 'owner') {
+    return NextResponse.json({ error: ERRORS.OWNER_REQUIRED }, { status: 403 })
   }
 
-  // Fetch account
   const { data: account, error: accError } = await supabase
     .from('accounts')
     .select('id, name, tier, stripe_customer_id, status')
-    .eq('id', profile.account_id)
+    .eq('id', auth.profile.account_id)
     .single()
 
   if (accError) return NextResponse.json({ error: accError.message }, { status: 500 })
 
-  // Fetch all users on this account
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, full_name, email, role, location_id, created_at')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
     .order('created_at', { ascending: true })
 
   if (usersError) return NextResponse.json({ error: usersError.message }, { status: 500 })
 
-  // Fetch pending invitations
   const { data: invitations } = await supabase
     .from('invitations')
     .select('id, email, role, created_at, expires_at, accepted_at')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
     .order('created_at', { ascending: false })
 
   return NextResponse.json({ account, users, invitations: invitations ?? [] })
@@ -47,17 +40,12 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const supabase = createServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role, account_id')
-    .eq('id', user.id)
-    .single()
+  const auth = await getAuthenticatedProfile<{ account_id: string; role: string }>(supabase, 'role, account_id')
+  if (auth.error) return auth.error
 
-  if (!profile || profile.role !== 'owner') {
-    return NextResponse.json({ error: 'Owner access required' }, { status: 403 })
+  if (auth.profile.role !== 'owner') {
+    return NextResponse.json({ error: ERRORS.OWNER_REQUIRED }, { status: 403 })
   }
 
   const body = await request.json()
@@ -70,7 +58,7 @@ export async function PATCH(request: Request) {
   const { data, error } = await supabase
     .from('accounts')
     .update(filtered)
-    .eq('id', profile.account_id)
+    .eq('id', auth.profile.account_id)
     .select()
     .single()
 

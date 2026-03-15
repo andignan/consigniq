@@ -81,25 +81,32 @@ describe('GET /api/admin/network-stats', () => {
   })
 
   it('returns network stats for superadmin', async () => {
-    // Mock price_history records
-    const records = [
-      { category: 'Furniture', sold: true, sold_price: 100, days_to_sell: 10 },
-      { category: 'Furniture', sold: true, sold_price: 200, days_to_sell: 5 },
-      { category: 'Jewelry & Silver', sold: true, sold_price: 50, days_to_sell: 3 },
-      { category: 'Jewelry & Silver', sold: false, sold_price: null, days_to_sell: null },
+    // M7: Now uses two queries — count-only for total, sold-only for stats
+    const soldRecords = [
+      { category: 'Furniture', sold_price: 100, days_to_sell: 10 },
+      { category: 'Furniture', sold_price: 200, days_to_sell: 5 },
+      { category: 'Jewelry & Silver', sold_price: 50, days_to_sell: 3 },
     ]
 
-    const chainWithData = {
-      eq: mockEq,
-      single: mockSingle,
-      then: jest.fn((resolve) => Promise.resolve({ data: records, error: null }).then(resolve)),
-    }
-    // The second mockSelect call (for price_history) should return data
-    mockSelect.mockReturnValueOnce({
-      eq: mockEq,
-      single: mockSingle,
-      then: jest.fn((resolve) => Promise.resolve({ data: { is_superadmin: true }, error: null }).then(resolve)),
-    }).mockReturnValueOnce(chainWithData)
+    const countResult = { count: 4, data: null, error: null }
+    const soldResult = { data: soldRecords, error: null }
+
+    // Mock: users.select (superadmin check) → price_history.select (count) → price_history.select (sold)
+    mockSelect
+      .mockReturnValueOnce({ // superadmin check chain
+        eq: mockEq,
+        single: mockSingle,
+        then: jest.fn((resolve) => Promise.resolve({ data: { is_superadmin: true }, error: null }).then(resolve)),
+      })
+      .mockReturnValueOnce({ // total count query (head:true)
+        then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),
+      })
+      .mockReturnValueOnce({ // sold-only query
+        eq: jest.fn().mockReturnValue({
+          then: jest.fn((resolve) => Promise.resolve(soldResult).then(resolve)),
+        }),
+        then: jest.fn((resolve) => Promise.resolve(soldResult).then(resolve)),
+      })
 
     const res = await GET()
     expect(res.status).toBe(200)

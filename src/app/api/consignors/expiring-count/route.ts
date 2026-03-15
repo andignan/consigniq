@@ -2,23 +2,13 @@
 // Replaces N+1 per-location fetches in the sidebar
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { getAuthenticatedProfile } from '@/lib/auth-helpers'
 
 export async function GET(request: NextRequest) {
   const supabase = createServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('account_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-  }
+  const auth = await getAuthenticatedProfile(supabase)
+  if (auth.error) return auth.error
 
   const locationId = request.nextUrl.searchParams.get('location_id')
 
@@ -26,7 +16,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('consignors')
     .select('expiry_date, grace_end_date, status')
-    .eq('account_id', profile.account_id)
+    .eq('account_id', auth.profile.account_id)
     .neq('status', 'closed')
 
   if (locationId) {
