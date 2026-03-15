@@ -495,5 +495,15 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - All test expectations updated to match authoritative matrix.
 - Test suite: **260 Jest tests passing**
 
+### Code Review — March 2026
+- **Full audit report at** `docs/code-review/code-review-march-2026.md`
+- **5 critical issues** (SQL injection in reports query, missing auth on comps/identify, no server-side solo route guards, no tier enforcement on API routes)
+- **7 important issues** (N+1 sidebar fetch, reports page perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth)
+- **18 minor issues** (duplicate patterns, error message inconsistency, fire-and-forget ops, unused params)
+- **~30-40 component tests missing** (SoloDashboard, TrialBanner, SetupPasswordPage, Sidebar tier nav)
+- **3 spec features not yet implemented** (Community Pricing Feed, API Access, Advanced Markdown Schedules)
+
 ### Deferred to Phase 7+
 - **Community Pricing Feed** — feature gate exists in `src/lib/tier-limits.ts` (`community_pricing_feed`, Pro tier), but no API, UI, or implementation. Will be designed and built in a future phase.
+- **API Access** — feature gate exists (`api_access`, Pro tier), but no public API endpoints or documentation.
+- **Advanced Markdown Schedules** — Standard tier mentions "advanced" markdowns but implementation is same as Starter (hardcoded schedule).
