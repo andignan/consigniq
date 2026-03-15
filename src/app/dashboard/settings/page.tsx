@@ -654,23 +654,14 @@ export default function SettingsPage() {
             <div id="billing" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Billing & Subscription</h2>
 
-              {/* Usage meter for starter tier */}
-              {account.tier === 'starter' && (
+              {/* Usage info for non-solo tiers */}
+              {['starter', 'standard', 'pro'].includes(account.tier) && (
                 <div className="mb-5 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-700 font-medium">AI Pricing Lookups</span>
-                    <span className="text-xs text-gray-500">{user?.accounts?.ai_lookups_this_month ?? 0} of 50 used this month</span>
+                    <span className="text-xs font-semibold text-emerald-600">Unlimited</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        (user?.accounts?.ai_lookups_this_month ?? 0) >= 48 ? 'bg-red-500' :
-                        (user?.accounts?.ai_lookups_this_month ?? 0) >= 40 ? 'bg-amber-500' : 'bg-indigo-500'
-                      }`}
-                      style={{ width: `${Math.min(100, ((user?.accounts?.ai_lookups_this_month ?? 0) / 50) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Resets monthly. Upgrade for unlimited.</p>
+                  <p className="text-xs text-gray-400 mt-1">Your plan includes unlimited AI pricing lookups.</p>
                 </div>
               )}
 

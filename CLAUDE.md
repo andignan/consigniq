@@ -114,11 +114,12 @@ Four tiers: `solo` ($9/mo, 200 AI lookups/mo, pricing-only), `starter` ($49/mo, 
 - **Feature gates** in `src/lib/feature-gates.ts` — `canUseFeature(tier, feature)`, `getUpgradeMessage(feature)`
 - **Stripe client** singleton in `src/lib/stripe.ts` — `getStripe()`
 - **UpgradePrompt** component (`src/components/UpgradePrompt.tsx`) — shown in place of locked features with "Upgrade to [tier]" CTA
-- **AI pricing usage tracking**: `accounts.ai_lookups_this_month` + `accounts.ai_lookups_reset_at` columns. Checked in `/api/pricing/suggest` — starter tier limited to 50/month, counter resets after 30 days. Incremented via `increment_ai_lookups` RPC.
-- **Webhook** at `/api/billing/webhook` — excluded from auth middleware, uses service role Supabase client, verifies Stripe signature
+- **AI pricing usage tracking**: `accounts.ai_lookups_this_month` + `accounts.ai_lookups_reset_at` columns. Checked in `/api/pricing/suggest` — solo tier limited to 200/month, starter/standard/pro unlimited (`aiPricingLimit: null`). Counter resets after 30 days. Incremented via `increment_ai_lookups` RPC.
+- **Webhook** at `/api/billing/webhook` — excluded from auth middleware, uses service role Supabase client, verifies Stripe signature. Sends branded lifecycle emails via Resend: upgrade confirmation, cancellation notice, payment failure alert.
 - **Feature gating in UI**: "Priced Before" panel (standard+), markdown schedules (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro), consignor management (starter+), payouts (starter+), reports (starter+)
 - **Bonus lookups**: Solo/starter accounts can purchase 50-lookup top-up packs ($5). Tracked via `accounts.bonus_lookups` (purchased) and `accounts.bonus_lookups_used` (consumed). Monthly reset clears `ai_lookups_this_month` only; bonus lookups persist until used.
-- **Settings billing UI**: usage meter for starter, pricing cards for upgrade, "Manage Billing" button for paid tiers via Stripe Portal
+- **Settings billing UI**: Solo tier shows usage meter (X of 200); Starter/Standard/Pro show "Unlimited" badge. Pricing cards for upgrade, "Manage Billing" button for paid tiers via Stripe Portal
+- **Billing lifecycle emails** via Resend (sent from webhook): `buildUpgradeEmail()` on checkout.session.completed (plan name, price, features, dashboard CTA), `buildCancellationEmail()` on subscription.deleted (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` on invoice.payment_failed (update payment method CTA to Stripe portal). All non-critical — webhook returns 200 even if email fails.
 
 ### Account Type System
 
@@ -448,6 +449,11 @@ Located at `/docs/test-plans/`. 26 test plans covering: authentication, consigno
 - **Settings subtitle**: Changes from "Manage your location and account settings" to "Manage your account and billing" for solo users.
 - **Sidebar upgrade CTA**: Changed from link to `/dashboard/settings?tab=account` to direct Stripe checkout for Starter tier via `/api/billing/checkout`. Falls back to settings on error.
 - **No shop owner content**: Solo users cannot see: Location Settings, Locations, Consignment Terms, split percentages, Agreement Duration, Grace Period, Markdown Schedule, Team Members, Invite User, or any Standard/Pro upgrade CTAs.
+- Test suite: **260 Jest tests passing**
+
+### Billing Lifecycle & Lookup Limits Fix (Done)
+- **Lookup limits corrected**: Solo tier: 200/month. Starter/Standard/Pro: unlimited (`aiPricingLimit: null`). Settings billing UI shows "Unlimited" badge for non-solo tiers instead of a usage meter with hardcoded "50" limit.
+- **Billing lifecycle emails**: Three new email templates in `src/lib/email-templates.ts`: `buildUpgradeEmail()` (plan name, price, features list, dashboard CTA), `buildCancellationEmail()` (previous tier, data-safe notice, resubscribe CTA), `buildPaymentFailedEmail()` (update payment method CTA). Webhook at `/api/billing/webhook` sends these via Resend on `checkout.session.completed`, `customer.subscription.deleted`, and `invoice.payment_failed` events. All email sends are non-critical (caught, logged, webhook still returns 200).
 - Test suite: **260 Jest tests passing**
 
 ### Deferred to Phase 7+

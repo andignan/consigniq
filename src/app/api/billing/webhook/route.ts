@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
+import { sendEmail } from '@/lib/email'
+import { buildUpgradeEmail, buildCancellationEmail, buildPaymentFailedEmail } from '@/lib/email-templates'
+import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 
 // Use service role client for webhook — no user session available
 function getServiceClient() {
@@ -9,6 +12,17 @@ function getServiceClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+}
+
+// Helper to get account owner's email and name
+async function getAccountOwner(supabase: ReturnType<typeof getServiceClient>, accountId: string) {
+  const { data } = await supabase
+    .from('users')
+    .select('email, full_name')
+    .eq('account_id', accountId)
+    .eq('role', 'owner')
+    .single()
+  return data
 }
 
 export async function POST(request: NextRequest) {
@@ -30,6 +44,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = getServiceClient()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   try {
     switch (event.type) {
@@ -52,10 +67,11 @@ export async function POST(request: NextRequest) {
               .eq('id', accountId)
           }
         } else if (accountId && session.metadata?.tier) {
+          const tier = session.metadata.tier as Tier
           // Tier upgrade
           await supabase
             .from('accounts')
-            .update({ tier: session.metadata.tier })
+            .update({ tier })
             .eq('id', accountId)
 
           // If this was a trial account, convert to paid
@@ -63,6 +79,23 @@ export async function POST(request: NextRequest) {
             .from('accounts')
             .update({ account_type: 'paid', trial_ends_at: null })
             .eq('id', accountId)
+
+          // Send upgrade confirmation email
+          try {
+            const owner = await getAccountOwner(supabase, accountId)
+            if (owner?.email) {
+              const tierConfig = TIER_CONFIGS[tier] ?? TIER_CONFIGS.starter
+              const emailContent = buildUpgradeEmail({
+                fullName: owner.full_name || owner.email,
+                tierLabel: tierConfig.label,
+                tierPrice: tierConfig.price,
+                dashboardUrl: `${appUrl}/dashboard`,
+              })
+              await sendEmail({ to: owner.email, ...emailContent })
+            }
+          } catch (emailErr) {
+            console.error('Failed to send upgrade email:', emailErr)
+          }
         }
         break
       }
@@ -97,15 +130,32 @@ export async function POST(request: NextRequest) {
 
         const { data: account } = await supabase
           .from('accounts')
-          .select('id')
+          .select('id, tier')
           .eq('stripe_customer_id', customerId)
           .single()
 
         if (account) {
+          const previousTier = (account.tier || 'starter') as Tier
           await supabase
             .from('accounts')
             .update({ tier: 'starter' })
             .eq('id', account.id)
+
+          // Send cancellation email
+          try {
+            const owner = await getAccountOwner(supabase, account.id)
+            if (owner?.email) {
+              const tierConfig = TIER_CONFIGS[previousTier] ?? TIER_CONFIGS.starter
+              const emailContent = buildCancellationEmail({
+                fullName: owner.full_name || owner.email,
+                tierLabel: tierConfig.label,
+                resubscribeUrl: `${appUrl}/dashboard/settings?tab=account`,
+              })
+              await sendEmail({ to: owner.email, ...emailContent })
+            }
+          } catch (emailErr) {
+            console.error('Failed to send cancellation email:', emailErr)
+          }
         }
         break
       }
@@ -118,8 +168,28 @@ export async function POST(request: NextRequest) {
 
         if (customerId) {
           console.warn(`Payment failed for customer ${customerId}`)
-          // Note: We do NOT downgrade immediately on payment failure.
-          // Stripe will retry and eventually delete the subscription if payment continues to fail.
+
+          // Send payment failed email
+          try {
+            const { data: account } = await supabase
+              .from('accounts')
+              .select('id')
+              .eq('stripe_customer_id', customerId)
+              .single()
+
+            if (account) {
+              const owner = await getAccountOwner(supabase, account.id)
+              if (owner?.email) {
+                const emailContent = buildPaymentFailedEmail({
+                  fullName: owner.full_name || owner.email,
+                  portalUrl: `${appUrl}/dashboard/settings?tab=account`,
+                })
+                await sendEmail({ to: owner.email, ...emailContent })
+              }
+            }
+          } catch (emailErr) {
+            console.error('Failed to send payment failed email:', emailErr)
+          }
         }
         break
       }

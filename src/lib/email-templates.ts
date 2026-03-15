@@ -353,3 +353,193 @@ This is an automated message from ConsignIQ.
 
   return { subject, text, html }
 }
+
+// ─── Billing Lifecycle Emails ──────────────────────────────
+
+const TIER_FEATURES: Record<string, string[]> = {
+  solo: ['200 AI pricing lookups/month', 'Photo identification', 'Personal inventory', 'CSV export'],
+  starter: ['Unlimited AI pricing lookups', 'Consignor management & lifecycle', 'Payouts & agreements', 'Reports & analytics', 'Staff management'],
+  standard: ['Everything in Starter', 'Repeat item history', 'Markdown schedules', 'Email notifications', 'Multi-location support'],
+  pro: ['Everything in Standard', 'Cross-customer pricing intelligence', 'Community pricing feed', 'All Locations dashboard', 'API access'],
+}
+
+interface UpgradeEmailData {
+  fullName: string
+  tierLabel: string
+  tierPrice: number
+  dashboardUrl: string
+}
+
+export function buildUpgradeEmail(data: UpgradeEmailData) {
+  const features = TIER_FEATURES[data.tierLabel.toLowerCase()] ?? TIER_FEATURES.starter
+  const featureListText = features.map(f => `• ${f}`).join('\n')
+  const featureListHtml = features.map(f => `<li>${f}</li>`).join('')
+
+  const text = `Hi ${data.fullName},
+
+You're now on ConsignIQ ${data.tierLabel}!
+
+Your new plan: ${data.tierLabel} — $${data.tierPrice}/month
+
+What's included:
+${featureListText}
+
+Go to your dashboard: ${data.dashboardUrl}
+
+Thanks for choosing ConsignIQ!
+
+This is an automated message from ConsignIQ.
+`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
+    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  </div>
+
+  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're now on ${data.tierLabel}!</h2>
+
+  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    Your ConsignIQ plan has been upgraded to <strong>${data.tierLabel}</strong> ($${data.tierPrice}/month).
+  </p>
+
+  <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
+    <h3 style="margin:0 0 8px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">What's Included</h3>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#374151;">${featureListHtml}</ul>
+  </div>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${data.dashboardUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+      Go to Your Dashboard
+    </a>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+</body>
+</html>`
+
+  const subject = `You're now on ConsignIQ ${data.tierLabel}!`
+  return { subject, text, html }
+}
+
+interface CancellationEmailData {
+  fullName: string
+  tierLabel: string
+  resubscribeUrl: string
+}
+
+export function buildCancellationEmail(data: CancellationEmailData) {
+  const text = `Hi ${data.fullName},
+
+Your ConsignIQ subscription has been cancelled.
+
+Your ${data.tierLabel} plan features are no longer active. Your data is still safe — you can resubscribe anytime to restore access.
+
+Resubscribe: ${data.resubscribeUrl}
+
+We'd love to have you back.
+
+The ConsignIQ Team
+
+This is an automated message from ConsignIQ.
+`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
+    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  </div>
+
+  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Your subscription has been cancelled</h2>
+
+  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    Your ConsignIQ <strong>${data.tierLabel}</strong> subscription has been cancelled. Your plan features are no longer active.
+  </p>
+
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;">
+    <p style="margin:0;font-size:14px;color:#991b1b;">
+      Your data is safe and will be preserved. You can resubscribe anytime to restore full access.
+    </p>
+  </div>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+      Resubscribe
+    </a>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+</body>
+</html>`
+
+  const subject = 'Your ConsignIQ subscription has been cancelled'
+  return { subject, text, html }
+}
+
+interface PaymentFailedEmailData {
+  fullName: string
+  portalUrl: string
+}
+
+export function buildPaymentFailedEmail(data: PaymentFailedEmailData) {
+  const text = `Hi ${data.fullName},
+
+We were unable to process your payment for ConsignIQ.
+
+Please update your payment method to avoid losing access to your account. Stripe will retry the payment, but if it continues to fail, your subscription may be cancelled.
+
+Update payment method: ${data.portalUrl}
+
+If you need help, reply to this email.
+
+The ConsignIQ Team
+
+This is an automated message from ConsignIQ.
+`
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
+    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  </div>
+
+  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Action required — payment failed</h2>
+
+  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:#374151;">
+    We were unable to process your payment for ConsignIQ. Please update your payment method to avoid losing access.
+  </p>
+
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:20px 0;">
+    <p style="margin:0;font-size:14px;color:#92400e;">
+      Stripe will retry the payment automatically, but if it continues to fail, your subscription may be cancelled.
+    </p>
+  </div>
+
+  <div style="text-align:center;margin:28px 0;">
+    <a href="${data.portalUrl}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+      Update Payment Method
+    </a>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+</body>
+</html>`
+
+  const subject = 'Action required — payment failed for ConsignIQ'
+  return { subject, text, html }
+}
