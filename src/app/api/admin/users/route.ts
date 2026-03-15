@@ -163,8 +163,11 @@ export async function POST(request: NextRequest) {
   let inviteError: string | undefined
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Use 'recovery' type instead of 'invite' — invite links expire based on
+    // Supabase's short email OTP expiry (often 1 hour). Recovery links use the
+    // longer recovery expiry setting (24 hours). The setup-password page handles both.
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'invite',
+      type: 'recovery',
       email,
       options: { redirectTo: `${appUrl}/auth/setup-password` },
     })

@@ -206,7 +206,7 @@ describe('POST /api/admin/users', () => {
 
     // Verify invite link generated and email sent
     expect(mockSupabaseAuth.admin.generateLink).toHaveBeenCalledWith({
-      type: 'invite',
+      type: 'recovery',
       email: 'new@test.com',
       options: { redirectTo: expect.stringContaining('/auth/setup-password') },
     })
