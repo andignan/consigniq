@@ -5,11 +5,10 @@
 
 const mockCreate = jest.fn()
 
-jest.mock('@anthropic-ai/sdk', () => {
-  return jest.fn().mockImplementation(() => ({
-    messages: { create: mockCreate },
-  }))
-})
+jest.mock('@/lib/anthropic', () => ({
+  getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+  ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+}))
 
 const mockGetUser = jest.fn()
 const mockSingle = jest.fn()

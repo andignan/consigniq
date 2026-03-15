@@ -1,8 +1,8 @@
 // app/api/pricing/identify/route.ts
 // Photo-based item identification using Claude vision
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@/lib/supabase/server'
+import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
 
 export interface IdentifyResult {
   name: string
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
   const mediaType = file.type as 'image/jpeg' | 'image/png' | 'image/webp'
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const anthropic = getAnthropicClient()
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 300,
       messages: [
         {

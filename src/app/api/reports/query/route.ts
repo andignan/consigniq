@@ -1,7 +1,7 @@
 // app/api/reports/query/route.ts
 import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
 
 const FORBIDDEN_TABLES = ['users', 'accounts', 'invitations', 'agreements']
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY is not set' }, { status: 500 })
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const anthropic = getAnthropicClient()
 
   // Determine location scoping
   let locationFilter = ''
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   try {
     // Step 1: Generate SQL
     const sqlMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 500,
       system: SQL_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: question.trim() }],
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     // Step 5: Generate summary
     const summaryMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 300,
       system: 'You are a helpful assistant for ConsignIQ, a consignment shop management platform. Summarize the query results in 2-3 sentences of plain language. Be specific with numbers.',
       messages: [{

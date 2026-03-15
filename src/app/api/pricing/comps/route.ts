@@ -28,13 +28,11 @@ export async function POST(request: NextRequest) {
 
   const serpApiKey = process.env.SERPAPI_KEY
   if (!serpApiKey) {
-    console.log('[comps] No SERPAPI_KEY set — skipping comp lookup')
     return NextResponse.json({ comps: [], source: 'none' })
   }
 
   const config = getCategoryConfig(category ?? 'Other')
   const searchQuery = config.searchTerms(name, description)
-  console.log('[comps] Searching eBay for:', searchQuery)
 
   try {
     // Search eBay sold listings via SerpApi
@@ -47,9 +45,6 @@ export async function POST(request: NextRequest) {
       api_key: serpApiKey,
     })
 
-    const debugUrl = `https://serpapi.com/search.json?${new URLSearchParams({ ...Object.fromEntries(params), api_key: '***' })}`
-    console.log('[comps] SerpApi request URL:', debugUrl)
-
     const res = await fetch(`https://serpapi.com/search.json?${params}`)
     if (!res.ok) {
       const errText = await res.text()
@@ -59,19 +54,6 @@ export async function POST(request: NextRequest) {
 
     const data = await res.json()
     const results = data.organic_results ?? []
-    console.log('[comps] SerpApi returned', results.length, 'organic_results')
-    if (results.length > 0) {
-      console.log('[comps] First result sample:', JSON.stringify({
-        title: results[0].title,
-        price: results[0].price,
-        link: results[0].link?.substring(0, 60),
-      }))
-    }
-    if (results.length === 0) {
-      console.log('[comps] Zero results. Response keys:', Object.keys(data))
-      if (data.error) console.error('[comps] SerpApi error in body:', data.error)
-      if (data.search_information) console.log('[comps] search_information:', JSON.stringify(data.search_information))
-    }
 
     // Exclude new-condition items that may slip through despite LH_ItemCondition filter
     const NEW_CONDITIONS = ['brand new', 'new', 'new with tags', 'new without tags', 'new with defects', 'new other']
@@ -95,7 +77,6 @@ export async function POST(request: NextRequest) {
       }))
       .filter((c: CompResult) => c.price > 0)
 
-    console.log('[comps] Returning', comps.length, 'comps after filtering')
     return NextResponse.json({ comps, source: 'ebay' })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

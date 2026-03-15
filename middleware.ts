@@ -43,7 +43,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api') &&
     !request.nextUrl.pathname.startsWith('/api/auth') &&
     !request.nextUrl.pathname.startsWith('/api/billing/webhook') &&
-    !request.nextUrl.pathname.startsWith('/api/trial')
+    !request.nextUrl.pathname.startsWith('/api/trial') &&
+    !request.nextUrl.pathname.startsWith('/api/agreements/notify-expiring')
   ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

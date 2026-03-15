@@ -1,8 +1,8 @@
 // app/api/pricing/suggest/route.ts
 // AI pricing engine using Claude
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { getCategoryConfig } from '@/lib/pricing/categories'
+import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
 import { createServerClient } from '@/lib/supabase/server'
 import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
@@ -120,9 +120,9 @@ Important:
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const anthropic = getAnthropicClient()
 
-    const userContent: Anthropic.MessageCreateParams['messages'][0]['content'] =
+    const userContent: Parameters<typeof anthropic.messages.create>[0]['messages'][0]['content'] =
       photoBase64 && photoMediaType
         ? [
             {
@@ -138,7 +138,7 @@ Important:
         : prompt
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 300,
       messages: [{ role: 'user', content: userContent }],
     })

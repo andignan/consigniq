@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
   // Generate insight text via Claude if we have the API key
   if (process.env.ANTHROPIC_API_KEY) {
     try {
-      const Anthropic = (await import('@anthropic-ai/sdk')).default
-      const anthropic = new Anthropic()
+      const { getAnthropicClient: getClient, ANTHROPIC_MODEL: MODEL } = await import('@/lib/anthropic')
+      const anthropic = getClient()
 
       const prompt = `You are a pricing analyst for a consignment shop. Based on this cross-account market data, write a 1-2 sentence insight:
 
@@ -124,7 +124,7 @@ Average days to sell: ${stats.avg_days_to_sell?.toFixed(0) ?? 'N/A'}
 Write a brief, actionable insight about pricing this item based on the market data. Be specific about numbers. Do not use markdown.`
 
       const msg = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: MODEL,
         max_tokens: 150,
         messages: [{ role: 'user', content: prompt }],
       })

@@ -1,28 +1,20 @@
 // app/api/agreements/notify-expiring/route.ts
+// I7: Uses CRON_SECRET auth pattern (matches /api/trial/check-expiry)
 // Finds consignors expiring in 3 days and sends reminder emails.
-// Designed to be called by a cron job.
-import { createServerClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
 import { buildExpiryReminderEmail } from '@/lib/email-templates'
 
-export async function POST() {
-  const supabase = createServerClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
+export async function POST(request: NextRequest) {
+  // Auth check: require CRON_SECRET header, or allow if no secret configured
+  const authHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('account_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
-    return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
-  }
+  const supabase = createAdminClient()
 
   // Find consignors expiring in exactly 3 days from today
   const today = new Date()
@@ -32,8 +24,7 @@ export async function POST() {
 
   const { data: expiringConsignors } = await supabase
     .from('consignors')
-    .select('id, name, email, expiry_date, grace_end_date, location_id')
-    .eq('account_id', profile.account_id)
+    .select('id, name, email, expiry_date, grace_end_date, location_id, account_id')
     .eq('expiry_date', targetDateStr)
     .not('email', 'is', null)
 
@@ -49,9 +40,6 @@ export async function POST() {
     .in('consignor_id', consignorIds)
     .not('email_sent_at', 'is', null)
 
-  // Build set of consignors who already received an expiry notification
-  // We check if they have any agreement with email_sent_at after the agreement was generated
-  // For simplicity: skip consignors who have ANY agreement with email_sent_at set
   const notifiedConsignorIds = new Set(
     (existingAgreements ?? [])
       .filter(a => a.email_sent_at)
@@ -71,7 +59,6 @@ export async function POST() {
   const errors: string[] = []
 
   for (const consignor of expiringConsignors) {
-    // Skip if already notified
     if (notifiedConsignorIds.has(consignor.id)) continue
     if (!consignor.email) continue
 

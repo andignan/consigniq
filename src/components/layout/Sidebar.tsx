@@ -123,41 +123,25 @@ export default function Sidebar({ user }: SidebarProps) {
   }, [])
 
   // Fetch expiring consignor count (expiring within 7 days or in grace) — skip for solo
+  // I1: Single endpoint replaces N+1 per-location fetches
   useEffect(() => {
     if (isSolo) return
     async function fetchExpiringCount() {
       if (!contextUser?.account_id) return
       if (!activeLocationId && !isAllLocations) return
-      const locId = activeLocationId || (locations.length > 0 ? locations[0].id : null)
-      if (!locId && !isAllLocations) return
 
       try {
-        const fetchLocations = isAllLocations ? locations.map(l => l.id) : [locId!]
-        let total = 0
-        for (const lid of fetchLocations) {
-          const res = await fetch(`/api/consignors?location_id=${lid}`, { credentials: 'include' })
-          if (!res.ok) continue
-          const data = await res.json()
-          const consignors = data.consignors || []
-          const now = new Date()
-          now.setHours(0, 0, 0, 0)
-          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
-          total += consignors.filter((c: { status: string; expiry_date: string; grace_end_date: string }) => {
-            if (c.status === 'closed') return false
-            const expiry = new Date(c.expiry_date + 'T00:00:00')
-            const graceEnd = new Date(c.grace_end_date + 'T00:00:00')
-            const isExpiringSoon = expiry.getTime() - now.getTime() <= sevenDaysMs && expiry.getTime() >= now.getTime()
-            const isInGrace = now > expiry && now <= graceEnd
-            return isExpiringSoon || isInGrace
-          }).length
-        }
-        setExpiringCount(total)
+        const params = activeLocationId ? `?location_id=${activeLocationId}` : ''
+        const res = await fetch(`/api/consignors/expiring-count${params}`, { credentials: 'include' })
+        if (!res.ok) return
+        const data = await res.json()
+        setExpiringCount(data.count ?? 0)
       } catch {
         // Silently fail — badge is informational
       }
     }
     fetchExpiringCount()
-  }, [contextUser?.account_id, activeLocationId, isAllLocations, locations, isSolo])
+  }, [contextUser?.account_id, activeLocationId, isAllLocations, isSolo])
 
   async function handleSignOut() {
     const supabase = createClient()

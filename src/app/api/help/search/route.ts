@@ -1,7 +1,7 @@
 // app/api/help/search/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { HELP_KNOWLEDGE_BASE } from '@/lib/help-knowledge-base'
+import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const anthropic = getAnthropicClient()
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       max_tokens: 300,
       system: `You are the ConsignIQ help assistant. Only answer questions about ConsignIQ features and how to use the application. If the question is not about ConsignIQ, politely say you can only help with ConsignIQ questions.
 

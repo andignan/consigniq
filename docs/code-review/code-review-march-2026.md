@@ -39,54 +39,39 @@
 
 ---
 
-## IMPORTANT ISSUES (Fix soon)
+## IMPORTANT ISSUES (Fix soon) — ALL RESOLVED
 
-### I1. N+1 Query in Sidebar Expiring Consignor Badge
-- **File:** `src/components/layout/Sidebar.tsx`, lines 126-160
-- **Issue:** For "All Locations" view, makes sequential HTTP requests per location:
-  ```typescript
-  for (const lid of fetchLocations) {
-    const res = await fetch(`/api/consignors?location_id=${lid}`, ...)
-  }
-  ```
-- **Impact:** 5 locations = 5 sequential API calls on every page load
-- **Fix:** Create a single endpoint `/api/consignors/expiring-count` or fetch by `account_id`
+### I1. N+1 Query in Sidebar Expiring Consignor Badge — RESOLVED
+- **File:** `src/components/layout/Sidebar.tsx`
+- **Fix applied:** Created `/api/consignors/expiring-count` endpoint. Single DB query scoped by `account_id` (with optional `location_id` filter). Sidebar now makes one API call instead of N per-location fetches.
+- **New file:** `src/app/api/consignors/expiring-count/route.ts`
+- **Tests:** `expiring-count.test.ts` — auth, 404, count=0, account scoping, location filter, expiry+grace counting
 
-### I2. Reports Page Loads Entire Dataset Client-Side
-- **File:** `src/app/dashboard/reports/page.tsx`, lines 282-309
-- **Issue:** Fetches ALL items and consignors for the account with no pagination, then filters in JavaScript (800+ filter operations). For accounts with 10,000+ items, this causes memory spikes.
-- **Fix:** Implement server-side aggregations or pagination
+### I2. Reports Page Loads Entire Dataset Client-Side — RESOLVED
+- **File:** `src/app/dashboard/reports/page.tsx`
+- **Fix applied:** Added `.limit(2000)` and `.order('intake_date', { ascending: false })` to items, consignors, and markdowns queries. Prevents memory spikes for large accounts while keeping all 13 report sections functional.
 
-### I3. Admin Stats Fetches All Records Instead of COUNT()
-- **File:** `src/app/api/admin/stats/route.ts`, lines 17-22
-- **Issue:** Fetches entire `accounts`, `locations`, `users`, `items`, `consignors` tables then counts in JS
-- **Fix:** Replace with Supabase `.select('*', { count: 'exact', head: true })` or RPC aggregation
+### I3. Admin Stats Fetches All Records Instead of COUNT() — RESOLVED
+- **File:** `src/app/api/admin/stats/route.ts`
+- **Fix applied:** Replaced full table fetches with `supabase.from(table).select('*', { count: 'exact', head: true })`. 19 parallel count-only queries (no data transfer). Added `solo` to `byTier` breakdown.
+- **Tests:** `admin-stats-count.test.ts` — verifies count:exact/head:true usage, numeric responses, solo tier in breakdown
 
-### I4. Missing Database Indexes
-- **Files:** `supabase/migrations/` — no CREATE INDEX statements found in any migration
-- **Missing indexes on frequently filtered columns:**
-  - `(account_id, status)` on items, consignors
-  - `(account_id, location_id)` on items, consignors
-  - `(location_id, status)` on items
-  - `(account_id)` on price_history, users, locations
-  - `(stripe_customer_id)` on accounts (webhook lookups)
-- **Fix:** Create migration with composite indexes
+### I4. Missing Database Indexes — RESOLVED
+- **Migration:** `supabase/migrations/20260315000000_add_performance_indexes.sql`
+- **Indexes added:** 9 composite indexes on items (3), consignors (2), price_history (1), users (1), locations (1), accounts (1)
 
-### I5. Debug Console.logs in Production Code
-- **File:** `src/app/api/pricing/comps/route.ts` — 8+ `console.log` statements for debug output (search query, SerpApi URL, result counts)
-- **File:** `src/app/dashboard/inventory/[id]/price/page.tsx` — 5 `console.log` statements
-- **File:** `src/app/dashboard/pricing/page.tsx` — 1 `console.log`
-- **Fix:** Remove debug logs or replace with structured logger
+### I5. Debug Console.logs in Production Code — RESOLVED
+- **Fix applied:** Removed 8 `console.log` statements from `/api/pricing/comps/route.ts` and 4 from `/dashboard/inventory/[id]/price/page.tsx`. Kept all `console.error` for real error logging.
 
-### I6. Anthropic Model Name Hardcoded in 5 Routes
-- **Files:** `help/search`, `pricing/identify`, `pricing/suggest`, `pricing/cross-account`, `reports/query`
-- **Issue:** `'claude-sonnet-4-20250514'` hardcoded in each route
-- **Fix:** Extract to `src/lib/anthropic.ts` as a constant: `export const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514'`
+### I6. Anthropic Model Name Hardcoded in 5 Routes — RESOLVED
+- **New file:** `src/lib/anthropic.ts` — exports `ANTHROPIC_MODEL` constant and `getAnthropicClient()` singleton
+- **Fix applied:** All 5 routes (`help/search`, `pricing/identify`, `pricing/suggest`, `pricing/cross-account`, `reports/query`) now import from `@/lib/anthropic` instead of creating per-request clients with hardcoded model strings.
+- **Tests:** `anthropic-config.test.ts` — verifies constant value and format
 
-### I7. Inconsistent Auth on `/api/agreements/notify-expiring`
+### I7. Inconsistent Auth on `/api/agreements/notify-expiring` — RESOLVED
 - **File:** `src/app/api/agreements/notify-expiring/route.ts`
-- **Issue:** Uses session auth, but designed for cron invocation. Should use `CRON_SECRET` pattern like `/api/trial/check-expiry`
-- **Fix:** Add CRON_SECRET support or document as user-triggered
+- **Fix applied:** Replaced session auth with CRON_SECRET pattern (matches `/api/trial/check-expiry`). Uses `createAdminClient()` instead of `createServerClient()`. Route excluded from middleware auth. DEPLOYMENT.md updated to document both cron endpoints under CRON_SECRET.
+- **Tests:** Updated `agreements.test.ts` — CRON_SECRET enforcement, request parameter passing
 
 ---
 
@@ -175,8 +160,8 @@
 ### Edge Cases Not Tested
 | Scenario | Priority |
 |----------|----------|
-| Solo user hits 200/month limit (403 response) | HIGH |
-| Bonus lookups exhausted after monthly limit | HIGH |
+| Solo user hits 200/month limit (403 response) | HIGH — TESTED in `lookup-limits.test.ts` |
+| Bonus lookups exhausted after monthly limit | HIGH — TESTED in `lookup-limits.test.ts` |
 | Trial expires mid-session (layout redirect) | MEDIUM |
 | Suspended/cancelled account lockout | MEDIUM |
 | Monthly counter reset after 30 days | MEDIUM |

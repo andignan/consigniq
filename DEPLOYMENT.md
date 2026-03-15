@@ -38,7 +38,7 @@ Set all of these in **Vercel → Project → Settings → Environment Variables*
 | `STRIPE_STANDARD_PRICE_ID` | Standard tier checkout | Checkout for that tier fails |
 | `STRIPE_PRO_PRICE_ID` | Pro tier checkout | Checkout for that tier fails |
 | `STRIPE_TOPUP_50_PRICE_ID` | 50-lookup top-up pack | Top-up purchase fails |
-| `CRON_SECRET` | Trial expiry cron auth | Cron endpoint open (no auth) |
+| `CRON_SECRET` | Cron endpoint auth (`/api/trial/check-expiry`, `/api/agreements/notify-expiring`) | Cron endpoints open (no auth) |
 
 ## Supabase Setup
 

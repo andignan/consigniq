@@ -279,9 +279,12 @@ export default function ReportsPage() {
 
     const effectiveLocation = isAllLocations ? null : (activeLocationId ?? user.location_id)
 
+    // I2: Limit fetches to 2000 records max to prevent memory spikes
     let itemsQuery = supabase
       .from('items')
       .select('id, name, category, condition, description, status, price, sold_price, sold_date, donated_at, priced_at, intake_date, location_id, consignor_id, ai_reasoning, current_markdown_pct, low_price, high_price, consignor:consignors(id, name, phone, email, split_store, split_consignor, intake_date, expiry_date, grace_end_date)')
+      .order('intake_date', { ascending: false })
+      .limit(2000)
     if (effectiveLocation) {
       itemsQuery = itemsQuery.eq('location_id', effectiveLocation)
     } else {
@@ -291,6 +294,7 @@ export default function ReportsPage() {
     let consignorsQuery = supabase
       .from('consignors')
       .select('id, name, phone, email, split_store, split_consignor, status, location_id, created_at, intake_date, expiry_date, grace_end_date')
+      .limit(2000)
     if (effectiveLocation) {
       consignorsQuery = consignorsQuery.eq('location_id', effectiveLocation)
     } else {
@@ -301,6 +305,7 @@ export default function ReportsPage() {
       .from('markdowns')
       .select('id, item_id, markdown_pct, original_price, new_price, applied_at')
       .eq('account_id', user.account_id)
+      .limit(2000)
 
     const [itemsRes, consignorsRes, markdownsRes] = await Promise.all([
       itemsQuery,

@@ -269,7 +269,6 @@ export default function PricingPage() {
       description: item.description,
       condition: item.condition,
     }
-    console.log('[inventory-pricing] Fetching comps with:', payload)
     try {
       const res = await fetch('/api/pricing/comps', {
         method: 'POST',
@@ -277,10 +276,8 @@ export default function PricingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      console.log('[inventory-pricing] Comps response status:', res.status)
       if (res.ok) {
         const data = await res.json()
-        console.log('[inventory-pricing] Comps data:', { source: data.source, count: (data.comps ?? []).length })
         return data.comps ?? []
       }
     } catch (err) {
@@ -297,7 +294,6 @@ export default function PricingPage() {
     setManualPrice('')
 
     const fetchedComps = await fetchComps()
-    console.log('[inventory-pricing] runCompsOnly got', fetchedComps.length, 'comps')
     setComps(fetchedComps)
     setStage('comps-ready')
   }

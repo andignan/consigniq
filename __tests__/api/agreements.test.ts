@@ -27,6 +27,12 @@ jest.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: mockFrom,
+  }),
+}))
+
 const mockSendEmail = jest.fn()
 jest.mock('@/lib/email', () => ({
   sendEmail: (...args: unknown[]) => mockSendEmail(...args),
@@ -292,29 +298,35 @@ describe('Expiry reminder email template', () => {
 // ==================== /api/agreements/notify-expiring ====================
 
 describe('POST /api/agreements/notify-expiring', () => {
-  it('returns 401 if unauthenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'Not authed' } })
-    const req = new NextRequest(new URL('/api/agreements/notify-expiring', 'http://localhost:3000'), { method: 'POST' })
-    const res = await notifyExpiring()
+  function makeCronRequest(cronSecret?: string): NextRequest {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (cronSecret) headers['authorization'] = `Bearer ${cronSecret}`
+    return new NextRequest(new URL('/api/agreements/notify-expiring', 'http://localhost:3000'), {
+      method: 'POST',
+      headers,
+    })
+  }
+
+  it('returns 401 if CRON_SECRET set and header missing', async () => {
+    process.env.CRON_SECRET = 'test-secret'
+    const req = makeCronRequest()
+    const res = await notifyExpiring(req)
     expect(res.status).toBe(401)
+    delete process.env.CRON_SECRET
   })
 
   it('returns sent: 0 when no expiring consignors', async () => {
-    // profile query
-    mockSingle.mockResolvedValue({ data: { account_id: 'acc-1' }, error: null })
-
-    const res = await notifyExpiring()
+    const req = makeCronRequest()
+    const res = await notifyExpiring(req)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.sent).toBe(0)
   })
 
   it('finds consignors expiring in 3 days', async () => {
-    mockSingle.mockResolvedValue({ data: { account_id: 'acc-1' }, error: null })
-
-    const res = await notifyExpiring()
+    const req = makeCronRequest()
+    const res = await notifyExpiring(req)
     // Should query consignors with expiry_date filter
     expect(mockFrom).toHaveBeenCalledWith('consignors')
-    expect(mockEq).toHaveBeenCalledWith('account_id', 'acc-1')
   })
 })

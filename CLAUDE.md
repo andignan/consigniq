@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (272 tests across unit + API)
+- `npm test` — Jest test suite (309 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -21,7 +21,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - **Supabase** for auth, database, RLS — via `@supabase/ssr`
 - **Tailwind CSS 3** (responsive: `md:` breakpoint for desktop)
 - **lucide-react** for icons
-- **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing + photo ID (vision)
+- **Anthropic Claude API** (`@anthropic-ai/sdk`) for AI pricing + photo ID (vision). Singleton client + model constant in `src/lib/anthropic.ts`
 - **SerpApi** for eBay sold comp lookups (`LH_Sold=1`, `LH_Complete=1`, `LH_ItemCondition=3000`)
 - **pdf-lib** for PDF label generation
 - **Stripe** (`stripe`) for subscription billing
@@ -43,14 +43,15 @@ Three client factories:
 **Items & Consignors:**
 - `/api/items` — GET (params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search`), POST, PATCH (auto-timestamps for sold/donated/priced; `status: 'sold'` writes `price_history` record)
 - `/api/consignors` — GET/POST with location scoping
+- `/api/consignors/expiring-count` — GET, single-query count of consignors expiring ≤7 days or in grace. Optional `?location_id=` filter. Scoped by account_id
 - `/api/price-history` — GET similar sold items. Requires `category`, optional `name`, `exclude_item_id`, `limit` (max 50, default 10)
 - `/api/locations` — GET (all account locations), POST (owner only)
 - `/api/payouts` — GET (sold items grouped by consignor with split calcs, `location_id`/`status` filters), PATCH (mark items paid, `item_ids[]`, optional `payout_note`)
 
 **Pricing:**
-- `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check
-- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits.
-- `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check
+- `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check. No debug console.logs
+- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton
+- `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton
 - `/api/pricing/cross-account` — Pro-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
 **Admin (superadmin only):**
@@ -100,7 +101,7 @@ Three client factories:
 - Supabase email/password auth. Login: `/auth/login`. Password setup: `/auth/setup-password` (invite + recovery links)
 - Setup-password manually parses `access_token`/`refresh_token` from URL hash → `setSession()` (required because `@supabase/ssr` uses cookie storage, doesn't auto-detect hash fragments)
 - Dashboard layout: auth check → load profile (with service role fallback) → redirect superadmins to `/admin` → wrap in `<UserProvider>` + `<LocationProvider>`
-- Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/trial/*`
+- Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/trial/*`, `/api/agreements/notify-expiring`
 - Post-login: calls `/api/auth/check-superadmin` → superadmins go to `/admin`, others to `/dashboard`
 
 ### Superadmin Access
@@ -144,6 +145,7 @@ Three client factories:
 - `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
 - `src/lib/feature-gates.ts` — `canUseFeature()`, `getUpgradeMessage()`, `isAccountActive()`, `getEffectiveTier()`, `canAccountUseFeature()`, `isLookupLimitReached()`
 - `src/lib/stripe.ts` — `getStripe()` singleton
+- `src/lib/anthropic.ts` — `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton (used by all 5 AI routes)
 - `src/components/UpgradePrompt.tsx` — shown for locked features
 
 **AI lookup tracking:** `accounts.ai_lookups_this_month` + `ai_lookups_reset_at`. Solo: 200/mo, others: unlimited. Incremented via `increment_ai_lookups` RPC. Monthly reset clears `ai_lookups_this_month` only.
@@ -268,7 +270,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**272 Jest tests passing.** 5 Playwright E2E specs. 26 manual test plans at `/docs/test-plans/`.
+**309 Jest tests passing.** 5 Playwright E2E specs. 27 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -280,7 +282,10 @@ __tests__/
 │   ├── feature-gates.test.ts      — canUseFeature(), tier configs, account type helpers, lookup limits
 │   ├── auto-capitalize.test.ts    — Item name auto-capitalize
 │   ├── description-hints.test.ts  — Category-specific description hints
-│   └── password-validation.test.ts — Password form validation
+│   ├── password-validation.test.ts — Password form validation
+│   ├── anthropic-config.test.ts   — ANTHROPIC_MODEL constant, singleton client
+│   ├── lookup-limits.test.ts      — Solo 200/mo limit, bonus exhaustion, unlimited tiers
+│   └── solo-dashboard.test.ts     — Usage meter math, bar colors, reset date calc
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -301,7 +306,9 @@ __tests__/
 │   ├── admin-users.test.ts        — GET/POST, superadmin enforcement, invite email
 │   ├── trial-check-expiry.test.ts — auth, reminder emails, expired count
 │   ├── password-flow.test.ts      — reset-password, forgot-password
-│   └── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
+│   ├── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
+│   ├── expiring-count.test.ts     — GET /api/consignors/expiring-count, auth, scoping, counting
+│   └── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
 ```
 
 ### Playwright E2E
@@ -325,6 +332,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260314060000` — add payout fields (paid_at, payout_note) to items
 - `20260314070000` — ensure superadmin user row
 - `20260314080000` — solo tier + account types (account_type, trial_ends_at, is_complimentary, complimentary_tier, bonus_lookups, bonus_lookups_used)
+- `20260315000000` — performance indexes: items (3), consignors (2), price_history (1), users (1), locations (1), accounts (1)
 
 ## Security
 
@@ -346,7 +354,16 @@ Full report: `docs/code-review/code-review-march-2026.md`
 
 **Regression tests:** `__tests__/api/critical-security.test.ts` — 5 UUID validation tests (C1) + 7 tier enforcement tests (C5) = 12 total.
 
-**Open issues:** 7 important (N+1 sidebar fetch, reports perf, admin stats perf, missing DB indexes, debug console.logs, hardcoded model names, inconsistent cron auth), 18 minor, ~30-40 component tests missing.
+**7 IMPORTANT issues — ALL RESOLVED:**
+- I1: N+1 sidebar query → single `/api/consignors/expiring-count` endpoint
+- I2: Reports full dataset load → `.limit(2000)` + `.order()` on all queries
+- I3: Admin stats full fetches → `{ count: 'exact', head: true }` count-only queries
+- I4: Missing DB indexes → migration `20260315000000` with 9 composite indexes
+- I5: Debug console.logs → removed 12 statements, kept console.error
+- I6: Hardcoded Anthropic model → `src/lib/anthropic.ts` with `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton
+- I7: Inconsistent cron auth → CRON_SECRET pattern on `/api/agreements/notify-expiring`
+
+**Open issues:** 18 minor, ~20 component tests missing (TrialBanner, TrialExpiredPage, SetupPasswordPage, Sidebar tier nav).
 
 ## Deferred to Phase 7+
 
