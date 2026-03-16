@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient()
   const body = await request.json()
 
-  const required = ['account_id', 'location_id', 'consignor_id', 'name', 'category', 'condition']
+  // consignor_id is optional (null for Solo tier users)
+  const required = ['account_id', 'location_id', 'name', 'category', 'condition']
   for (const field of required) {
     if (!body[field]) {
       return NextResponse.json({ error: `${field} is required` }, { status: 400 })
@@ -57,19 +58,29 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthenticatedUser(supabase)
   if (auth.error) return auth.error
 
+  // If price is provided (e.g., from Price Lookup save), mark as priced
+  const hasPrice = body.price != null
+  const today = new Date()
+  const intakeDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
   const { data, error } = await supabase
     .from('items')
     .insert({
       account_id: body.account_id,
       location_id: body.location_id,
-      consignor_id: body.consignor_id,
+      consignor_id: body.consignor_id ?? null,
       name: body.name,
       category: body.category,
       condition: body.condition,
       description: body.description ?? null,
       photo_url: body.photo_url ?? null,
-      status: 'pending',
-      intake_date: new Date().toISOString().split('T')[0],
+      price: body.price ?? null,
+      low_price: body.low_price ?? null,
+      high_price: body.high_price ?? null,
+      ai_reasoning: body.ai_reasoning ?? null,
+      status: hasPrice ? 'priced' : 'pending',
+      priced_at: hasPrice ? new Date().toISOString() : null,
+      intake_date: intakeDate,
       current_markdown_pct: 0,
       created_by: auth.user.id,
     })

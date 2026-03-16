@@ -191,9 +191,12 @@ export default function PriceLookupPage() {
       })
       if (res.ok) {
         setSaved(true)
+      } else {
+        const errData = await res.json().catch(() => ({ error: 'Failed to save' }))
+        setError(errData.error || 'Failed to save to inventory')
       }
     } catch {
-      // Silently fail
+      setError('Failed to save to inventory')
     } finally {
       setSaving(false)
     }
