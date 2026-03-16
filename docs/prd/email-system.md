@@ -70,9 +70,9 @@ Microsoft/Outlook email security scanners pre-fetch links in emails, consuming o
 On `/auth/setup-password`, if an `access_token` exists in the URL hash:
 
 1. Decode the JWT from the access_token to extract the intended email
-2. Call `setSession()` with the token (replaces the current session directly — no signOut needed)
+2. Call `setSession()` with the token
 3. Verify `data.user.email === expectedEmail` — show expired error on mismatch
 
-**No signOut is called.** `setSession()` replaces the current tab's session atomically. Calling `signOut()` would invalidate the session server-side and disrupt other tabs (including admin sessions).
+**Known limitation:** Supabase uses cookie-based auth shared across all browser tabs. When a new user clicks an invite link in the same browser where an admin is logged in, the admin's session will be replaced by the new user's session in ALL tabs. This is inherent to cookie-based auth — no code fix can prevent it.
 
-This prevents a logged-in user from accidentally changing the wrong account's password.
+**Workaround for admins:** Use an incognito/private window or a different browser when testing invite links while logged into the admin panel. The JWT email verification ensures the correct account's password is always set — it will never silently change the wrong account's password.
