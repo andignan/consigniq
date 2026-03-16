@@ -81,6 +81,24 @@ All dashboard views display "Welcome back, [firstName]!" as the page heading whe
 - All Locations view (server-side via `authUser.user_metadata.full_name`)
 - Single location view (server-side, same pattern)
 
+### Responsive Layout Standard
+- Mobile: `w-full` with `px-4 py-6` padding (no max-width constraint)
+- Desktop (1024px+): `lg:max-w-5xl lg:mx-auto` centers content at a comfortable reading width
+- The `lg:` prefix ensures zero mobile impact — layout is identical below 1024px
+- Applied to all dashboard page containers (11 files, 12 containers)
+- NOT applied to: sidebar, admin pages, auth pages
+
+### Icon Standard
+- All icons use outlined/stroke style: `fill="none"` + `stroke="currentColor"`
+- lucide-react icons are stroke-based by default
+- Inline SVGs follow the same convention
+- The logo mark is the only intentional filled exception (solid brand square with white tag)
+
+### Button Hierarchy
+- **Primary**: Filled teal (`bg-brand-600 hover:bg-brand-700 text-white`) — main CTA per page (e.g., "Price an Item", "New Consignor")
+- **Secondary**: Teal outline (`border-2 border-brand-600 text-brand-600 hover:bg-brand-50`) — used for upgrade CTAs in cards and secondary actions
+- Applied to SoloDashboard upgrade nudge button to avoid competing with "Price an Item" primary CTA
+
 ### Files Modified
 - 6 new files created (brand-tokens.css, Logo.tsx, favicon.svg, logo-mark.svg, brand-identity.md, layout.tsx icons)
 - 27 files modified (sidebar, auth pages, admin sidebar, email templates, 20+ dashboard pages/components)

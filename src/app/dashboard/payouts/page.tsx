@@ -149,7 +149,7 @@ export default function PayoutsPage() {
   const totalPaidOut = payouts.reduce((sum, p) => sum + (p.summary.consignor_share - p.summary.unpaid_consignor_share), 0)
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="w-full lg:max-w-5xl lg:mx-auto p-4 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Payouts</h1>

@@ -71,7 +71,7 @@ export default async function ConsignorDetailPage({
   }, 0)
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       {/* Back */}
       <Link
         href="/dashboard/consignors"

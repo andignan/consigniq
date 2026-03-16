@@ -217,7 +217,7 @@ export default function PriceLookupPage() {
   const hasResults = stage === 'comps-ready' || stage === 'ready'
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Price Lookup</h1>

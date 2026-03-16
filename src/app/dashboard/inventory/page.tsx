@@ -388,7 +388,7 @@ export default function InventoryPage() {
 
   // ─── Render ───────────────────────────────────────────────
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>

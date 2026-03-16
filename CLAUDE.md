@@ -255,6 +255,18 @@ intake_date → expiry_date → grace_end_date. `getLifecycleStatus()` in `src/t
 - **Admin** (`/admin`): Overview stats, Users (CRUD + invite), Accounts (detail + tier/status/type management, reset password)
 - **Help**: Tooltips, floating widget (`HelpWidget` — tier-aware quick links, page-aware ordering, client+server response caching with 24h TTL), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
 
+## UI Standards
+
+### Responsive Layout
+All dashboard page containers use `w-full lg:max-w-5xl lg:mx-auto` with `px-4 py-6` padding. The `lg:` prefix (1024px+) ensures mobile layout is unaffected. Not applied to sidebar, admin, or auth pages.
+
+### Button Hierarchy
+- **Primary**: Filled teal (`bg-brand-600`) — one per page (e.g., "Price an Item")
+- **Secondary**: Teal outline (`border-2 border-brand-600 text-brand-600`) — upgrade CTAs in cards
+
+### Icons
+All icons are outlined/stroke-based (`fill="none"`, `stroke="currentColor"`). Logo mark is the only filled exception.
+
 ## Critical Patterns
 
 ### fetch() calls must include `credentials: 'include'`

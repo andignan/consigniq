@@ -195,7 +195,7 @@ export default async function DashboardPage({
     })
 
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -337,7 +337,7 @@ export default async function DashboardPage({
     .reduce((sum, i) => sum + (i.price ?? 0), 0)
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

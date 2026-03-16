@@ -50,7 +50,7 @@ export default function SoloDashboard() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">
           Welcome back{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!
@@ -134,7 +134,7 @@ export default function SoloDashboard() {
         </p>
         <Link
           href="/dashboard/settings?tab=account"
-          className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 border-2 border-brand-600 text-brand-600 hover:bg-brand-50 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           Upgrade to Starter — $49/mo
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
