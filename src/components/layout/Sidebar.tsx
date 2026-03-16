@@ -294,7 +294,7 @@ export default function Sidebar({ user }: SidebarProps) {
           <p className="text-stone-300 text-sm font-medium truncate">
             {user?.full_name?.trim() || user?.email || 'Unknown'}
           </p>
-          <p className="text-stone-500 text-xs">{user?.role === 'staff' ? 'Staff' : isSolo ? 'Solo Pricer' : 'Owner'}</p>
+          <p className="text-stone-500 text-xs truncate">{user?.email || ''}</p>
         </div>
         <button
           onClick={handleSignOut}

@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: '/admin/accounts', label: 'Accounts', icon: Building2 },
 ]
 
-export default function AdminSidebar({ email }: { email: string }) {
+export default function AdminSidebar({ name, email }: { name: string; email: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -58,6 +58,10 @@ export default function AdminSidebar({ email }: { email: string }) {
       </nav>
 
       <div className="p-3 border-t border-gray-100">
+        <div className="px-3 py-2 mb-1">
+          <p className="text-gray-900 text-sm font-medium truncate">{name}</p>
+          <p className="text-gray-400 text-xs truncate">{email}</p>
+        </div>
         <button
           onClick={handleSignOut}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"

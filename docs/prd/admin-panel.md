@@ -62,4 +62,11 @@ Cross-account pricing intelligence from `price_history` table:
 - No "Back to App" link — superadmins live in `/admin` only
 - Sign Out button at sidebar bottom
 - Superadmin accessing `/dashboard` is redirected to `/admin`
+
+## Sidebar User Identity Pattern
+
+Both dashboard and admin sidebars follow the same pattern at the bottom:
+- **Line 1:** Display name (bold, `text-sm font-medium`)
+- **Line 2:** Email address (muted, `text-xs`, truncated)
+- Falls back to email if `full_name` is empty
 - Admin sidebar: Overview, Users, Accounts
