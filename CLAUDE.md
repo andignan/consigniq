@@ -366,6 +366,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260315010000` — add deleted_at (timestamptz) and deletion_reason (text) to accounts
 - `20260315020000` — add subscription_cancelled_at, subscription_period_end, cancelled_tier to accounts
 - `20260316000000` — make items.consignor_id nullable (Solo users save without consignor)
+- `20260316010000` — add 'archived' to items status CHECK constraint
 
 ## Security
 

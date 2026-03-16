@@ -123,7 +123,10 @@ export async function PATCH(request: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[items PATCH] error:', error.message, error.details, error.hint, error.code)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   // M5: Write price_history record when item is marked sold (with error handling)
   if (updates.status === 'sold' && data) {
