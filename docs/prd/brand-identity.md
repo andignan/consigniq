@@ -99,6 +99,14 @@ All dashboard views display "Welcome back, [firstName]!" as the page heading whe
 - **Secondary**: Teal outline (`border-2 border-brand-600 text-brand-600 hover:bg-brand-50`) — used for upgrade CTAs in cards and secondary actions
 - Applied to SoloDashboard upgrade nudge button to avoid competing with "Price an Item" primary CTA
 
+### UpgradeCard Component
+- **File**: `src/components/UpgradeCard.tsx` — single source of truth for all upgrade CTAs
+- **Props**: `targetTier` (starter/standard/pro), `context` (dashboard/settings/inline), `onUpgrade` (callback), `loading`
+- **Config**: `UPGRADE_CARD_CONFIG` object holds all copy/features per tier — change once, updates everywhere
+- **Prices**: Derived from `TIER_CONFIGS[targetTier].price` — never hardcoded
+- **`onUpgrade` pattern**: Parent page handles Stripe redirect; component stays billing-agnostic. Without `onUpgrade`, renders as `<Link>` to settings
+- **Rule**: Never hardcode upgrade UI — always use UpgradeCard
+
 ### Files Modified
 - 6 new files created (brand-tokens.css, Logo.tsx, favicon.svg, logo-mark.svg, brand-identity.md, layout.tsx icons)
 - 27 files modified (sidebar, auth pages, admin sidebar, email templates, 20+ dashboard pages/components)

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import Link from 'next/link'
 import { TIER_CONFIGS } from '@/lib/tier-limits'
+import UpgradeCard from '@/components/UpgradeCard'
 
 export default function SoloDashboard() {
   const user = useUser()
@@ -127,21 +128,7 @@ export default function SoloDashboard() {
       </div>
 
       {/* Upgrade CTA */}
-      <div className="bg-gradient-to-br from-brand-50 to-brand-100 border border-brand-100 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-gray-900 mb-1">Running a consignment shop?</h3>
-        <p className="text-xs text-gray-600 mb-3">
-          ConsignIQ Starter has everything you need — consignor management, lifecycle tracking, reports, payouts, and more.
-        </p>
-        <Link
-          href="/dashboard/settings?tab=account"
-          className="inline-flex items-center gap-1.5 border-2 border-brand-600 text-brand-600 hover:bg-brand-50 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-        >
-          Upgrade to Starter — $49/mo
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-      </div>
+      <UpgradeCard targetTier="starter" context="dashboard" />
     </div>
   )
 }

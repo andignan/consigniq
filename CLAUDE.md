@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (406 tests across unit + API)
+- `npm test` — Jest test suite (422 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -326,7 +326,8 @@ __tests__/
 │   ├── solo-pricing-prompt.test.ts — Solo vs consignment AI prompt language
 │   ├── help-widget-tier.test.ts   — Tier-aware quick links, page ordering, cache logic
 │   ├── subscription-lifecycle.test.ts — All state transitions, cancelled_grace/limited access
-│   └── logo-variant.test.ts          — Logo dark/light variant, sidebar usage, welcome message consistency
+│   ├── logo-variant.test.ts          — Logo dark/light variant, sidebar usage, welcome message consistency
+│   └── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression

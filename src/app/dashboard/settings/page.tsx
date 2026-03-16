@@ -4,12 +4,13 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Loader2, Save, MapPin, Building2, Mail, Shield,
   ChevronDown, X, Plus, ExternalLink, AlertCircle, Pencil,
-  Zap, Crown, Check,
+  Zap, Check,
 } from 'lucide-react'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
 import Tooltip from '@/components/Tooltip'
 import UpgradePrompt from '@/components/UpgradePrompt'
+import UpgradeCard from '@/components/UpgradeCard'
 import { canUseFeature } from '@/lib/feature-gates'
 import { type Tier } from '@/lib/tier-limits'
 
@@ -670,75 +671,14 @@ export default function SettingsPage() {
               {/* Pricing cards */}
               {account.tier === 'starter' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {/* Standard card */}
-                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-brand-600" />
-                      <h3 className="text-sm font-bold text-brand-700">Standard</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 mb-2">$79<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
-                      <li>Unlimited AI pricing lookups</li>
-                      <li>Repeat item history</li>
-                      <li>Markdown schedules</li>
-                      <li>Email notifications</li>
-                    </ul>
-                    <button
-                      onClick={() => handleCheckout('standard')}
-                      disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                    >
-                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Standard'}
-                    </button>
-                  </div>
-
-                  {/* Pro card */}
-                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Crown className="w-4 h-4 text-brand-600" />
-                      <h3 className="text-sm font-bold text-brand-700">Pro</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
-                      <li>Everything in Standard</li>
-                      <li>Cross-customer pricing intel</li>
-                      <li>Community pricing feed</li>
-                      <li>Multi-location &quot;All Locations&quot;</li>
-                      <li>API access</li>
-                    </ul>
-                    <button
-                      onClick={() => handleCheckout('pro')}
-                      disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                    >
-                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
-                    </button>
-                  </div>
+                  <UpgradeCard targetTier="standard" context="settings" onUpgrade={() => handleCheckout('standard')} loading={billingLoading} />
+                  <UpgradeCard targetTier="pro" context="settings" onUpgrade={() => handleCheckout('pro')} loading={billingLoading} />
                 </div>
               )}
 
               {account.tier === 'standard' && (
                 <div className="mb-4">
-                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30 mb-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Crown className="w-4 h-4 text-brand-600" />
-                      <h3 className="text-sm font-bold text-brand-700">Upgrade to Pro</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                    <ul className="text-xs text-gray-600 space-y-1 mb-3">
-                      <li>Cross-customer pricing intelligence</li>
-                      <li>Community pricing feed</li>
-                      <li>Multi-location &quot;All Locations&quot; dashboard</li>
-                      <li>API access</li>
-                    </ul>
-                    <button
-                      onClick={() => handleCheckout('pro')}
-                      disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                    >
-                      {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
-                    </button>
-                  </div>
+                  <UpgradeCard targetTier="pro" context="settings" onUpgrade={() => handleCheckout('pro')} loading={billingLoading} />
                 </div>
               )}
 
@@ -935,26 +875,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Upgrade CTA — only Starter */}
-          <div className="bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-brand-600" />
-              <h3 className="text-sm font-bold text-gray-900">Upgrade to Starter</h3>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 mb-2">$49<span className="text-sm font-normal text-gray-500">/mo</span></p>
-            <ul className="text-xs text-gray-600 space-y-1 mb-3">
-              <li>Unlimited AI pricing lookups</li>
-              <li>Consignor management & lifecycle</li>
-              <li>Payouts, agreements, reports</li>
-              <li>Staff management & multi-location</li>
-            </ul>
-            <button
-              onClick={() => handleCheckout('starter')}
-              disabled={billingLoading}
-              className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-            >
-              {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Starter'}
-            </button>
-          </div>
+          <UpgradeCard targetTier="starter" context="settings" onUpgrade={() => handleCheckout('starter')} loading={billingLoading} />
         </div>
       )}
 
