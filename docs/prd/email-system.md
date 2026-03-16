@@ -50,3 +50,7 @@ All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, ht
 - `RESEND_FROM_EMAIL` — sender address (optional, defaults to `noreply@consigniq.com`)
 
 **Not used:** Supabase built-in email (replaced with Resend for full control over branding and delivery). Supabase's `auth.admin.generateLink()` generates the link, but the email is sent via Resend, not Supabase's SMTP.
+
+## Invite Link Security Rule
+
+On `/auth/setup-password`, if an `access_token` exists in the URL hash, **always sign out any existing session first** before processing the token. This prevents a logged-in user from accidentally changing the wrong account's password when clicking an invite link. Invite links must always set up the intended account regardless of who is currently logged in.

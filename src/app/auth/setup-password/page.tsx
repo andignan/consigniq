@@ -45,6 +45,11 @@ export default function SetupPasswordPage() {
         const refreshToken = params.get('refresh_token')
 
         if (accessToken && refreshToken) {
+          // SECURITY: Always sign out any existing session before processing
+          // the invite token. This prevents a logged-in user from accidentally
+          // changing the wrong account's password when clicking an invite link.
+          await supabase.auth.signOut()
+
           const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
