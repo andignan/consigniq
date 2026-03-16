@@ -45,16 +45,32 @@ export default function SetupPasswordPage() {
         const refreshToken = params.get('refresh_token')
 
         if (accessToken && refreshToken) {
-          // SECURITY: Always sign out any existing session before processing
-          // the invite token. This prevents a logged-in user from accidentally
-          // changing the wrong account's password when clicking an invite link.
-          await supabase.auth.signOut()
+          // SECURITY: Sign out ALL sessions (global scope) before processing
+          // the invite token. This clears any active browser sessions that
+          // could interfere with the new account's token.
+          await supabase.auth.signOut({ scope: 'global' })
+          // Small delay to ensure signout completes fully
+          await new Promise(resolve => setTimeout(resolve, 100))
+
+          // Decode JWT to get the intended email for verification
+          let expectedEmail: string | null = null
+          try {
+            const payload = JSON.parse(atob(accessToken.split('.')[1]))
+            expectedEmail = payload.email || null
+          } catch {
+            // If JWT decode fails, continue without verification
+          }
 
           const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           })
           if (!sessionError && data.user) {
+            // Verify the session matches the intended account
+            if (expectedEmail && data.user.email !== expectedEmail) {
+              setExpired(true)
+              return
+            }
             window.history.replaceState(null, '', window.location.pathname)
             const fullName = data.user.user_metadata?.full_name as string | undefined
             if (fullName) setUserName(fullName.split(' ')[0])

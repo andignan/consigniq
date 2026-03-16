@@ -53,4 +53,12 @@ All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, ht
 
 ## Invite Link Security Rule
 
-On `/auth/setup-password`, if an `access_token` exists in the URL hash, **always sign out any existing session first** before processing the token. This prevents a logged-in user from accidentally changing the wrong account's password when clicking an invite link. Invite links must always set up the intended account regardless of who is currently logged in.
+On `/auth/setup-password`, if an `access_token` exists in the URL hash:
+
+1. Call `signOut({ scope: 'global' })` to clear ALL active browser sessions (not just the local one)
+2. Wait 100ms after signOut to ensure full completion
+3. Decode the JWT from the access_token to extract the intended email
+4. Call `setSession()` with the token
+5. After session is established, verify `data.user.email === expectedEmail` — if they don't match, show the expired error
+
+This prevents a logged-in user (e.g., admin) from accidentally changing the wrong account's password when clicking a new user's invite link.
