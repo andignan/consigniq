@@ -69,7 +69,7 @@ export default function PriceLookupPage() {
       const { result } = await res.json()
       setName(result.name)
       if (ITEM_CATEGORIES.includes(result.category)) setCategory(result.category)
-      if (['excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
+      if (['new_in_box', 'new_with_tags', 'new_without_tags', 'new', 'like_new', 'excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
         setCondition(result.condition as ItemCondition)
       }
       setDescription(result.description)

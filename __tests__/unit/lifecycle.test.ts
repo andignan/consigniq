@@ -106,8 +106,13 @@ describe('getLifecycleStatus', () => {
 })
 
 describe('CONDITION_LABELS', () => {
-  it('has labels for all 5 conditions', () => {
-    expect(Object.keys(CONDITION_LABELS)).toHaveLength(5)
+  it('has labels for all 10 conditions', () => {
+    expect(Object.keys(CONDITION_LABELS)).toHaveLength(10)
+    expect(CONDITION_LABELS.new_in_box).toBe('New in Box')
+    expect(CONDITION_LABELS.new_with_tags).toBe('New with Tags')
+    expect(CONDITION_LABELS.new_without_tags).toBe('New without Tags')
+    expect(CONDITION_LABELS.new).toBe('New')
+    expect(CONDITION_LABELS.like_new).toBe('Like New')
     expect(CONDITION_LABELS.excellent).toBe('Excellent')
     expect(CONDITION_LABELS.very_good).toBe('Very Good')
     expect(CONDITION_LABELS.good).toBe('Good')

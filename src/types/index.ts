@@ -6,9 +6,14 @@ export type Tier = 'starter' | 'standard' | 'pro'
 export type UserRole = 'owner' | 'staff'
 export type ConsignorStatus = 'active' | 'expired' | 'grace' | 'closed'
 export type ItemStatus = 'pending' | 'priced' | 'sold' | 'donated' | 'returned' | 'archived'
-export type ItemCondition = 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
+export type ItemCondition = 'new_in_box' | 'new_with_tags' | 'new_without_tags' | 'new' | 'like_new' | 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
 
 export const CONDITION_LABELS: Record<ItemCondition, string> = {
+  new_in_box: 'New in Box',
+  new_with_tags: 'New with Tags',
+  new_without_tags: 'New without Tags',
+  new: 'New',
+  like_new: 'Like New',
   excellent: 'Excellent',
   very_good: 'Very Good',
   good: 'Good',

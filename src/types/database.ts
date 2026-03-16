@@ -5,7 +5,7 @@
 export type Tier = 'starter' | 'standard' | 'pro'
 export type AccountStatus = 'active' | 'suspended' | 'cancelled'
 export type UserRole = 'owner' | 'staff'
-export type ItemCondition = 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
+export type ItemCondition = 'new_in_box' | 'new_with_tags' | 'new_without_tags' | 'new' | 'like_new' | 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
 export type ItemStatus = 'pending' | 'priced' | 'sold' | 'donated' | 'returned'
 export type ConsignorStatus = 'active' | 'expired' | 'grace' | 'closed'
 export type MarkdownTrigger = 'schedule' | 'manual'

@@ -69,7 +69,7 @@ Respond with ONLY a JSON object (no markdown, no code fences):
 {
   "name": "<specific item name, include brand if visible>",
   "category": "<one of: Clothing & Shoes, Furniture, Jewelry & Silver, China & Crystal, Collectibles & Art, Electronics, Books & Games, Toys, Tools, Luxury & Designer, Kitchen & Home, Other>",
-  "condition": "<one of: excellent, very_good, good, fair, poor>",
+  "condition": "<one of: new_in_box, new_with_tags, new_without_tags, new, like_new, excellent, very_good, good, fair, poor>",
   "description": "<brief description: brand, material, size, color, notable features, any visible damage>"
 }`,
             },

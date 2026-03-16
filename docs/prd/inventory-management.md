@@ -2,6 +2,13 @@
 
 **Status:** Implemented
 
+## Item Conditions
+
+10 valid conditions (ordered best to worst):
+`new_in_box`, `new_with_tags`, `new_without_tags`, `new`, `like_new`, `excellent`, `very_good`, `good`, `fair`, `poor`
+
+Defined in `src/types/index.ts` as `ItemCondition` type and `CONDITION_LABELS` map. Used in all condition dropdowns (intake, pricing, inventory edit) and the AI identification prompt.
+
 ## Item Status States
 
 | Status | Description | Transition from | Transition to |

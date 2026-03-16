@@ -377,7 +377,7 @@ function IntakeRow({
       if (result.category && ITEM_CATEGORIES.includes(result.category)) {
         onChange(draft.id, 'category', result.category)
       }
-      if (result.condition && ['excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
+      if (result.condition && ['new_in_box', 'new_with_tags', 'new_without_tags', 'new', 'like_new', 'excellent', 'very_good', 'good', 'fair', 'poor'].includes(result.condition)) {
         onChange(draft.id, 'condition', result.condition)
       }
       if (result.description) onChange(draft.id, 'description', result.description)
