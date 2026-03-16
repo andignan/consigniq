@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient()
   const body = await request.json()
 
+  console.log('[items POST] body:', JSON.stringify({ account_id: body.account_id, location_id: body.location_id, name: body.name, consignor_id: body.consignor_id, price: body.price }))
+
   // consignor_id is optional (null for Solo tier users)
   const required = ['account_id', 'location_id', 'name', 'category', 'condition']
   for (const field of required) {
@@ -87,7 +89,11 @@ export async function POST(request: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[items POST] insert error:', error.message, error.details, error.hint)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  console.log('[items POST] success:', data?.id)
   return NextResponse.json({ item: data }, { status: 201 })
 }
 

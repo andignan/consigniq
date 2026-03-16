@@ -170,32 +170,40 @@ export default function PriceLookupPage() {
   async function saveToInventory() {
     if (!suggestion || !name.trim() || saving || saved) return
     setSaving(true)
+    setError(null)
+
+    const payload = {
+      account_id: contextUser?.account_id,
+      location_id: contextUser?.location_id,
+      name: name.trim(),
+      category,
+      condition,
+      description: description || null,
+      consignor_id: null,
+      price: suggestion.price,
+      low_price: suggestion.low,
+      high_price: suggestion.high,
+      ai_reasoning: suggestion.reasoning,
+    }
+    console.log('[save-to-inventory] payload:', JSON.stringify(payload))
+
     try {
       const res = await fetch('/api/items', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          account_id: contextUser?.account_id,
-          location_id: contextUser?.location_id,
-          name: name.trim(),
-          category,
-          condition,
-          description: description || null,
-          consignor_id: null,
-          price: suggestion.price,
-          low_price: suggestion.low,
-          high_price: suggestion.high,
-          ai_reasoning: suggestion.reasoning,
-        }),
+        body: JSON.stringify(payload),
       })
+      const resBody = await res.json().catch(() => ({}))
+      console.log('[save-to-inventory] response:', res.status, JSON.stringify(resBody))
+
       if (res.ok) {
         setSaved(true)
       } else {
-        const errData = await res.json().catch(() => ({ error: 'Failed to save' }))
-        setError(errData.error || 'Failed to save to inventory')
+        setError(resBody.error || 'Failed to save to inventory')
       }
-    } catch {
+    } catch (err) {
+      console.error('[save-to-inventory] error:', err)
       setError('Failed to save to inventory')
     } finally {
       setSaving(false)
