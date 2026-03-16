@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Plus, Search, Users } from 'lucide-react'
+import { Loader2, Plus, Search, Shield, Users } from 'lucide-react'
 import { TIER_BADGE_CLASSES } from '@/lib/style-constants'
 import Modal from '@/components/ui/Modal'
 
@@ -12,6 +12,7 @@ interface UserRow {
   role: string
   account_id: string
   is_superadmin: boolean
+  platform_role: string | null
   created_at: string
   accounts: {
     id: string
@@ -57,6 +58,18 @@ function AccountTypeBadge({ user }: { user: UserRow }) {
   )
 }
 
+const PLATFORM_ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
+  support: 'Support',
+  finance: 'Finance',
+}
+
+const PLATFORM_ROLE_BADGE_CLASSES: Record<string, string> = {
+  super_admin: 'bg-red-50 text-red-700',
+  support: 'bg-blue-50 text-blue-700',
+  finance: 'bg-amber-50 text-amber-700',
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,6 +77,9 @@ export default function AdminUsersPage() {
   const [accountTypeFilter, setAccountTypeFilter] = useState('')
   const [tierFilter, setTierFilter] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [currentPlatformRole, setCurrentPlatformRole] = useState<string | null>(null)
+  const [roleEditingUserId, setRoleEditingUserId] = useState<string | null>(null)
+  const [roleUpdating, setRoleUpdating] = useState(false)
 
   // Form state
   const [formEmail, setFormEmail] = useState('')
@@ -97,8 +113,36 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     loadUsers()
+    // Check current user's platform role
+    fetch('/api/auth/check-superadmin', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => setCurrentPlatformRole(d.platform_role ?? null))
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountTypeFilter, tierFilter])
+
+  async function handleRoleChange(userId: string, newRole: string | null) {
+    setRoleUpdating(true)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, platform_role: newRole || null }),
+      })
+      if (res.ok) {
+        setRoleEditingUserId(null)
+        loadUsers()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to update role')
+      }
+    } catch {
+      alert('Failed to update role')
+    } finally {
+      setRoleUpdating(false)
+    }
+  }
 
   function handleSearchKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
@@ -230,6 +274,7 @@ export default function AdminUsersPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Account</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Tier</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Platform Role</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,6 +290,43 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <AccountTypeBadge user={u} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {roleEditingUserId === u.id ? (
+                        <div className="flex items-center gap-1">
+                          <select
+                            defaultValue={u.platform_role || ''}
+                            onChange={e => handleRoleChange(u.id, e.target.value || null)}
+                            disabled={roleUpdating}
+                            className="text-xs px-1.5 py-1 rounded border border-gray-200 bg-white text-gray-700"
+                          >
+                            <option value="">None</option>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="support">Support</option>
+                            <option value="finance">Finance</option>
+                          </select>
+                          <button onClick={() => setRoleEditingUserId(null)} className="text-xs text-gray-400 hover:text-gray-600">
+                            Cancel
+                          </button>
+                        </div>
+                      ) : u.platform_role ? (
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${PLATFORM_ROLE_BADGE_CLASSES[u.platform_role] ?? 'bg-gray-100 text-gray-600'} ${currentPlatformRole === 'super_admin' ? 'cursor-pointer' : ''}`}
+                          onClick={() => currentPlatformRole === 'super_admin' && setRoleEditingUserId(u.id)}
+                        >
+                          <Shield className="w-3 h-3" />
+                          {PLATFORM_ROLE_LABELS[u.platform_role] ?? u.platform_role}
+                        </span>
+                      ) : currentPlatformRole === 'super_admin' ? (
+                        <button
+                          onClick={() => setRoleEditingUserId(u.id)}
+                          className="text-xs text-gray-400 hover:text-brand-600"
+                        >
+                          Set role
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400">&mdash;</span>
+                      )}
                     </td>
                   </tr>
                 ))}

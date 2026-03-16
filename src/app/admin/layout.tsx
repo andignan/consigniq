@@ -19,11 +19,11 @@ export default async function AdminLayout({
 
   const { data: profile } = await adminClient
     .from('users')
-    .select('id, email, full_name, is_superadmin')
+    .select('id, email, full_name, platform_role, is_superadmin')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_superadmin) redirect('/dashboard')
+  if (!profile?.platform_role && !profile?.is_superadmin) redirect('/dashboard')
 
   return (
     <div className="flex h-screen bg-stone-50 overflow-hidden">

@@ -28,12 +28,12 @@ jest.mock('@/lib/supabase/admin', () => ({
 
     const { data: profile } = await supabase
       .from('users')
-      .select('is_superadmin')
+      .select('platform_role, is_superadmin')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
-    return { authorized: true as const, userId: user.id }
+    if (!profile?.platform_role && !profile?.is_superadmin) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id, platformRole: (profile.platform_role ?? (profile.is_superadmin ? 'super_admin' : null)) as string }
   },
   createAdminClient: () => ({
     from: mockFrom,
@@ -45,27 +45,23 @@ import { GET as getStats } from '@/app/api/admin/stats/route'
 beforeEach(() => {
   jest.clearAllMocks()
 
-  // Each .select('*', { count: 'exact', head: true }).eq(...) chain returns { count: N }
+  // Each .select('*', { count: 'exact', head: true }).eq(...).eq(...) chain returns { count: N }
   const makeCountChain = (count: number) => {
     const countResult = { count, data: null, error: null }
     const obj: Record<string, jest.Mock | Promise<unknown>> = {
-      eq: jest.fn().mockReturnValue({
-        then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),
-        single: mockSingle,
-      }),
-      neq: jest.fn(),
+      eq: jest.fn(),
       single: mockSingle,
       then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),
     }
-    // neq returns the same chain (for further .eq() calls)
-    ;(obj.neq as jest.Mock).mockReturnValue(obj)
+    // eq returns the same chain (for further .eq() calls)
+    ;(obj.eq as jest.Mock).mockReturnValue(obj)
     return obj
   }
 
   // Default: all count queries return 0
   mockSelect.mockReturnValue(makeCountChain(0))
   mockEq.mockReturnValue(makeCountChain(0))
-  mockSingle.mockResolvedValue({ data: { is_superadmin: true }, error: null })
+  mockSingle.mockResolvedValue({ data: { platform_role: 'super_admin', is_superadmin: true }, error: null })
   mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null })
 })
 

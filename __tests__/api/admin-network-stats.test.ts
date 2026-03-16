@@ -28,12 +28,12 @@ jest.mock('@/lib/supabase/admin', () => ({
 
     const { data: profile } = await supabase
       .from('users')
-      .select('is_superadmin')
+      .select('platform_role, is_superadmin')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
-    return { authorized: true as const, userId: user.id }
+    if (!profile?.platform_role && !profile?.is_superadmin) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id, platformRole: (profile.platform_role ?? (profile.is_superadmin ? 'super_admin' : null)) as string }
   },
   createAdminClient: () => ({
     from: mockFrom,
@@ -60,7 +60,7 @@ beforeEach(() => {
 
   // Default: superadmin profile
   mockSingle.mockResolvedValue({
-    data: { is_superadmin: true },
+    data: { platform_role: 'super_admin', is_superadmin: true },
     error: null,
   })
 
@@ -75,7 +75,7 @@ describe('GET /api/admin/network-stats', () => {
   })
 
   it('returns 403 if not superadmin', async () => {
-    mockSingle.mockResolvedValue({ data: { is_superadmin: false }, error: null })
+    mockSingle.mockResolvedValue({ data: { platform_role: null, is_superadmin: false }, error: null })
     const res = await GET()
     expect(res.status).toBe(403)
   })
@@ -96,7 +96,7 @@ describe('GET /api/admin/network-stats', () => {
       .mockReturnValueOnce({ // superadmin check chain
         eq: mockEq,
         single: mockSingle,
-        then: jest.fn((resolve) => Promise.resolve({ data: { is_superadmin: true }, error: null }).then(resolve)),
+        then: jest.fn((resolve) => Promise.resolve({ data: { platform_role: 'super_admin', is_superadmin: true }, error: null }).then(resolve)),
       })
       .mockReturnValueOnce({ // total count query (head:true)
         then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),

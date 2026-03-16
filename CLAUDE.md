@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (443 tests across unit + API)
+- `npm test` — Jest test suite (463 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -36,7 +36,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 Three client factories:
 - `src/lib/supabase/client.ts` — browser client (`createBrowserClient`), `'use client'` components
 - `src/lib/supabase/server.ts` — server client (`createServerClient`), Server Components + API routes. Exported as both `createServerClient` and `createClient`
-- `src/lib/supabase/admin.ts` — service role client (`createAdminClient`), bypasses RLS. Exports `checkSuperadmin()` helper (authenticates via regular client, verifies `is_superadmin` via service role — needed because superadmin may not satisfy RLS)
+- `src/lib/supabase/admin.ts` — service role client (`createAdminClient`), bypasses RLS. Exports `checkSuperadmin()` helper (authenticates via regular client, verifies `platform_role` via service role — needed because platform users may not satisfy RLS). Returns `{ authorized, userId, platformRole }`
 
 ### API Routes
 
@@ -57,7 +57,7 @@ Three client factories:
 **Admin (superadmin only):**
 - `/api/admin/stats` — cross-account platform stats
 - `/api/admin/accounts` — GET list/detail, PATCH tier/status/account_type. Filters: `?id=`, `?tier=`, `?status=`
-- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates account+location+auth user+users row (upsert for trigger compat), sends invite email via Resend (non-critical)
+- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates account+location+auth user+users row (upsert for trigger compat), sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
 - `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
 - `/api/admin/network-stats` — cross-account pricing intelligence stats
 - `/api/admin/accounts/delete` — POST, takes `{ account_id, reason? }`. Complimentary/trial: hard deletes all data + auth users. Paid with Stripe: cancels subscription, soft deletes (status='deleted', deleted_at set). Sends notification email
@@ -107,15 +107,18 @@ Three client factories:
 - Middleware protects `/dashboard/*`, `/admin/*` (redirect to login), `/api/*` (401 JSON). Excluded: `/api/auth/*`, `/api/billing/webhook`, `/api/billing/check-grace-periods`, `/api/trial/*`, `/api/agreements/notify-expiring`
 - Post-login: calls `/api/auth/check-superadmin` → superadmins go to `/admin`, others to `/dashboard`
 
-### Superadmin Access
+### Platform Roles & Admin Access
 
-- `is_superadmin` on `users` table gates `/admin` routes
+- `platform_role` on `users` table gates `/admin` routes (super_admin/support/finance)
+- `accounts.is_system` boolean marks system accounts (filtered from stats/lists)
 - Admin layout checks via service role client (bypasses RLS)
-- All admin API routes use `checkSuperadmin()` + `createAdminClient()` → 403 for non-superadmins
+- All admin API routes use `checkSuperadmin()` + `createAdminClient()` → 403 for users without `platform_role`
+- Only `super_admin` can modify platform roles (PATCH `/api/admin/users`)
 - All admin queries are cross-account (no `account_id` scoping)
-- Admin has own sidebar (dark navy `bg-navy-900`, Logo + "Admin" badge, teal active nav). No "Back to App" link — superadmins live in `/admin` only
+- Admin has own sidebar (dark navy `bg-navy-900`, Logo + "Admin" badge, teal active nav). No "Back to App" link — platform users live in `/admin` only
 - **Critical**: every Supabase Auth user MUST have a `users` table row. Auth alone is not enough.
-- All superadmin checks MUST use service role client (superadmin may not satisfy RLS)
+- All platform role checks MUST use service role client (platform users may not satisfy RLS)
+- See `/docs/prd/platform-roles.md` for full details
 
 ### PRDs (Product Requirements Documents)
 
@@ -130,6 +133,7 @@ Read the relevant PRD before modifying any of these systems:
 - **Email System:** `/docs/prd/email-system.md`
 - **Subscription Lifecycle:** `/docs/prd/subscription-lifecycle.md`
 - **Account Deletion:** `/docs/prd/account-deletion.md`
+- **Platform Roles:** `/docs/prd/platform-roles.md`
 
 ### Stripe Billing & Tier Enforcement
 
@@ -278,8 +282,8 @@ Always audit actual column names before writing queries:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable)
-- Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`
+- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable), `is_system` (boolean, NOT NULL, default false)
+- Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`, `platform_role` (text, nullable: super_admin/support/finance)
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
 - Agreements: `id`, `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`
@@ -301,7 +305,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**443 Jest tests passing.** 5 Playwright E2E specs. 35 manual test plans at `/docs/test-plans/`.
+**463 Jest tests passing.** 5 Playwright E2E specs. 35 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -327,7 +331,8 @@ __tests__/
 │   ├── help-widget-tier.test.ts   — Tier-aware quick links, page ordering, cache logic
 │   ├── subscription-lifecycle.test.ts — All state transitions, cancelled_grace/limited access
 │   ├── logo-variant.test.ts          — Logo dark/light variant, sidebar usage, welcome message consistency
-│   └── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
+│   ├── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
+│   └── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -352,7 +357,8 @@ __tests__/
 │   ├── expiring-count.test.ts     — GET /api/consignors/expiring-count, auth, scoping, counting
 │   ├── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
 │   ├── settings-profile.test.ts  — PATCH /api/settings/profile auth, validation, name update
-│   └── account-delete.test.ts   — POST /api/admin/accounts/delete, auth, hard/soft delete
+│   ├── account-delete.test.ts   — POST /api/admin/accounts/delete, auth, hard/soft delete
+│   └── platform-roles.test.ts  — PATCH /api/admin/users platform role management
 ```
 
 ### Playwright E2E
@@ -381,6 +387,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260315020000` — add subscription_cancelled_at, subscription_period_end, cancelled_tier to accounts
 - `20260316000000` — make items.consignor_id nullable (Solo users save without consignor)
 - `20260316010000` — add 'archived' to items status CHECK constraint
+- `20260316020000` — platform roles: add `users.platform_role`, `accounts.is_system`, migrate data
 
 ## Security
 

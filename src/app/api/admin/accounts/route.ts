@@ -44,10 +44,16 @@ export async function GET(request: NextRequest) {
   }
 
   // List all accounts with counts
+  const showSystem = searchParams.get('show_system') === 'true'
+
   let query = supabase
     .from('accounts')
     .select('*')
     .order('created_at', { ascending: false })
+
+  if (!showSystem) {
+    query = query.eq('is_system', false)
+  }
 
   if (tier) query = query.eq('tier', tier)
   if (status) query = query.eq('status', status)

@@ -4,11 +4,12 @@
 
 ## Access Control
 
-- Gated by `is_superadmin` boolean on `users` table
+- Gated by `users.platform_role` (super_admin/support/finance). See `/docs/prd/platform-roles.md`
 - Admin layout checks via service role client (bypasses RLS)
-- All admin API routes use `checkSuperadmin()` → 403 for non-superadmins
+- All admin API routes use `checkSuperadmin()` → 403 for users without a `platform_role`
+- Only `super_admin` can modify platform roles on other users
 - All admin queries are cross-account (no `account_id` scoping)
-- Login redirect: superadmin users go to `/admin`, never `/dashboard`
+- Login redirect: platform role users go to `/admin`, never `/dashboard`
 
 ## Admin Dashboard (`/admin`)
 
@@ -24,7 +25,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 **Network Pricing Intelligence:** Total price_history records, sold items count, top 5 categories by record count, avg days to sell.
 
-**Implementation:** All counts use `{ count: 'exact', head: true }` — no data transfer, 19 parallel queries. Account queries filter out "ConsignIQ System" via `.neq('name', 'ConsignIQ System')`.
+**Implementation:** All counts use `{ count: 'exact', head: true }` — no data transfer, 19 parallel queries. Account queries filter system accounts via `.eq('is_system', false)`.
 
 ## Account Management
 
@@ -38,7 +39,9 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 ## User Management (`/admin/users`)
 
-**List:** Search by email/name, filter by account type and tier. Table shows email, name, account, tier badge, account type badge.
+**List:** Search by email/name, filter by account type and tier. Table shows email, name, account, tier badge, account type badge, platform role badge.
+
+**Platform Role Management:** Super admins can click a role badge or "Set role" link to assign/remove platform roles (super_admin/support/finance) via dropdown.
 
 **Add User modal:**
 - Fields: Email, Full Name, Account Name, Tier (solo/starter/standard/pro), Account Type (paid/trial/complimentary)
@@ -68,7 +71,8 @@ Cross-account pricing intelligence from `price_history` table:
 
 ## Stats Filtering
 
-- `/api/admin/stats` excludes the "ConsignIQ System" account from all account counts (total, by tier, by status) via `.neq('name', 'ConsignIQ System')`
+- `/api/admin/stats` excludes system accounts from all account counts via `.eq('is_system', false)`
+- `/api/admin/accounts` excludes system accounts by default; pass `?show_system=true` to include
 - Item, consignor, location, and user counts are unfiltered
 
 ## Sidebar User Identity Pattern

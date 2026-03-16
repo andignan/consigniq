@@ -4,6 +4,7 @@
 
 export type Tier = 'starter' | 'standard' | 'pro'
 export type UserRole = 'owner' | 'staff'
+export type PlatformRole = 'super_admin' | 'support' | 'finance'
 export type ConsignorStatus = 'active' | 'expired' | 'grace' | 'closed'
 export type ItemStatus = 'pending' | 'priced' | 'sold' | 'donated' | 'returned' | 'archived'
 export type ItemCondition = 'new_in_box' | 'new_with_tags' | 'new_without_tags' | 'new' | 'like_new' | 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
@@ -70,6 +71,7 @@ export interface User {
   full_name: string | null
   role: UserRole
   is_superadmin: boolean
+  platform_role: PlatformRole | null
   created_at: string
 }
 

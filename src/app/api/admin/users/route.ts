@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   // Get all users with their account info
   let query = supabase
     .from('users')
-    .select('id, email, full_name, role, account_id, location_id, is_superadmin, created_at, accounts(id, name, tier, status, account_type, trial_ends_at, is_complimentary, complimentary_tier)')
+    .select('id, email, full_name, role, account_id, location_id, is_superadmin, platform_role, created_at, accounts(id, name, tier, status, account_type, trial_ends_at, is_complimentary, complimentary_tier)')
     .order('created_at', { ascending: false })
 
   if (search) {
@@ -204,4 +204,61 @@ export async function POST(request: NextRequest) {
     location,
     ...(inviteError ? { invite_warning: inviteError } : {}),
   }, { status: 201 })
+}
+
+const VALID_PLATFORM_ROLES = ['super_admin', 'support', 'finance']
+
+export async function PATCH(request: NextRequest) {
+  const auth = await checkSuperadmin()
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
+  }
+
+  // Only super_admin can modify platform roles
+  if (auth.platformRole !== 'super_admin') {
+    return NextResponse.json({ error: 'Only super admins can modify platform roles' }, { status: 403 })
+  }
+
+  const supabase = createAdminClient()
+  const body = await request.json()
+  const { user_id, platform_role } = body
+
+  if (!user_id) {
+    return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+  }
+
+  // Validate platform_role (null to remove, or valid role string)
+  if (platform_role !== null && !VALID_PLATFORM_ROLES.includes(platform_role)) {
+    return NextResponse.json({ error: `platform_role must be null or one of: ${VALID_PLATFORM_ROLES.join(', ')}` }, { status: 400 })
+  }
+
+  // If removing super_admin, check we're not removing the last one
+  if (platform_role !== 'super_admin') {
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('platform_role')
+      .eq('id', user_id)
+      .single()
+
+    if (currentUser?.platform_role === 'super_admin') {
+      const { count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('platform_role', 'super_admin')
+
+      if ((count ?? 0) <= 1) {
+        return NextResponse.json({ error: 'Cannot remove the last super admin' }, { status: 400 })
+      }
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('users')
+    .update({ platform_role })
+    .eq('id', user_id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ user: data })
 }

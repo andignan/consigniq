@@ -37,6 +37,8 @@ export interface Location {
   created_at: string
 }
 
+export type PlatformRole = 'super_admin' | 'support' | 'finance'
+
 export interface User {
   id: string
   account_id: string
@@ -44,6 +46,7 @@ export interface User {
   email: string
   full_name: string | null
   role: UserRole
+  platform_role: PlatformRole | null
   created_at: string
 }
 

@@ -33,12 +33,12 @@ jest.mock('@/lib/supabase/admin', () => ({
 
     const { data: profile } = await supabase
       .from('users')
-      .select('is_superadmin')
+      .select('platform_role, is_superadmin')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
-    return { authorized: true as const, userId: user.id }
+    if (!profile?.platform_role && !profile?.is_superadmin) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id, platformRole: (profile.platform_role ?? (profile.is_superadmin ? 'super_admin' : null)) as string }
   },
   createAdminClient: () => ({
     from: mockFrom,
@@ -59,14 +59,11 @@ beforeEach(() => {
   const makeChainable = (resolveWith = { data: [], error: null }) => {
     const obj: Record<string, jest.Mock | Promise<unknown>> = {
       eq: mockEq,
-      neq: jest.fn(),
       in: mockIn,
       order: mockOrder,
       single: mockSingle,
       then: jest.fn((resolve) => Promise.resolve(resolveWith).then(resolve)),
     }
-    // neq returns the same chainable (for further .eq() calls)
-    ;(obj.neq as jest.Mock).mockReturnValue(obj)
     return obj
   }
 
@@ -78,7 +75,7 @@ beforeEach(() => {
 
   // Default: superadmin profile
   mockSingle.mockResolvedValue({
-    data: { is_superadmin: true },
+    data: { platform_role: 'super_admin', is_superadmin: true },
     error: null,
   })
 
@@ -107,7 +104,7 @@ describe('GET /api/admin/stats', () => {
   })
 
   it('returns 403 if not superadmin', async () => {
-    mockSingle.mockResolvedValue({ data: { is_superadmin: false }, error: null })
+    mockSingle.mockResolvedValue({ data: { platform_role: null, is_superadmin: false }, error: null })
     const res = await getStats()
     expect(res.status).toBe(403)
   })
@@ -142,7 +139,7 @@ describe('GET /api/admin/accounts', () => {
   })
 
   it('returns 403 if not superadmin', async () => {
-    mockSingle.mockResolvedValue({ data: { is_superadmin: false }, error: null })
+    mockSingle.mockResolvedValue({ data: { platform_role: null, is_superadmin: false }, error: null })
     const req = makeRequest('http://localhost:3000/api/admin/accounts')
     const res = await getAccounts(req)
     expect(res.status).toBe(403)
@@ -183,7 +180,7 @@ describe('PATCH /api/admin/accounts', () => {
   })
 
   it('returns 403 if not superadmin', async () => {
-    mockSingle.mockResolvedValue({ data: { is_superadmin: false }, error: null })
+    mockSingle.mockResolvedValue({ data: { platform_role: null, is_superadmin: false }, error: null })
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
       body: JSON.stringify({ id: 'acc-1', tier: 'pro' }),

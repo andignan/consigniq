@@ -18,9 +18,12 @@ export async function GET() {
 
   const { data: profile } = await serviceClient
     .from('users')
-    .select('is_superadmin')
+    .select('platform_role, is_superadmin')
     .eq('id', user.id)
     .single()
 
-  return NextResponse.json({ is_superadmin: profile?.is_superadmin === true })
+  return NextResponse.json({
+    is_superadmin: !!profile?.platform_role || profile?.is_superadmin === true,
+    platform_role: profile?.platform_role ?? (profile?.is_superadmin ? 'super_admin' : null),
+  })
 }

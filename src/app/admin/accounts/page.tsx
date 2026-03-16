@@ -20,6 +20,7 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true)
   const [tierFilter, setTierFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [showSystem, setShowSystem] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -27,6 +28,7 @@ export default function AccountsPage() {
       const params = new URLSearchParams()
       if (tierFilter) params.set('tier', tierFilter)
       if (statusFilter) params.set('status', statusFilter)
+      if (showSystem) params.set('show_system', 'true')
       try {
         const res = await fetch(`/api/admin/accounts?${params}`, { credentials: 'include' })
         if (res.ok) {
@@ -40,14 +42,14 @@ export default function AccountsPage() {
       }
     }
     load()
-  }, [tierFilter, statusFilter])
+  }, [tierFilter, statusFilter, showSystem])
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-gray-900 mb-6">Accounts</h1>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <select
           value={tierFilter}
           onChange={e => setTierFilter(e.target.value)}
@@ -68,6 +70,15 @@ export default function AccountsPage() {
           <option value="suspended">Suspended</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <label className="flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer ml-auto">
+          <input
+            type="checkbox"
+            checked={showSystem}
+            onChange={e => setShowSystem(e.target.checked)}
+            className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          />
+          Show system accounts
+        </label>
       </div>
 
       {loading ? (

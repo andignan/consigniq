@@ -36,13 +36,13 @@ export default async function DashboardLayout({
       .eq('id', user.id)
       .single()
 
-    if (adminProfile?.is_superadmin) {
+    if (adminProfile?.platform_role || adminProfile?.is_superadmin) {
       redirect('/admin')
     }
     profile = adminProfile
   }
 
-  if (profile?.is_superadmin) {
+  if (profile?.platform_role || profile?.is_superadmin) {
     redirect('/admin')
   }
 
