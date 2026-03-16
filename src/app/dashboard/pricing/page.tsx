@@ -199,12 +199,10 @@ export default function PriceLookupPage() {
 
       if (res.ok) {
         setSaved(true)
-        // Reset form and redirect after brief confirmation
+        // Immediately reset form for next item
         if (isSolo) {
-          setTimeout(() => {
-            reset()
-            window.scrollTo(0, 0)
-          }, 1500)
+          reset()
+          window.scrollTo(0, 0)
         }
       } else {
         setError(resBody.error || 'Failed to save to inventory')
