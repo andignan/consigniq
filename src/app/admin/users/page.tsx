@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Plus, Search, X, Users } from 'lucide-react'
+import { Loader2, Plus, Search, Users } from 'lucide-react'
+import { TIER_BADGE_CLASSES } from '@/lib/style-constants'
+import Modal from '@/components/ui/Modal'
 
 interface UserRow {
   id: string
@@ -21,13 +23,6 @@ interface UserRow {
     is_complimentary: boolean | null
     complimentary_tier: string | null
   } | null
-}
-
-const TIER_BADGE: Record<string, string> = {
-  solo: 'bg-slate-100 text-slate-600',
-  starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-brand-50 text-brand-600',
-  pro: 'bg-amber-50 text-amber-700',
 }
 
 function AccountTypeBadge({ user }: { user: UserRow }) {
@@ -244,7 +239,7 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3 text-gray-700">{u.full_name || '--'}</td>
                     <td className="px-4 py-3 text-gray-700">{u.accounts?.name || '--'}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE[u.accounts?.tier ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[u.accounts?.tier ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
                         {u.accounts?.tier ?? '--'}
                       </span>
                     </td>
@@ -260,94 +255,82 @@ export default function AdminUsersPage() {
       )}
 
       {/* Add User Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">Add User</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formEmail}
-                  onChange={e => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="user@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={e => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Jane Smith"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Account Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formAccountName}
-                  onChange={e => setFormAccountName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Treasure Trove Consignment"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Tier</label>
-                  <select
-                    value={formTier}
-                    onChange={e => setFormTier(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="solo">Solo</option>
-                    <option value="starter">Starter</option>
-                    <option value="standard">Standard</option>
-                    <option value="pro">Pro</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Account Type</label>
-                  <select
-                    value={formAccountType}
-                    onChange={e => setFormAccountType(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="paid">Paid</option>
-                    <option value="trial">Trial</option>
-                    <option value="complimentary">Complimentary</option>
-                  </select>
-                </div>
-              </div>
-
-              {formError && <p className="text-xs text-red-600">{formError}</p>}
-              {formSuccess && <p className="text-xs text-emerald-600">{formSuccess}</p>}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {submitting ? 'Creating...' : 'Create User'}
-              </button>
-            </form>
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Add User">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
+            <input
+              type="email"
+              required
+              value={formEmail}
+              onChange={e => setFormEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="user@example.com"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Full Name *</label>
+            <input
+              type="text"
+              required
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="Jane Smith"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Account Name *</label>
+            <input
+              type="text"
+              required
+              value={formAccountName}
+              onChange={e => setFormAccountName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="Treasure Trove Consignment"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tier</label>
+              <select
+                value={formTier}
+                onChange={e => setFormTier(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="solo">Solo</option>
+                <option value="starter">Starter</option>
+                <option value="standard">Standard</option>
+                <option value="pro">Pro</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Account Type</label>
+              <select
+                value={formAccountType}
+                onChange={e => setFormAccountType(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="paid">Paid</option>
+                <option value="trial">Trial</option>
+                <option value="complimentary">Complimentary</option>
+              </select>
+            </div>
+          </div>
+
+          {formError && <p className="text-xs text-red-600">{formError}</p>}
+          {formSuccess && <p className="text-xs text-emerald-600">{formSuccess}</p>}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {submitting ? 'Creating...' : 'Create User'}
+          </button>
+        </form>
+      </Modal>
     </div>
   )
 }

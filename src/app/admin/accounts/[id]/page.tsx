@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Loader2, Save, MapPin, Users, Package, AlertTriangle, ShieldX } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
 
 interface AccountDetail {
   id: string
@@ -518,84 +519,76 @@ export default function AccountDetailPage() {
       </div>
 
       {/* Suspend Modal */}
-      {showSuspendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                <ShieldX className="w-5 h-5 text-orange-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Suspend Account</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Suspend <strong>{account.name}</strong>? Users will lose access immediately but all data is preserved.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowSuspendModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSuspend}
-                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
-              >
-                Suspend
-              </button>
-            </div>
+      <Modal open={showSuspendModal} onClose={() => setShowSuspendModal(false)}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+            <ShieldX className="w-5 h-5 text-orange-600" />
           </div>
+          <h3 className="text-lg font-semibold text-gray-900">Suspend Account</h3>
         </div>
-      )}
+        <p className="text-sm text-gray-600 mb-6">
+          Suspend <strong>{account.name}</strong>? Users will lose access immediately but all data is preserved.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => setShowSuspendModal(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSuspend}
+            className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
+          >
+            Suspend
+          </button>
+        </div>
+      </Modal>
 
       {/* Delete Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-2">
-              {getDeleteDescription()}
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              Type <strong>{account.name}</strong> to confirm:
-            </p>
-            <input
-              type="text"
-              value={deleteConfirmName}
-              onChange={e => setDeleteConfirmName(e.target.value)}
-              placeholder={account.name}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-            <input
-              type="text"
-              value={deleteReason}
-              onChange={e => setDeleteReason(e.target.value)}
-              placeholder="Reason (optional)"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => { setShowDeleteModal(false); setDeleteConfirmName(''); setDeleteReason('') }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteConfirmName.trim().toLowerCase() !== account.name.trim().toLowerCase() || deleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 rounded-lg transition-colors"
-              >
-                {deleting ? 'Deleting...' : 'Delete Account'}
-              </button>
-            </div>
+      <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeleteConfirmName(''); setDeleteReason('') }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
+          <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
         </div>
-      )}
+        <p className="text-sm text-gray-600 mb-2">
+          {getDeleteDescription()}
+        </p>
+        <p className="text-sm text-gray-600 mb-4">
+          Type <strong>{account.name}</strong> to confirm:
+        </p>
+        <input
+          type="text"
+          value={deleteConfirmName}
+          onChange={e => setDeleteConfirmName(e.target.value)}
+          placeholder={account.name}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-red-500"
+        />
+        <input
+          type="text"
+          value={deleteReason}
+          onChange={e => setDeleteReason(e.target.value)}
+          placeholder="Reason (optional)"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+        />
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => { setShowDeleteModal(false); setDeleteConfirmName(''); setDeleteReason('') }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleteConfirmName.trim().toLowerCase() !== account.name.trim().toLowerCase() || deleting}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:text-gray-500 rounded-lg transition-colors"
+          >
+            {deleting ? 'Deleting...' : 'Delete Account'}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

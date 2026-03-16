@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
+import { TIER_BADGE_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/style-constants'
 
 interface AccountRow {
   id: string
@@ -12,18 +13,6 @@ interface AccountRow {
   location_count: number
   user_count: number
   created_at: string
-}
-
-const TIER_BADGE: Record<string, string> = {
-  starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-brand-50 text-brand-600',
-  pro: 'bg-amber-50 text-amber-700',
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-emerald-50 text-emerald-600',
-  suspended: 'bg-orange-50 text-orange-600',
-  cancelled: 'bg-red-50 text-red-600',
 }
 
 export default function AccountsPage() {
@@ -111,12 +100,12 @@ export default function AccountsPage() {
                     <tr className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{a.name}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE[a.tier] ?? 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[a.tier] ?? 'bg-gray-100 text-gray-600'}`}>
                           {a.tier}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[a.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE_CLASSES[a.status] ?? 'bg-gray-100 text-gray-600'}`}>
                           {a.status}
                         </span>
                       </td>

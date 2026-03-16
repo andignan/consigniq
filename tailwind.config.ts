@@ -27,6 +27,22 @@ const config: Config = {
           800: "var(--navy-800)",
           900: "var(--navy-900)",
         },
+        surface: {
+          DEFAULT: "#ffffff",
+          page: "#fafaf9",
+          section: "#f9fafb",
+          muted: "#f3f4f6",
+        },
+        border: {
+          DEFAULT: "#e5e7eb",
+          subtle: "#f3f4f6",
+        },
+        content: {
+          DEFAULT: "#111827",
+          secondary: "#374151",
+          tertiary: "#6b7280",
+          muted: "#9ca3af",
+        },
       },
     },
   },

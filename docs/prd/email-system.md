@@ -14,6 +14,8 @@
 
 All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, html }` with dual plain-text + HTML. HTML uses ConsignIQ branded header where applicable.
 
+**Color constants:** All inline hex values use the `EMAIL_COLORS` constant object at the top of the file. To change a brand color across all emails, update the single constant (e.g., `brandPrimary`, `headerBg`, `textBody`). Keys: `brandPrimary`, `headerBg`, `textPrimary`, `textBody`, `textMuted`, `textFaint`, `bgSubtle`, `borderDefault`, `white`, `brandLight`, `brandLightBorder`, `brandDark`, `brandMedium`, `dangerBg`, `dangerBorder`, `dangerText`, `warningBg`, `warningBorder`, `dangerButton`, `sectionBg`.
+
 | # | Template Function | Trigger | Recipient | Key Content |
 |---|---|---|---|---|
 | 1 | `buildAgreementEmail()` | Manual: "Send Agreement" button | Consignor | Store header, dates, splits, item list (**no prices**), pickup instructions |

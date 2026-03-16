@@ -13,6 +13,8 @@ import UpgradePrompt from '@/components/UpgradePrompt'
 import UpgradeCard from '@/components/UpgradeCard'
 import { canUseFeature } from '@/lib/feature-gates'
 import { type Tier } from '@/lib/tier-limits'
+import { TIER_BADGE_CLASSES } from '@/lib/style-constants'
+import Modal from '@/components/ui/Modal'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -54,13 +56,6 @@ interface Invitation {
   created_at: string
   expires_at: string
   accepted_at: string | null
-}
-
-const TIER_COLORS: Record<string, string> = {
-  solo: 'bg-slate-100 text-slate-600',
-  starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-brand-50 text-brand-600',
-  pro: 'bg-amber-50 text-amber-600',
 }
 
 // ─── Main ─────────────────────────────────────────────────────
@@ -632,7 +627,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Plan</label>
                   <div className="flex items-center gap-2 h-[38px]">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${TIER_COLORS[account.tier] ?? TIER_COLORS.starter}`}>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${TIER_BADGE_CLASSES[account.tier] ?? TIER_BADGE_CLASSES.starter}`}>
                       {account.tier}
                     </span>
                   </div>
@@ -897,74 +892,62 @@ export default function SettingsPage() {
       )}
 
       {/* ═══ Invite Modal ═══ */}
-      {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setInviteOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-gray-900">Invite User</h3>
-              <button onClick={() => setInviteOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
+      <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite User">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              placeholder="user@example.com"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+            <div className="relative">
+              <select
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value as 'owner' | 'staff')}
+                className="w-full appearance-none px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              >
+                <option value="staff">Staff</option>
+                <option value="owner">Owner</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              {inviteRole === 'owner' ? 'Full access to all locations and account settings' : 'Access to assigned location only'}
+            </p>
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
-                <div className="relative">
-                  <select
-                    value={inviteRole}
-                    onChange={e => setInviteRole(e.target.value as 'owner' | 'staff')}
-                    className="w-full appearance-none px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {inviteRole === 'owner' ? 'Full access to all locations and account settings' : 'Access to assigned location only'}
-                </p>
-              </div>
-
-              {inviteError && (
-                <div className="flex items-center gap-1.5 text-sm text-red-500">
-                  <AlertCircle className="w-4 h-4" />
-                  {inviteError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setInviteOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={sendInvite}
-                  disabled={inviteSending || !inviteEmail.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
-                >
-                  {inviteSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Send Invite
-                </button>
-              </div>
+          {inviteError && (
+            <div className="flex items-center gap-1.5 text-sm text-red-500">
+              <AlertCircle className="w-4 h-4" />
+              {inviteError}
             </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setInviteOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={sendInvite}
+              disabled={inviteSending || !inviteEmail.trim()}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
+            >
+              {inviteSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              Send Invite
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

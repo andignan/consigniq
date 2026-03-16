@@ -1,6 +1,29 @@
 // lib/email-templates.ts
 // Email templates for agreement and notification emails
 
+const EMAIL_COLORS = {
+  brandPrimary: '#0A9E78',
+  headerBg: '#071020',
+  textPrimary: '#1a1a1a',
+  textBody: '#374151',
+  textMuted: '#6b7280',
+  textFaint: '#9ca3af',
+  bgSubtle: '#fafafa',
+  borderDefault: '#e5e7eb',
+  white: '#ffffff',
+  brandLight: '#E7F5EF',
+  brandLightBorder: '#C3E8D8',
+  brandDark: '#056A50',
+  brandMedium: '#077D5F',
+  dangerBg: '#fef2f2',
+  dangerBorder: '#fecaca',
+  dangerText: '#991b1b',
+  warningBg: '#fffbeb',
+  warningBorder: '#fde68a',
+  dangerButton: '#dc2626',
+  sectionBg: '#f9fafb',
+} as const
+
 interface AgreementEmailData {
   storeName: string
   storeAddress: string
@@ -83,39 +106,39 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;">
-    <h1 style="margin:0 0 4px;font-size:20px;color:#ffffff;">${data.storeName}</h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">${storeAddr}</p>
-    ${storeContact ? `<p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">${storeContact}</p>` : ''}
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;">
+    <h1 style="margin:0 0 4px;font-size:20px;color:${EMAIL_COLORS.white};">${data.storeName}</h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${storeAddr}</p>
+    ${storeContact ? `<p style="margin:4px 0 0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${storeContact}</p>` : ''}
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Consignment Agreement</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Consignment Agreement</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Dear ${data.consignorName},
   </p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Thank you for consigning with ${data.storeName}! This email confirms the terms of your consignment agreement.
   </p>
 
-  <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
-    <h3 style="margin:0 0 12px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Agreement Details</h3>
+  <div style="background:${EMAIL_COLORS.bgSubtle};border:1px solid ${EMAIL_COLORS.borderDefault};border-radius:8px;padding:16px;margin:20px 0;">
+    <h3 style="margin:0 0 12px;font-size:14px;color:${EMAIL_COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;">Agreement Details</h3>
     <table style="width:100%;font-size:14px;">
-      <tr><td style="padding:4px 0;color:#6b7280;">Intake Date</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.intakeDate)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Agreement Expires</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.expiryDate)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Grace Period Ends</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.graceEndDate)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Revenue Split</td><td style="padding:4px 0;font-weight:600;">${data.splitConsignor}% to you / ${data.splitStore}% to store</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Intake Date</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.intakeDate)}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Agreement Expires</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.expiryDate)}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Grace Period Ends</td><td style="padding:4px 0;font-weight:600;">${formatDate(data.graceEndDate)}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Revenue Split</td><td style="padding:4px 0;font-weight:600;">${data.splitConsignor}% to you / ${data.splitStore}% to store</td></tr>
     </table>
   </div>
 
-  <h3 style="font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;">Items Consigned (${data.items.length} total)</h3>
-  <table style="width:100%;font-size:13px;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;">
+  <h3 style="font-size:14px;color:${EMAIL_COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 12px;">Items Consigned (${data.items.length} total)</h3>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;border:1px solid ${EMAIL_COLORS.borderDefault};border-radius:8px;">
     <thead>
-      <tr style="background:#f9fafb;">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid #e5e7eb;">Item</th>
-        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid #e5e7eb;">Category</th>
-        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid #e5e7eb;">Condition</th>
+      <tr style="background:${EMAIL_COLORS.sectionBg};">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid ${EMAIL_COLORS.borderDefault};">Item</th>
+        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid ${EMAIL_COLORS.borderDefault};">Category</th>
+        <th style="padding:8px 12px;text-align:left;font-weight:600;border-bottom:2px solid ${EMAIL_COLORS.borderDefault};">Condition</th>
       </tr>
     </thead>
     <tbody>
@@ -123,9 +146,9 @@ This is an automated message from ConsignIQ.
     </tbody>
   </table>
 
-  <div style="background:#E7F5EF;border:1px solid #C3E8D8;border-radius:8px;padding:16px;margin:24px 0;">
-    <h3 style="margin:0 0 8px;font-size:14px;color:#056A50;">How It Works</h3>
-    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#077D5F;">
+  <div style="background:${EMAIL_COLORS.brandLight};border:1px solid ${EMAIL_COLORS.brandLightBorder};border-radius:8px;padding:16px;margin:24px 0;">
+    <h3 style="margin:0 0 8px;font-size:14px;color:${EMAIL_COLORS.brandDark};">How It Works</h3>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:${EMAIL_COLORS.brandMedium};">
       <li>Your items will be displayed for sale for <strong>${data.agreementDays} days</strong> from intake.</li>
       <li>When an item sells, you receive <strong>${data.splitConsignor}%</strong> of the sale price.</li>
       <li>After ${data.agreementDays} days, if items remain unsold, you have a <strong>${data.graceDays}-day grace period</strong> (until ${formatDate(data.graceEndDate)}) to pick them up.</li>
@@ -133,17 +156,17 @@ This is an automated message from ConsignIQ.
     </ul>
   </div>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     To pick up unsold items, please visit <strong>${data.storeName}</strong> during business hours before <strong>${formatDate(data.graceEndDate)}</strong>.
     ${data.storePhone ? ` Contact us at <strong>${data.storePhone}</strong> with any questions.` : ''}
   </p>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Thank you for choosing ${data.storeName}!
   </p>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">
     This is an automated message from ConsignIQ.
   </p>
 </body>
@@ -198,40 +221,40 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're Invited!</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">You're Invited!</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Hi ${data.fullName},
   </p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     You've been invited to join <strong>${data.accountName}</strong> on ConsignIQ.
   </p>
 
-  <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
+  <div style="background:${EMAIL_COLORS.bgSubtle};border:1px solid ${EMAIL_COLORS.borderDefault};border-radius:8px;padding:16px;margin:20px 0;">
     <table style="width:100%;font-size:14px;">
-      <tr><td style="padding:4px 0;color:#6b7280;">Account</td><td style="padding:4px 0;font-weight:600;">${data.accountName}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Plan</td><td style="padding:4px 0;font-weight:600;">${tierName}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Account</td><td style="padding:4px 0;font-weight:600;">${data.accountName}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Plan</td><td style="padding:4px 0;font-weight:600;">${tierName}</td></tr>
     </table>
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${landingUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:${EMAIL_COLORS.white};font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Set Up Your Account
     </a>
   </div>
 
-  <p style="font-size:13px;line-height:1.6;color:#6b7280;text-align:center;">
+  <p style="font-size:13px;line-height:1.6;color:${EMAIL_COLORS.textMuted};text-align:center;">
     This link expires in 24 hours. If it expires, contact your administrator for a new invite.
   </p>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">
     This is an automated message from ConsignIQ.
   </p>
 </body>
@@ -272,33 +295,33 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Reset Your Password</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Reset Your Password</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Hi ${data.fullName},
   </p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     We received a request to reset your ConsignIQ password. Click the button below to set a new password.
   </p>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${landingUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:${EMAIL_COLORS.white};font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Reset Password
     </a>
   </div>
 
-  <p style="font-size:13px;line-height:1.6;color:#6b7280;text-align:center;">
+  <p style="font-size:13px;line-height:1.6;color:${EMAIL_COLORS.textMuted};text-align:center;">
     This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
   </p>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">
     This is an automated message from ConsignIQ.
   </p>
 </body>
@@ -335,29 +358,29 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Agreement Expiring Soon</h2>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Agreement Expiring Soon</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.consignorName},</p>
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">Hi ${data.consignorName},</p>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     This is a friendly reminder that your consignment agreement with <strong>${data.storeName}</strong> expires on <strong>${formatDate(data.expiryDate)}</strong>.
   </p>
 
-  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;">
-    <p style="margin:0;font-size:14px;color:#991b1b;">
+  <div style="background:${EMAIL_COLORS.dangerBg};border:1px solid ${EMAIL_COLORS.dangerBorder};border-radius:8px;padding:16px;margin:20px 0;">
+    <p style="margin:0;font-size:14px;color:${EMAIL_COLORS.dangerText};">
       If you have unsold items, please arrange to pick them up by <strong>${formatDate(data.graceEndDate)}</strong> (the end of the grace period). After this date, uncollected items may be donated or disposed of.
     </p>
   </div>
 
-  ${data.storePhone ? `<p style="font-size:14px;line-height:1.6;color:#374151;">Contact us at <strong>${data.storePhone}</strong> with any questions.</p>` : ''}
+  ${data.storePhone ? `<p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">Contact us at <strong>${data.storePhone}</strong> with any questions.</p>` : ''}
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Thank you,<br><strong>${data.storeName}</strong>
   </p>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p>
 </body>
 </html>`
 
@@ -406,32 +429,32 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're now on ${data.tierLabel}!</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">You're now on ${data.tierLabel}!</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Your ConsignIQ plan has been upgraded to <strong>${data.tierLabel}</strong> ($${data.tierPrice}/month).
   </p>
 
-  <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
-    <h3 style="margin:0 0 8px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">What's Included</h3>
-    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#374151;">${featureListHtml}</ul>
+  <div style="background:${EMAIL_COLORS.bgSubtle};border:1px solid ${EMAIL_COLORS.borderDefault};border-radius:8px;padding:16px;margin:20px 0;">
+    <h3 style="margin:0 0 8px;font-size:14px;color:${EMAIL_COLORS.textMuted};text-transform:uppercase;letter-spacing:0.5px;">What's Included</h3>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:${EMAIL_COLORS.textBody};">${featureListHtml}</ul>
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.dashboardUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${data.dashboardUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:${EMAIL_COLORS.white};font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Go to Your Dashboard
     </a>
   </div>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p>
 </body>
 </html>`
 
@@ -464,33 +487,33 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Your subscription has been cancelled</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Your subscription has been cancelled</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     Your ConsignIQ <strong>${data.tierLabel}</strong> subscription has been cancelled. Your plan features are no longer active.
   </p>
 
-  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;">
-    <p style="margin:0;font-size:14px;color:#991b1b;">
+  <div style="background:${EMAIL_COLORS.dangerBg};border:1px solid ${EMAIL_COLORS.dangerBorder};border-radius:8px;padding:16px;margin:20px 0;">
+    <p style="margin:0;font-size:14px;color:${EMAIL_COLORS.dangerText};">
       Your data is safe and will be preserved. You can resubscribe anytime to restore full access.
     </p>
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${data.resubscribeUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:${EMAIL_COLORS.white};font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Resubscribe
     </a>
   </div>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p>
 </body>
 </html>`
 
@@ -522,33 +545,33 @@ This is an automated message from ConsignIQ.
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
   </div>
 
-  <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Action required — payment failed</h2>
+  <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Action required — payment failed</h2>
 
-  <p style="font-size:14px;line-height:1.6;color:#374151;">Hi ${data.fullName},</p>
-  <p style="font-size:14px;line-height:1.6;color:#374151;">
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">Hi ${data.fullName},</p>
+  <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
     We were unable to process your payment for ConsignIQ. Please update your payment method to avoid losing access.
   </p>
 
-  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:20px 0;">
-    <p style="margin:0;font-size:14px;color:#9ca3af;">
+  <div style="background:${EMAIL_COLORS.warningBg};border:1px solid ${EMAIL_COLORS.warningBorder};border-radius:8px;padding:16px;margin:20px 0;">
+    <p style="margin:0;font-size:14px;color:${EMAIL_COLORS.textFaint};">
       Stripe will retry the payment automatically, but if it continues to fail, your subscription may be cancelled.
     </p>
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.portalUrl}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${data.portalUrl}" style="display:inline-block;background:${EMAIL_COLORS.dangerButton};color:${EMAIL_COLORS.white};font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Update Payment Method
     </a>
   </div>
 
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p>
 </body>
 </html>`
 
@@ -581,15 +604,15 @@ The ConsignIQ Team`
 <body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;">
   <div style="text-align:center;margin-bottom:24px;">
     <h1 style="font-size:24px;font-weight:bold;color:#1f2937;margin:0;">ConsignIQ</h1>
-    <p style="font-size:12px;color:#9ca3af;margin:4px 0 0 0;">AI-Powered Consignment Management</p>
+    <p style="font-size:12px;color:${EMAIL_COLORS.textFaint};margin:4px 0 0 0;">AI-Powered Consignment Management</p>
   </div>
   <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Account Closed</h2>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">Hi ${data.ownerName},</p>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">${data.isPaid ? paidText : freeText}</p>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">If you believe this was done in error, please contact support immediately.</p>
   <p style="font-size:14px;line-height:1.6;">Thanks,<br>The ConsignIQ Team</p>
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-  <p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p>
+  <hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;">
+  <p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p>
 </body>
 </html>`
 
@@ -602,7 +625,7 @@ interface GraceReminderEmailData { fullName: string; tierLabel: string; periodEn
 
 export function buildGraceReminderEmail(data: GraceReminderEmailData) {
   const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}. After that date, you'll be limited to basic pricing features only.\n\nResubscribe now to keep full access to your consignors, reports, payouts, and all your data: ${data.resubscribeUrl}\n\nYour data is safe and will be preserved.\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your access ends soon</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> access ends on <strong>${data.periodEndDate}</strong>. After that date, you'll be limited to basic pricing features only.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><p style="font-size:13px;color:#6b7280;">Your data is safe and will be preserved.</p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your access ends soon</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> access ends on <strong>${data.periodEndDate}</strong>. After that date, you'll be limited to basic pricing features only.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><p style="font-size:13px;color:${EMAIL_COLORS.textMuted};">Your data is safe and will be preserved.</p><hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;"><p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: `Your ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}`, text, html }
 }
 
@@ -611,7 +634,7 @@ interface AccessEndedEmailData { fullName: string; tierLabel: string; resubscrib
 
 export function buildAccessEndedEmail(data: AccessEndedEmailData) {
   const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} subscription period has ended. You now have access to basic pricing features only.\n\nAll your data (consignors, items, reports) is preserved and waiting for you. Resubscribe anytime to restore full access: ${data.resubscribeUrl}\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your subscription period has ended</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription period has ended. You now have access to basic pricing features only.</p><p>All your data (consignors, items, reports) is preserved and waiting for you.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your subscription period has ended</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription period has ended. You now have access to basic pricing features only.</p><p>All your data (consignors, items, reports) is preserved and waiting for you.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;"><p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: 'Your ConsignIQ subscription period has ended', text, html }
 }
 
@@ -620,7 +643,7 @@ interface PaymentFinalWarningEmailData { fullName: string; portalUrl: string }
 
 export function buildPaymentFinalWarningEmail(data: PaymentFinalWarningEmailData) {
   const text = `Hi ${data.fullName},\n\nThis is a final warning — we've been unable to process your payment after multiple attempts. Your ConsignIQ subscription will be cancelled if payment is not resolved.\n\nPlease update your payment method immediately: ${data.portalUrl}\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;color:#dc2626;margin-bottom:16px;">Final payment warning</h2><p>Hi ${data.fullName},</p><p>This is a final warning — we've been unable to process your payment after multiple attempts. Your ConsignIQ subscription will be cancelled if payment is not resolved.</p><p><a href="${data.portalUrl}" style="display:inline-block;background:#dc2626;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Update Payment Method</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;color:${EMAIL_COLORS.dangerButton};margin-bottom:16px;">Final payment warning</h2><p>Hi ${data.fullName},</p><p>This is a final warning — we've been unable to process your payment after multiple attempts. Your ConsignIQ subscription will be cancelled if payment is not resolved.</p><p><a href="${data.portalUrl}" style="display:inline-block;background:${EMAIL_COLORS.dangerButton};color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Update Payment Method</a></p><hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;"><p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: 'Final warning — update your ConsignIQ payment method', text, html }
 }
 
@@ -629,6 +652,6 @@ interface WelcomeBackEmailData { fullName: string; tierLabel: string; dashboardU
 
 export function buildWelcomeBackEmail(data: WelcomeBackEmailData) {
   const text = `Hi ${data.fullName},\n\nWelcome back! Your ConsignIQ ${data.tierLabel} subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.\n\nHead to your dashboard: ${data.dashboardUrl}\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Welcome back!</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.</p><p><a href="${data.dashboardUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Welcome back!</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.</p><p><a href="${data.dashboardUrl}" style="display:inline-block;background:${EMAIL_COLORS.brandPrimary};color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p><hr style="border:none;border-top:1px solid ${EMAIL_COLORS.borderDefault};margin:24px 0;"><p style="font-size:11px;color:${EMAIL_COLORS.textFaint};text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: 'Welcome back to ConsignIQ!', text, html }
 }

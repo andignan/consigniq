@@ -12,6 +12,7 @@ import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
+import Modal from '@/components/ui/Modal'
 
 interface ConsignorOption {
   id: string
@@ -690,175 +691,146 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* ─── Modal overlay ──────────────────────────────────── */}
-      {modalMode && modalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={closeModal}>
-          <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Edit modal */}
-            {modalMode === 'edit' && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-gray-900">Edit Item</h2>
-                  <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
-                    <select
-                      value={editCategory}
-                      onChange={e => setEditCategory(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      {ITEM_CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Condition</label>
-                    <select
-                      value={editCondition}
-                      onChange={e => setEditCondition(e.target.value as ItemCondition)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      {Object.entries(CONDITION_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-                    <textarea
-                      value={editDescription}
-                      onChange={e => setEditDescription(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-5">
-                  <button
-                    onClick={closeModal}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveEdit}
-                    disabled={saving || !editName.trim()}
-                    className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Sell modal */}
-            {modalMode === 'sell' && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-gray-900">Mark as Sold</h2>
-                  <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-500 mb-1">{modalItem.name}</p>
-                {modalItem.price != null && (
-                  <p className="text-xs text-gray-400 mb-4">
-                    Listed at ${modalItem.price.toFixed(2)}
-                  </p>
-                )}
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Sold Price</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={soldPrice}
-                      onChange={e => setSoldPrice(e.target.value)}
-                      placeholder="0.00"
-                      autoFocus
-                      className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-5">
-                  <button
-                    onClick={closeModal}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveSold}
-                    disabled={saving || !soldPrice || parseFloat(soldPrice) <= 0}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
-                  >
-                    <Tag className="w-4 h-4" />
-                    {saving ? 'Saving...' : 'Confirm Sale'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Donate modal */}
-            {modalMode === 'donate' && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-gray-900">Mark as Donated</h2>
-                  <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-500 mb-1">{modalItem.name}</p>
-                <p className="text-sm text-gray-700 mt-3 bg-gray-50 rounded-xl p-4">
-                  This will mark the item as donated. This action cannot be undone.
-                </p>
-
-                <div className="flex gap-2 mt-5">
-                  <button
-                    onClick={closeModal}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveDonate}
-                    disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-gray-700 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
-                  >
-                    <Gift className="w-4 h-4" />
-                    {saving ? 'Saving...' : 'Confirm Donation'}
-                  </button>
-                </div>
-              </>
-            )}
+      {/* ─── Edit modal ──────────────────────────────────── */}
+      <Modal open={modalMode === 'edit' && !!modalItem} onClose={closeModal} title="Edit Item">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+            <select
+              value={editCategory}
+              onChange={e => setEditCategory(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {ITEM_CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Condition</label>
+            <select
+              value={editCondition}
+              onChange={e => setEditCondition(e.target.value as ItemCondition)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {Object.entries(CONDITION_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+            <textarea
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+            />
           </div>
         </div>
-      )}
+
+        <div className="flex gap-2 mt-5">
+          <button
+            onClick={closeModal}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={saveEdit}
+            disabled={saving || !editName.trim()}
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </Modal>
+
+      {/* ─── Sell modal ──────────────────────────────────── */}
+      <Modal open={modalMode === 'sell' && !!modalItem} onClose={closeModal} title="Mark as Sold">
+        {modalItem && (
+          <>
+            <p className="text-sm text-gray-500 mb-1">{modalItem.name}</p>
+            {modalItem.price != null && (
+              <p className="text-xs text-gray-400 mb-4">
+                Listed at ${modalItem.price.toFixed(2)}
+              </p>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Sold Price</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={soldPrice}
+                  onChange={e => setSoldPrice(e.target.value)}
+                  placeholder="0.00"
+                  autoFocus
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={closeModal}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveSold}
+                disabled={saving || !soldPrice || parseFloat(soldPrice) <= 0}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+              >
+                <Tag className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Confirm Sale'}
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* ─── Donate modal ──────────────────────────────────── */}
+      <Modal open={modalMode === 'donate' && !!modalItem} onClose={closeModal} title="Mark as Donated">
+        {modalItem && (
+          <>
+            <p className="text-sm text-gray-500 mb-1">{modalItem.name}</p>
+            <p className="text-sm text-gray-700 mt-3 bg-gray-50 rounded-xl p-4">
+              This will mark the item as donated. This action cannot be undone.
+            </p>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={closeModal}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveDonate}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-gray-700 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+              >
+                <Gift className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Confirm Donation'}
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   )
 }

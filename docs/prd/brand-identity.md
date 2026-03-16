@@ -48,7 +48,24 @@
 - File: `src/styles/brand-tokens.css`
 - CSS custom properties in `:root` block
 - Consumed by Tailwind via `tailwind.config.ts` → `extend.colors.brand` and `extend.colors.navy`
+- Semantic tokens in Tailwind: `surface` (DEFAULT/page/section/muted), `border` (DEFAULT/subtle), `content` (DEFAULT/secondary/tertiary/muted)
 - Dark mode scaffold included (commented out)
+
+### Shared Style Constants
+- File: `src/lib/style-constants.ts` — single source of truth for repeated class strings
+- `TIER_BADGE_CLASSES` — tier badge colors (solo/starter/standard/pro), used by settings, admin users, admin accounts
+- `STATUS_BADGE_CLASSES` — account status badge colors (active/suspended/cancelled/deleted), used by admin accounts
+- `CARD_CLASSES` / `CARD_CLASSES_LG` — card containers (uses semantic tokens)
+- `MODAL_BACKDROP` / `MODAL_CONTAINER` — modal overlay and panel classes
+- `INPUT_CLASSES` / `PAGE_CONTAINER` / `SECTION_HEADER` — common layout patterns
+- **Rule:** New badge/status color maps go here, not in individual page files
+
+### Modal Component
+- File: `src/components/ui/Modal.tsx`
+- Props: `open`, `onClose`, `title?`, `children`, `maxWidth?` (default `max-w-md`)
+- Handles: backdrop click to close, Escape key, scroll lock (`body.overflow = 'hidden'`)
+- Uses `MODAL_BACKDROP` and `MODAL_CONTAINER` from style-constants
+- Used by: inventory (edit/sell/donate), settings (invite), admin accounts (suspend/delete), admin users (add user)
 
 ### Mapping from Previous Colors
 | Previous | New | Notes |
