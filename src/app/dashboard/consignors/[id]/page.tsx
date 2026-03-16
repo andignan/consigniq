@@ -21,6 +21,7 @@ function ItemStatusBadge({ status }: { status: Item['status'] }) {
     sold: { label: 'Sold', className: 'bg-emerald-100 text-emerald-700' },
     donated: { label: 'Donated', className: 'bg-gray-100 text-gray-600' },
     returned: { label: 'Returned', className: 'bg-gray-100 text-gray-600' },
+    archived: { label: 'Archived', className: 'bg-gray-100 text-gray-400' },
   }
   const { label, className } = map[status]
   return (

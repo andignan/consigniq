@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, Filter, Download, Package, Loader2, X,
-  Tag, DollarSign, Gift, Pencil, Sparkles, Users, Printer,
+  Tag, DollarSign, Gift, Pencil, Sparkles, Users, Printer, Archive,
 } from 'lucide-react'
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
@@ -41,6 +41,7 @@ const STATUS_BADGE: Record<string, string> = {
   sold: 'bg-emerald-50 text-emerald-600',
   donated: 'bg-gray-100 text-gray-500',
   returned: 'bg-red-50 text-red-600',
+  archived: 'bg-gray-100 text-gray-400',
 }
 
 // ─── Types ────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ export default function InventoryPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [labelSize, setLabelSize] = useState<'2x1' | '4x2'>('2x1')
   const [printingLabels, setPrintingLabels] = useState(false)
+  const [selectionMode, setSelectionMode] = useState(false)
 
   function toggleItem(id: string) {
     setSelectedItems(prev => {
@@ -211,6 +213,20 @@ export default function InventoryPage() {
   function openDonate(item: ItemWithConsignor) {
     setModalItem(item)
     setModalMode('donate')
+  }
+
+  async function archiveItem(item: ItemWithConsignor) {
+    try {
+      await fetch('/api/items', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, status: 'archived' }),
+      })
+      fetchItems()
+    } catch {
+      // Silently fail
+    }
   }
 
   function closeModal() {
@@ -337,6 +353,18 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setSelectionMode(!selectionMode); setSelectedItems(new Set()) }}
+            disabled={items.length === 0}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
+              selectionMode
+                ? 'text-indigo-700 bg-indigo-50 border border-indigo-200'
+                : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50'
+            } disabled:opacity-40`}
+          >
+            <Printer className="w-4 h-4" />
+            {selectionMode ? 'Cancel' : 'Print Labels'}
+          </button>
           <button
             onClick={exportCSV}
             disabled={items.length === 0}
@@ -476,16 +504,18 @@ export default function InventoryPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Select all */}
-          <label className="flex items-center gap-2 px-4 py-1 text-xs text-gray-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={items.length > 0 && selectedItems.size === items.length}
-              onChange={toggleAll}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            Select all
-          </label>
+          {/* Select all — only in selection mode */}
+          {selectionMode && (
+            <label className="flex items-center gap-2 px-4 py-1 text-xs text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={items.length > 0 && selectedItems.size === items.length}
+                onChange={toggleAll}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Select all
+            </label>
+          )}
           {items.map(item => (
             <div
               key={item.id}
@@ -494,12 +524,14 @@ export default function InventoryPage() {
               }`}
             >
               <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedItems.has(item.id)}
-                  onChange={() => toggleItem(item.id)}
-                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                />
+                {selectionMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.has(item.id)}
+                    onChange={() => toggleItem(item.id)}
+                    className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-sm font-semibold text-gray-900 truncate">
@@ -577,6 +609,15 @@ export default function InventoryPage() {
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
+                  {item.status !== 'sold' && item.status !== 'donated' && item.status !== 'archived' && (
+                    <button
+                      onClick={() => archiveItem(item)}
+                      title="Archive item"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

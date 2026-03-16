@@ -199,6 +199,13 @@ export default function PriceLookupPage() {
 
       if (res.ok) {
         setSaved(true)
+        // Reset form and redirect after brief confirmation
+        if (isSolo) {
+          setTimeout(() => {
+            reset()
+            window.scrollTo(0, 0)
+          }, 1500)
+        }
       } else {
         setError(resBody.error || 'Failed to save to inventory')
       }
@@ -442,7 +449,7 @@ export default function PriceLookupPage() {
                 {saved && (
                   <span className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
                     <Check className="w-4 h-4" />
-                    Saved to your inventory
+                    {isSolo ? 'Saved! Price another item...' : 'Saved to your inventory'}
                   </span>
                 )}
               </div>
