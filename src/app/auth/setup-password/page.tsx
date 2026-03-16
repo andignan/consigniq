@@ -45,11 +45,8 @@ export default function SetupPasswordPage() {
         const refreshToken = params.get('refresh_token')
 
         if (accessToken && refreshToken) {
-          // Sign out the current tab's session before processing the invite token.
+          // No signOut — setSession() replaces the current session directly.
           // JWT email verification below prevents wrong-account access.
-          await supabase.auth.signOut()
-          // Small delay to ensure signout completes fully
-          await new Promise(resolve => setTimeout(resolve, 100))
 
           // Decode JWT to get the intended email for verification
           let expectedEmail: string | null = null

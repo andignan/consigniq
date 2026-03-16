@@ -69,10 +69,10 @@ Microsoft/Outlook email security scanners pre-fetch links in emails, consuming o
 
 On `/auth/setup-password`, if an `access_token` exists in the URL hash:
 
-1. Call `signOut()` (local scope) to clear the current tab's session
-2. Wait 100ms after signOut to ensure full completion
-3. Decode the JWT to extract the intended email
-4. Call `setSession()` with the token
-5. Verify `data.user.email === expectedEmail` — show expired error on mismatch
+1. Decode the JWT from the access_token to extract the intended email
+2. Call `setSession()` with the token (replaces the current session directly — no signOut needed)
+3. Verify `data.user.email === expectedEmail` — show expired error on mismatch
+
+**No signOut is called.** `setSession()` replaces the current tab's session atomically. Calling `signOut()` would invalidate the session server-side and disrupt other tabs (including admin sessions).
 
 This prevents a logged-in user from accidentally changing the wrong account's password.
