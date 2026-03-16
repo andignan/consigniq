@@ -2,6 +2,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sparkles, Loader2, DollarSign, ExternalLink, RefreshCw, AlertCircle,
   Camera, X, Search,
@@ -17,6 +18,7 @@ import { Check } from 'lucide-react'
 type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'error'
 
 export default function PriceLookupPage() {
+  const router = useRouter()
   // Form
   const [name, setName] = useState('')
   const [category, setCategory] = useState<string>(ITEM_CATEGORIES[0])
@@ -199,10 +201,8 @@ export default function PriceLookupPage() {
 
       if (res.ok) {
         setSaved(true)
-        // Immediately reset form for next item
         if (isSolo) {
-          reset()
-          window.scrollTo(0, 0)
+          router.push('/dashboard/pricing')
         }
       } else {
         setError(resBody.error || 'Failed to save to inventory')
