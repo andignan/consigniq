@@ -1,9 +1,11 @@
 // ConsignIQ Logo — SVG mark + wordmark
 export default function Logo({
   size = 'md',
+  variant = 'light',
   showSubtitle = false,
 }: {
   size?: 'sm' | 'md' | 'lg'
+  variant?: 'light' | 'dark'
   showSubtitle?: boolean
 }) {
   const sizes = {
@@ -39,7 +41,7 @@ export default function Logo({
       {/* Wordmark */}
       <div>
         <span className={`${s.text} font-bold tracking-tight`}>
-          <span className="text-current">Consign</span>
+          <span style={{ color: variant === 'dark' ? '#ffffff' : undefined }} className={variant === 'light' ? 'text-current' : undefined}>Consign</span>
           <span style={{ color: '#0A9E78' }}>IQ</span>
         </span>
         {showSubtitle && (

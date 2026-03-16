@@ -250,7 +250,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-800">
         <div className="text-white">
-          <Logo size="sm" />
+          <Logo size="sm" variant="dark" />
         </div>
         {isSolo && (
           <p className="text-stone-500 text-xs mt-0.5">Solo Pricer</p>
@@ -330,7 +330,7 @@ export default function Sidebar({ user }: SidebarProps) {
             </svg>
           </button>
           <div className="text-white">
-            <Logo size="sm" />
+            <Logo size="sm" variant="dark" />
           </div>
           {!isSolo && activeLocationName && (
             <span className="text-stone-400 text-xs truncate ml-auto">{activeLocationName}</span>

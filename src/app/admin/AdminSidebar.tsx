@@ -34,7 +34,7 @@ export default function AdminSidebar({ name, email }: { name: string; email: str
     <>
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2 mb-1">
-          <Logo size="sm" />
+          <Logo size="sm" variant="dark" />
           <span className="text-xs font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded">Admin</span>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function AdminSidebar({ name, email }: { name: string; email: str
           <Menu className="w-5 h-5 text-white/65" />
         </button>
         <div className="flex items-center gap-2 ml-3">
-          <Logo size="sm" />
+          <Logo size="sm" variant="dark" />
           <span className="text-xs font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded">Admin</span>
         </div>
       </div>

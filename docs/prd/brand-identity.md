@@ -32,6 +32,8 @@
 
 ### Wordmark
 - "Consign" in current text color + "IQ" in inline `#0A9E78` (uses `style` not Tailwind class to guarantee teal on dark backgrounds)
+- `variant="dark"`: "Consign" renders white (`#ffffff`) for use on dark backgrounds (sidebar, admin)
+- `variant="light"` (default): "Consign" uses `text-current` (inherits parent color)
 - Component: `src/components/Logo.tsx`
 - Sizes: sm (28px mark), md (32px), lg (40px)
 - Optional subtitle: "AI-Powered Pricing & Inventory"
@@ -72,6 +74,12 @@
 - **Amber**: Disable/suspend actions, warning semantics (expiring consignors)
 - **Emerald**: Success states (paid, sold, confirmations)
 - **Orange**: Suspend modal
+
+### Welcome Message Pattern
+All dashboard views display "Welcome back, [firstName]!" as the page heading when the user's `full_name` is available (falls back to "Dashboard"). The first name is extracted from `user_metadata.full_name` (first word). This applies consistently to:
+- Solo dashboard (`SoloDashboard` component, client-side via `useUser().full_name`)
+- All Locations view (server-side via `authUser.user_metadata.full_name`)
+- Single location view (server-side, same pattern)
 
 ### Files Modified
 - 6 new files created (brand-tokens.css, Logo.tsx, favicon.svg, logo-mark.svg, brand-identity.md, layout.tsx icons)
