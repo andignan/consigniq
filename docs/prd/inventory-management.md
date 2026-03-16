@@ -6,11 +6,23 @@
 
 | Status | Description | Transition from | Transition to |
 |---|---|---|---|
-| `pending` | Intake'd, not yet priced | (creation) | `priced` |
-| `priced` | Has a price assigned | `pending` | `sold`, `donated` |
-| `sold` | Sold to customer | `priced` | (terminal) |
-| `donated` | Donated after grace period | `priced` | (terminal) |
-| `archived` | Solo-only soft archive | `priced` | (terminal) |
+| `pending` | Intake'd, not yet priced | (creation) | `priced`, `archived` |
+| `priced` | Has a price assigned | `pending`, `archived` (restore) | `sold`, `donated`, `archived` |
+| `sold` | Sold to customer | `priced` | (terminal — cannot delete) |
+| `donated` | Donated after grace period | `priced` | `archived` |
+| `archived` | Soft archive, hidden from All tab | `pending`, `priced`, `donated` | `priced` (restore if price), `pending` (restore if no price) |
+
+## Item Actions
+
+| Action | Description | Available on | Button |
+|---|---|---|---|
+| **Archive** | Hides item from main inventory. Reversible. | pending, priced, donated | Archive icon |
+| **Restore** | Returns archived item to active inventory | archived | "Restore" button |
+| **Delete** | Permanently removes item from database. Irreversible. | pending, priced, donated, archived (NOT sold) | Trash icon with confirmation |
+| **Sell** | Marks item as sold, records sold_price | priced only | "Sell" button |
+| **Donate** | Marks item as donated | priced only | Gift icon |
+
+**"All" tab hides archived items.** Archived items only appear in the Archived tab. This is filtered client-side after fetch.
 
 ## Auto-Timestamps on PATCH
 

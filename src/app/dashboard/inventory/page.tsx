@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, Filter, Download, Package, Loader2, X,
-  Tag, DollarSign, Gift, Pencil, Sparkles, Users, Printer, Archive,
+  Tag, DollarSign, Gift, Pencil, Sparkles, Users, Printer, Archive, Trash2, RotateCcw,
 } from 'lucide-react'
 import type { Item, ItemStatus, ItemCondition } from '@/types'
 import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
@@ -126,7 +126,14 @@ export default function InventoryPage() {
       }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
+      // Use <a> click instead of window.open to avoid Safari popup blocker
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     } catch {
       alert('Failed to generate labels')
     } finally {
@@ -164,7 +171,11 @@ export default function InventoryPage() {
       const res = await fetch(`/api/items?${params}`, { credentials: 'include' })
       if (!res.ok) throw new Error('Failed to load')
       const { items: data } = await res.json()
-      setItems(data ?? [])
+      // Hide archived items from "All" tab — they only show in the Archived tab
+      const filtered = statusFilter === 'all'
+        ? (data ?? []).filter((i: ItemWithConsignor) => i.status !== 'archived')
+        : (data ?? [])
+      setItems(filtered)
     } catch {
       setItems([])
     } finally {
@@ -226,6 +237,41 @@ export default function InventoryPage() {
       fetchItems()
     } catch {
       // Silently fail
+    }
+  }
+
+  async function restoreItem(item: ItemWithConsignor) {
+    const newStatus = item.price ? 'priced' : 'pending'
+    try {
+      await fetch('/api/items', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, status: newStatus }),
+      })
+      fetchItems()
+    } catch {
+      // Silently fail
+    }
+  }
+
+  async function deleteItem(item: ItemWithConsignor) {
+    if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return
+    try {
+      const res = await fetch('/api/items', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id }),
+      })
+      if (res.ok) {
+        fetchItems()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete')
+      }
+    } catch {
+      alert('Failed to delete item')
     }
   }
 
@@ -609,6 +655,16 @@ export default function InventoryPage() {
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
+                  {item.status === 'archived' && (
+                    <button
+                      onClick={() => restoreItem(item)}
+                      title="Restore item"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Restore
+                    </button>
+                  )}
                   {item.status !== 'sold' && item.status !== 'donated' && item.status !== 'archived' && (
                     <button
                       onClick={() => archiveItem(item)}
@@ -616,6 +672,15 @@ export default function InventoryPage() {
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <Archive className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {item.status !== 'sold' && (
+                    <button
+                      onClick={() => deleteItem(item)}
+                      title="Delete item permanently"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

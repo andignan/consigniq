@@ -159,3 +159,30 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ item: data })
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = createServerClient()
+  const body = await request.json()
+  const { id } = body
+
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  // Cannot delete sold items (affects payout history)
+  const { data: item } = await supabase
+    .from('items')
+    .select('status')
+    .eq('id', id)
+    .single()
+
+  if (item?.status === 'sold') {
+    return NextResponse.json({ error: 'Cannot delete sold items — this would affect payout history' }, { status: 400 })
+  }
+
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ deleted: true })
+}
