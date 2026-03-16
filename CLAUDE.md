@@ -365,6 +365,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260315000000` — performance indexes: items (3), consignors (2), price_history (1), users (1), locations (1), accounts (1)
 - `20260315010000` — add deleted_at (timestamptz) and deletion_reason (text) to accounts
 - `20260315020000` — add subscription_cancelled_at, subscription_period_end, cancelled_tier to accounts
+- `20260316000000` — make items.consignor_id nullable (Solo users save without consignor)
 
 ## Security
 

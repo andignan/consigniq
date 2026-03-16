@@ -42,7 +42,7 @@ When an item is marked sold, a `price_history` record is automatically inserted:
 **Flow:** Solo user prices an item on `/dashboard/pricing` → clicks "Save to My Inventory" → POST `/api/items` with `consignor_id: null`, `price`, `low_price`, `high_price`, `ai_reasoning` → item saved with `status: 'priced'` and `priced_at` set → success toast shown.
 
 **Key details:**
-- `consignor_id` is nullable in the items table — Solo users have no consignors
+- `consignor_id` is nullable in the items table (migration `20260316000000`) — Solo users have no consignors
 - Items saved from Price Lookup have `status: 'priced'` (not `pending`) since they already have a price
 - `priced_at` is set automatically when `price` is provided in the POST body
 - The API validation does NOT require `consignor_id` — it's optional
