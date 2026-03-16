@@ -51,14 +51,28 @@ All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, ht
 
 **Not used:** Supabase built-in email (replaced with Resend for full control over branding and delivery). Supabase's `auth.admin.generateLink()` generates the link, but the email is sent via Resend, not Supabase's SMTP.
 
-## Invite Link Security Rule
+## Email Scanner Protection (Landing Page Pattern)
+
+Microsoft/Outlook email security scanners pre-fetch links in emails, consuming one-time Supabase auth tokens before the user clicks them.
+
+**Fix:** All email links go through a landing page (`/auth/invite`) instead of directly to the Supabase verify URL:
+
+1. Email templates base64-encode the Supabase verify URL
+2. Email button points to `/auth/invite?link=[base64]&name=[name]&account=[account]`
+3. Landing page shows personalized welcome and a "Set Up Your Account" button
+4. The actual Supabase URL is only followed on explicit user click — no auto-redirect
+5. Email scanners hit the landing page (harmless) instead of the one-time token URL
+
+**Applied to:** `buildInviteEmail()` (invite flow) and `buildPasswordResetEmail()` (password reset flow, uses `&type=reset`).
+
+## Setup Password Security
 
 On `/auth/setup-password`, if an `access_token` exists in the URL hash:
 
-1. Call `signOut({ scope: 'global' })` to clear ALL active browser sessions (not just the local one)
+1. Call `signOut({ scope: 'global' })` to clear ALL active browser sessions
 2. Wait 100ms after signOut to ensure full completion
-3. Decode the JWT from the access_token to extract the intended email
+3. Decode the JWT to extract the intended email
 4. Call `setSession()` with the token
-5. After session is established, verify `data.user.email === expectedEmail` — if they don't match, show the expired error
+5. Verify `data.user.email === expectedEmail` — show expired error on mismatch
 
-This prevents a logged-in user (e.g., admin) from accidentally changing the wrong account's password when clicking a new user's invite link.
+This prevents a logged-in user from accidentally changing the wrong account's password.

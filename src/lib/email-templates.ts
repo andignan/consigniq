@@ -170,6 +170,12 @@ export function buildInviteEmail(data: InviteEmailData) {
   }
   const tierName = tierLabel[data.tier] || data.tier
 
+  // Wrap the Supabase link in a landing page to prevent email scanner consumption
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://getconsigniq.com'
+  const encodedLink = Buffer.from(data.setupLink).toString('base64')
+  const firstName = data.fullName.split(' ')[0]
+  const landingUrl = `${appUrl}/auth/invite?link=${encodeURIComponent(encodedLink)}&name=${encodeURIComponent(firstName)}&account=${encodeURIComponent(data.accountName)}`
+
   const text = `Hi ${data.fullName},
 
 You've been invited to ConsignIQ!
@@ -179,7 +185,7 @@ Plan: ${tierName}
 
 To get started, set your password and log in using the link below:
 
-${data.setupLink}
+${landingUrl}
 
 This link expires in 24 hours. If it expires, contact your administrator for a new invite.
 
@@ -215,7 +221,7 @@ This is an automated message from ConsignIQ.
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.setupLink}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Set Up Your Account
     </a>
   </div>
@@ -242,13 +248,19 @@ interface PasswordResetEmailData {
 }
 
 export function buildPasswordResetEmail(data: PasswordResetEmailData) {
+  // Wrap the Supabase link in a landing page to prevent email scanner consumption
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://getconsigniq.com'
+  const encodedLink = Buffer.from(data.resetLink).toString('base64')
+  const firstName = data.fullName.split(' ')[0]
+  const landingUrl = `${appUrl}/auth/invite?link=${encodeURIComponent(encodedLink)}&name=${encodeURIComponent(firstName)}&type=reset`
+
   const text = `Hi ${data.fullName},
 
 We received a request to reset your ConsignIQ password.
 
 Click the link below to set a new password:
 
-${data.resetLink}
+${landingUrl}
 
 This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
 
@@ -276,7 +288,7 @@ This is an automated message from ConsignIQ.
   </p>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.resetLink}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Reset Password
     </a>
   </div>
