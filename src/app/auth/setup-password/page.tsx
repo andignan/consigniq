@@ -45,10 +45,9 @@ export default function SetupPasswordPage() {
         const refreshToken = params.get('refresh_token')
 
         if (accessToken && refreshToken) {
-          // SECURITY: Sign out ALL sessions (global scope) before processing
-          // the invite token. This clears any active browser sessions that
-          // could interfere with the new account's token.
-          await supabase.auth.signOut({ scope: 'global' })
+          // Sign out the current tab's session before processing the invite token.
+          // JWT email verification below prevents wrong-account access.
+          await supabase.auth.signOut()
           // Small delay to ensure signout completes fully
           await new Promise(resolve => setTimeout(resolve, 100))
 

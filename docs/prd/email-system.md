@@ -69,7 +69,7 @@ Microsoft/Outlook email security scanners pre-fetch links in emails, consuming o
 
 On `/auth/setup-password`, if an `access_token` exists in the URL hash:
 
-1. Call `signOut({ scope: 'global' })` to clear ALL active browser sessions
+1. Call `signOut()` (local scope) to clear the current tab's session
 2. Wait 100ms after signOut to ensure full completion
 3. Decode the JWT to extract the intended email
 4. Call `setSession()` with the token
