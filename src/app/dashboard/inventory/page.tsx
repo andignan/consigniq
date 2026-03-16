@@ -22,7 +22,7 @@ interface ConsignorOption {
 const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
   { value: 'all', label: 'All', color: 'bg-gray-100 text-gray-700' },
   { value: 'pending', label: 'Pending', color: 'bg-amber-100 text-amber-700' },
-  { value: 'priced', label: 'Priced', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'priced', label: 'Priced', color: 'bg-brand-100 text-brand-700' },
   { value: 'sold', label: 'Sold', color: 'bg-emerald-100 text-emerald-700' },
   { value: 'donated', label: 'Donated', color: 'bg-gray-100 text-gray-500' },
   { value: 'archived' as ItemStatus, label: 'Archived', color: 'bg-gray-100 text-gray-500' },
@@ -30,14 +30,14 @@ const STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[]
 
 const SOLO_STATUS_TABS: { value: ItemStatus | 'all'; label: string; color: string }[] = [
   { value: 'all', label: 'All', color: 'bg-gray-100 text-gray-700' },
-  { value: 'priced', label: 'Priced', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'priced', label: 'Priced', color: 'bg-brand-100 text-brand-700' },
   { value: 'sold', label: 'Sold', color: 'bg-emerald-100 text-emerald-700' },
   { value: 'archived' as ItemStatus, label: 'Archived', color: 'bg-gray-100 text-gray-500' },
 ]
 
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-600',
-  priced: 'bg-indigo-50 text-indigo-600',
+  priced: 'bg-brand-50 text-brand-600',
   sold: 'bg-emerald-50 text-emerald-600',
   donated: 'bg-gray-100 text-gray-500',
   returned: 'bg-red-50 text-red-600',
@@ -404,7 +404,7 @@ export default function InventoryPage() {
             disabled={items.length === 0}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
               selectionMode
-                ? 'text-indigo-700 bg-indigo-50 border border-indigo-200'
+                ? 'text-brand-700 bg-brand-50 border border-brand-200'
                 : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50'
             } disabled:opacity-40`}
           >
@@ -414,7 +414,7 @@ export default function InventoryPage() {
           <button
             onClick={exportCSV}
             disabled={items.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-brand-700 bg-white border border-brand-200 rounded-xl hover:bg-brand-50 disabled:opacity-40 transition-colors"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -424,14 +424,14 @@ export default function InventoryPage() {
 
       {/* Bulk actions bar */}
       {selectedItems.size > 0 && (
-        <div className="flex items-center gap-3 mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-          <span className="text-sm font-medium text-indigo-700">
+        <div className="flex items-center gap-3 mb-4 p-3 bg-brand-50 border border-brand-100 rounded-xl">
+          <span className="text-sm font-medium text-brand-700">
             {selectedItems.size} selected
           </span>
           <select
             value={labelSize}
             onChange={e => setLabelSize(e.target.value as '2x1' | '4x2')}
-            className="text-xs px-2 py-1 rounded-lg border border-indigo-200 bg-white text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs px-2 py-1 rounded-lg border border-brand-200 bg-white text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="2x1">2.25&quot; x 1.25&quot;</option>
             <option value="4x2">4&quot; x 2&quot;</option>
@@ -439,14 +439,14 @@ export default function InventoryPage() {
           <button
             onClick={() => printLabels()}
             disabled={printingLabels}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg disabled:opacity-50 transition-colors"
           >
             {printingLabels ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
             Print Labels
           </button>
           <button
             onClick={() => setSelectedItems(new Set())}
-            className="text-xs text-indigo-500 hover:text-indigo-700 ml-auto"
+            className="text-xs text-brand-500 hover:text-brand-700 ml-auto"
           >
             Clear
           </button>
@@ -479,7 +479,7 @@ export default function InventoryPage() {
             placeholder="Search items..."
             value={searchQuery}
             onChange={e => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
           {searchQuery && (
             <button
@@ -497,7 +497,7 @@ export default function InventoryPage() {
             <select
               value={consignorFilter}
               onChange={e => setConsignorFilter(e.target.value)}
-              className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             >
               <option value="">All Consignors</option>
               {consignors.map(c => (
@@ -512,7 +512,7 @@ export default function InventoryPage() {
           <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
-            className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="appearance-none pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="">All Categories</option>
             {ITEM_CATEGORIES.map(cat => (
@@ -525,7 +525,7 @@ export default function InventoryPage() {
       {/* Items list */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-16">
@@ -536,7 +536,7 @@ export default function InventoryPage() {
               <p className="text-sm text-gray-400 mb-4">Price an item and save it here to build your inventory</p>
               <Link
                 href="/dashboard/pricing"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
                 Price an Item
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -557,7 +557,7 @@ export default function InventoryPage() {
                 type="checkbox"
                 checked={items.length > 0 && selectedItems.size === items.length}
                 onChange={toggleAll}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
               />
               Select all
             </label>
@@ -566,7 +566,7 @@ export default function InventoryPage() {
             <div
               key={item.id}
               className={`bg-white rounded-xl border shadow-sm p-4 hover:shadow-md transition-all ${
-                selectedItems.has(item.id) ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-gray-100 hover:border-gray-200'
+                selectedItems.has(item.id) ? 'border-brand-300 ring-1 ring-brand-100' : 'border-gray-100 hover:border-gray-200'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -575,7 +575,7 @@ export default function InventoryPage() {
                     type="checkbox"
                     checked={selectedItems.has(item.id)}
                     onChange={() => toggleItem(item.id)}
-                    className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                    className="mt-1 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
@@ -615,7 +615,7 @@ export default function InventoryPage() {
                   {item.status === 'pending' && (
                     <Link
                       href={`/dashboard/inventory/${item.id}/price`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       Price
@@ -659,7 +659,7 @@ export default function InventoryPage() {
                     <button
                       onClick={() => restoreItem(item)}
                       title="Restore item"
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       Restore
@@ -714,7 +714,7 @@ export default function InventoryPage() {
                       type="text"
                       value={editName}
                       onChange={e => setEditName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   </div>
                   <div>
@@ -722,7 +722,7 @@ export default function InventoryPage() {
                     <select
                       value={editCategory}
                       onChange={e => setEditCategory(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                       {ITEM_CATEGORIES.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -734,7 +734,7 @@ export default function InventoryPage() {
                     <select
                       value={editCondition}
                       onChange={e => setEditCondition(e.target.value as ItemCondition)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                       {Object.entries(CONDITION_LABELS).map(([val, label]) => (
                         <option key={val} value={val}>{label}</option>
@@ -747,7 +747,7 @@ export default function InventoryPage() {
                       value={editDescription}
                       onChange={e => setEditDescription(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                     />
                   </div>
                 </div>
@@ -762,7 +762,7 @@ export default function InventoryPage() {
                   <button
                     onClick={saveEdit}
                     disabled={saving || !editName.trim()}
-                    className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+                    className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save Changes'}
                   </button>

@@ -2,6 +2,7 @@
 export const APP = {
   name: 'ConsignIQ',
   tagline: 'AI-Powered Pricing & Inventory',
+  logoTagline: 'AI-Powered Pricing & Inventory',
   emailTagline: 'AI-Powered Consignment Management',
   supportEmail: 'admin@getconsigniq.com',
   version: 'v1.0',

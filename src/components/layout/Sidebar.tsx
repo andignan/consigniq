@@ -8,6 +8,7 @@ import { useLocation } from '@/contexts/LocationContext'
 import { useUser } from '@/contexts/UserContext'
 import type { User } from '@/types/database'
 import { type Tier } from '@/lib/tier-limits'
+import Logo from '@/components/Logo'
 
 // Icons as inline SVGs (same as before)
 const DashboardIcon = () => (
@@ -185,7 +186,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 onClick={() => handleLocationSwitch('all')}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
                   isAllLocations
-                    ? 'bg-amber-500/20 text-amber-400'
+                    ? 'bg-brand-500/20 text-brand-400'
                     : 'text-stone-300 hover:bg-stone-700 hover:text-white'
                 }`}
               >
@@ -195,7 +196,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 </svg>
                 All Locations
                 {isAllLocations && (
-                  <svg className="w-4 h-4 ml-auto text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 ml-auto text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -207,7 +208,7 @@ export default function Sidebar({ user }: SidebarProps) {
                   onClick={() => handleLocationSwitch(loc.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
                     !isAllLocations && activeLocationName === loc.name
-                      ? 'bg-amber-500/20 text-amber-400'
+                      ? 'bg-brand-500/20 text-brand-400'
                       : 'text-stone-300 hover:bg-stone-700 hover:text-white'
                   }`}
                 >
@@ -219,7 +220,7 @@ export default function Sidebar({ user }: SidebarProps) {
                   </svg>
                   <span className="truncate">{loc.name}</span>
                   {!isAllLocations && activeLocationName === loc.name && (
-                    <svg className="w-4 h-4 ml-auto text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 ml-auto text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
@@ -248,7 +249,9 @@ export default function Sidebar({ user }: SidebarProps) {
     <>
       {/* Brand */}
       <div className="px-5 py-5 border-b border-stone-800">
-        <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
+        <div className="text-white">
+          <Logo size="sm" />
+        </div>
         {isSolo && (
           <p className="text-stone-500 text-xs mt-0.5">Solo Pricer</p>
         )}
@@ -272,8 +275,8 @@ export default function Sidebar({ user }: SidebarProps) {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-amber-500 text-white'
-                  : 'text-stone-400 hover:text-white hover:bg-stone-800'
+                  ? 'border-l-2 border-brand-500 text-brand-400 bg-stone-800/50'
+                  : 'border-l-2 border-transparent text-stone-400 hover:text-white hover:bg-stone-800'
               }`}
             >
               {item.icon}
@@ -315,7 +318,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Mobile: header bar + overlay (hidden on md+) */}
       <div className="block md:hidden">
         {/* Fixed header bar with hamburger */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-stone-900 border-b border-stone-800 px-4 py-3 flex items-center gap-3">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-navy-900 border-b border-stone-800 px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => setMobileOpen(true)}
             className="text-white p-1"
@@ -326,7 +329,9 @@ export default function Sidebar({ user }: SidebarProps) {
                 d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-white font-bold text-lg tracking-tight">ConsignIQ</h1>
+          <div className="text-white">
+            <Logo size="sm" />
+          </div>
           {!isSolo && activeLocationName && (
             <span className="text-stone-400 text-xs truncate ml-auto">{activeLocationName}</span>
           )}
@@ -341,7 +346,7 @@ export default function Sidebar({ user }: SidebarProps) {
               onClick={() => setMobileOpen(false)}
             />
             {/* Sidebar panel */}
-            <aside className="relative w-60 bg-stone-900 flex flex-col h-full">
+            <aside className="relative w-60 bg-navy-900 flex flex-col h-full">
               {sidebarContent}
             </aside>
           </div>
@@ -349,7 +354,7 @@ export default function Sidebar({ user }: SidebarProps) {
       </div>
 
       {/* Desktop: always-visible sidebar (hidden below md) */}
-      <aside className="hidden md:flex w-60 bg-stone-900 flex-col h-full shrink-0">
+      <aside className="hidden md:flex w-60 bg-navy-900 flex-col h-full shrink-0">
         {sidebarContent}
       </aside>
     </>

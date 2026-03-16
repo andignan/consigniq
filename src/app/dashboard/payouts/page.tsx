@@ -189,7 +189,7 @@ export default function PayoutsPage() {
             onClick={() => { setFilter(s); setSelectedItems(new Set()) }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === s
-                ? 'bg-amber-100 text-amber-800'
+                ? 'bg-brand-100 text-brand-800'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >

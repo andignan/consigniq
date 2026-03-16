@@ -23,7 +23,7 @@ export default function UpgradePrompt({ feature, description }: UpgradePromptPro
       </p>
       <Link
         href="/dashboard/settings?tab=account#billing"
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors"
       >
         <ArrowUpRight className="w-3.5 h-3.5" />
         Upgrade to {tierConfig.label} — ${tierConfig.price}/mo

@@ -181,7 +181,7 @@ export default function HelpWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
           aria-label="Help"
         >
           <HelpCircle className="w-5 h-5" />
@@ -203,9 +203,9 @@ export default function HelpWidget() {
             {/* Header with tier badge */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-indigo-500" />
+                <HelpCircle className="w-4 h-4 text-brand-500" />
                 <h2 className="text-sm font-semibold text-gray-900">Help</h2>
-                <span className="text-[10px] font-medium text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-medium text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-full">
                   {tierLabel}
                 </span>
               </div>
@@ -227,7 +227,7 @@ export default function HelpWidget() {
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Ask anything..."
                   autoFocus
-                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 />
               </div>
             </form>
@@ -242,9 +242,9 @@ export default function HelpWidget() {
                 </div>
               )}
               {aiAnswer && !searching && (
-                <div className="mb-4 p-3 bg-indigo-50 rounded-xl">
+                <div className="mb-4 p-3 bg-brand-50 rounded-xl">
                   <p className="text-sm text-gray-800 leading-relaxed">{aiAnswer}</p>
-                  <p className="text-[10px] text-indigo-400 mt-2">Powered by AI</p>
+                  <p className="text-[10px] text-brand-400 mt-2">Powered by AI</p>
                 </div>
               )}
 

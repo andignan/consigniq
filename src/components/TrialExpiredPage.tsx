@@ -53,7 +53,7 @@ export default function TrialExpiredPage() {
                   </p>
                   <button
                     onClick={() => handleCheckout(tier)}
-                    className="w-full mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="w-full mt-3 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     Choose {config.label}
                   </button>

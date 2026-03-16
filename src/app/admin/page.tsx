@@ -44,13 +44,13 @@ export default function AdminOverview() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
       </div>
     )
   }
 
   if (!stats) {
-    return <div className="p-6 text-sm text-red-600">Failed to load admin stats.</div>
+    return <div className="p-6 text-sm text-gray-600">Failed to load admin stats.</div>
   }
 
   return (
@@ -59,9 +59,9 @@ export default function AdminOverview() {
 
       {/* Top-level stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <StatCard icon={Building2} label="Accounts" value={stats.accounts.total} color="red" />
+        <StatCard icon={Building2} label="Accounts" value={stats.accounts.total} color="brand" />
         <StatCard icon={MapPin} label="Locations" value={stats.locations.total} color="blue" />
-        <StatCard icon={Users} label="Users" value={stats.users.total} color="indigo" />
+        <StatCard icon={Users} label="Users" value={stats.users.total} color="brand" />
         <StatCard icon={Package} label="Items" value={stats.items.total} color="emerald" />
         <StatCard icon={UserCheck} label="Consignors" value={stats.consignors.total} color="amber" />
       </div>
@@ -72,8 +72,8 @@ export default function AdminOverview() {
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Accounts by Tier</h2>
           <div className="space-y-3">
             <TierRow label="Starter" count={stats.accounts.byTier.starter} total={stats.accounts.total} color="bg-gray-400" />
-            <TierRow label="Standard" count={stats.accounts.byTier.standard} total={stats.accounts.total} color="bg-indigo-500" />
-            <TierRow label="Pro" count={stats.accounts.byTier.pro} total={stats.accounts.total} color="bg-amber-500" />
+            <TierRow label="Standard" count={stats.accounts.byTier.standard} total={stats.accounts.total} color="bg-brand-500" />
+            <TierRow label="Pro" count={stats.accounts.byTier.pro} total={stats.accounts.total} color="bg-brand-800" />
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export default function AdminOverview() {
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Items by Status</h2>
           <div className="space-y-3">
             <TierRow label="Pending" count={stats.items.byStatus.pending} total={stats.items.total} color="bg-amber-400" />
-            <TierRow label="Priced" count={stats.items.byStatus.priced} total={stats.items.total} color="bg-blue-500" />
+            <TierRow label="Priced" count={stats.items.byStatus.priced} total={stats.items.total} color="bg-brand-500" />
             <TierRow label="Sold" count={stats.items.byStatus.sold} total={stats.items.total} color="bg-emerald-500" />
             <TierRow label="Donated" count={stats.items.byStatus.donated} total={stats.items.total} color="bg-gray-400" />
           </div>

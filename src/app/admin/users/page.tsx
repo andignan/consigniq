@@ -26,7 +26,7 @@ interface UserRow {
 const TIER_BADGE: Record<string, string> = {
   solo: 'bg-slate-100 text-slate-600',
   starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-indigo-50 text-indigo-600',
+  standard: 'bg-brand-50 text-brand-600',
   pro: 'bg-amber-50 text-amber-700',
 }
 
@@ -49,7 +49,7 @@ function AccountTypeBadge({ user }: { user: UserRow }) {
 
   if (type === 'complimentary') {
     return (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-600">
         Complimentary{account.complimentary_tier ? ` (${account.complimentary_tier})` : ''}
       </span>
     )
@@ -171,7 +171,7 @@ export default function AdminUsersPage() {
         <h1 className="text-xl font-bold text-gray-900">Users</h1>
         <button
           onClick={() => { resetForm(); setShowModal(true) }}
-          className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add User
@@ -188,13 +188,13 @@ export default function AdminUsersPage() {
             onChange={e => setSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search email or name..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <select
           value={accountTypeFilter}
           onChange={e => setAccountTypeFilter(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">All Types</option>
           <option value="paid">Paid</option>
@@ -204,7 +204,7 @@ export default function AdminUsersPage() {
         <select
           value={tierFilter}
           onChange={e => setTierFilter(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">All Tiers</option>
           <option value="solo">Solo</option>
@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
       {/* Users Table */}
       {loading ? (
         <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-5 h-5 animate-spin text-red-500" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
         </div>
       ) : users.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -279,7 +279,7 @@ export default function AdminUsersPage() {
                   required
                   value={formEmail}
                   onChange={e => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="user@example.com"
                 />
               </div>
@@ -290,7 +290,7 @@ export default function AdminUsersPage() {
                   required
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Jane Smith"
                 />
               </div>
@@ -301,7 +301,7 @@ export default function AdminUsersPage() {
                   required
                   value={formAccountName}
                   onChange={e => setFormAccountName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="Treasure Trove Consignment"
                 />
               </div>
@@ -311,7 +311,7 @@ export default function AdminUsersPage() {
                   <select
                     value={formTier}
                     onChange={e => setFormTier(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="solo">Solo</option>
                     <option value="starter">Starter</option>
@@ -324,7 +324,7 @@ export default function AdminUsersPage() {
                   <select
                     value={formAccountType}
                     onChange={e => setFormAccountType(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="paid">Paid</option>
                     <option value="trial">Trial</option>
@@ -339,7 +339,7 @@ export default function AdminUsersPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {submitting ? 'Creating...' : 'Create User'}

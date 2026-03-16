@@ -213,10 +213,10 @@ export function getLifecycleStatus(
 
 export const COLOR_CLASSES = {
   green: {
-    badge: 'bg-emerald-100 text-emerald-800',
-    bar: 'bg-emerald-500',
-    dot: 'bg-emerald-500',
-    ring: 'ring-emerald-200',
+    badge: 'bg-brand-50 text-brand-800',
+    bar: 'bg-brand-500',
+    dot: 'bg-brand-500',
+    ring: 'ring-brand-200',
   },
   yellow: {
     badge: 'bg-yellow-100 text-yellow-800',

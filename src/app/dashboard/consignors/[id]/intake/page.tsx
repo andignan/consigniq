@@ -47,7 +47,7 @@ export default function IntakePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
       </div>
     )
   }
@@ -56,7 +56,7 @@ export default function IntakePage() {
     return (
       <div className="max-w-xl mx-auto px-4 py-8 text-center">
         <p className="text-sm text-red-600">{error ?? 'Consignor not found'}</p>
-        <Link href="/dashboard/consignors" className="text-indigo-600 text-sm mt-4 block">
+        <Link href="/dashboard/consignors" className="text-brand-600 text-sm mt-4 block">
           ← Back to Consignors
         </Link>
       </div>

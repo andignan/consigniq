@@ -59,11 +59,14 @@ beforeEach(() => {
   const makeChainable = (resolveWith = { data: [], error: null }) => {
     const obj: Record<string, jest.Mock | Promise<unknown>> = {
       eq: mockEq,
+      neq: jest.fn(),
       in: mockIn,
       order: mockOrder,
       single: mockSingle,
       then: jest.fn((resolve) => Promise.resolve(resolveWith).then(resolve)),
     }
+    // neq returns the same chainable (for further .eq() calls)
+    ;(obj.neq as jest.Mock).mockReturnValue(obj)
     return obj
   }
 

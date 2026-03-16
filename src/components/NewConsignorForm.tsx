@@ -139,7 +139,7 @@ export function NewConsignorForm({
                 placeholder="Jane Smith"
                 required
                 autoFocus
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -156,7 +156,7 @@ export function NewConsignorForm({
                 value={form.phone}
                 onChange={e => set('phone', e.target.value)}
                 placeholder="(708) 555-0123"
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -173,7 +173,7 @@ export function NewConsignorForm({
                 value={form.email}
                 onChange={e => set('email', e.target.value)}
                 placeholder="jane@example.com"
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -190,7 +190,7 @@ export function NewConsignorForm({
                 onChange={e => set('notes', e.target.value)}
                 placeholder="Any notes about this consignor…"
                 rows={3}
-                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
+                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition resize-none"
               />
             </div>
           </div>
@@ -206,7 +206,7 @@ export function NewConsignorForm({
           <button
             type="button"
             onClick={() => setShowSplitCustom(!showSplitCustom)}
-            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-xs text-brand-600 hover:text-brand-700 font-medium"
           >
             {showSplitCustom ? 'Use default' : 'Customize split'}
           </button>
@@ -225,12 +225,12 @@ export function NewConsignorForm({
             <div className="text-xs text-gray-500 mb-0.5">Grace Period Ends</div>
             <div className="text-sm font-semibold text-gray-800">{formatDisplayDate(graceEndDate)}</div>
           </div>
-          <div className="bg-indigo-50 rounded-lg p-3 text-center">
-            <div className="text-xs text-indigo-600 mb-0.5">Split</div>
-            <div className="text-sm font-semibold text-indigo-800">
+          <div className="bg-brand-50 rounded-lg p-3 text-center">
+            <div className="text-xs text-brand-600 mb-0.5">Split</div>
+            <div className="text-sm font-semibold text-brand-800">
               {form.split_store}/{form.split_consignor}
             </div>
-            <div className="text-xs text-indigo-500">store / consignor</div>
+            <div className="text-xs text-brand-500">store / consignor</div>
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export function NewConsignorForm({
                 step="5"
                 value={form.split_store}
                 onChange={e => handleStoreChange(e.target.value)}
-                className="flex-1 accent-indigo-600"
+                className="flex-1 accent-brand-600"
               />
               <div className="flex items-center gap-1 text-sm font-semibold w-24 justify-center">
                 <span className="text-gray-800">{form.split_store}%</span>
@@ -275,7 +275,7 @@ export function NewConsignorForm({
         type="submit"
         disabled={loading || !form.name.trim()}
         title={!form.name.trim() ? 'Enter consignor name to continue' : undefined}
-        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+        className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
       >
         {loading ? (
           <>

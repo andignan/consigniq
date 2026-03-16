@@ -16,7 +16,7 @@ interface AccountRow {
 
 const TIER_BADGE: Record<string, string> = {
   starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-indigo-50 text-indigo-600',
+  standard: 'bg-brand-50 text-brand-600',
   pro: 'bg-amber-50 text-amber-700',
 }
 

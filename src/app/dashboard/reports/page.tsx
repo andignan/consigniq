@@ -131,16 +131,16 @@ function StatCard({
   label,
   value,
   sub,
-  color = 'indigo',
+  color = 'brand',
 }: {
   icon: React.ElementType
   label: string
   value: string | number
   sub?: string
-  color?: 'indigo' | 'amber' | 'red' | 'emerald' | 'gray'
+  color?: 'brand' | 'amber' | 'red' | 'emerald' | 'gray'
 }) {
   const colorMap = {
-    indigo: 'bg-indigo-50 text-indigo-600',
+    brand: 'bg-brand-50 text-brand-600',
     amber: 'bg-amber-50 text-amber-600',
     red: 'bg-red-50 text-red-600',
     emerald: 'bg-emerald-50 text-emerald-600',
@@ -190,7 +190,7 @@ function SortHeader({
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        <ArrowUpDown className={`w-3 h-3 ${current.key === sortKey ? 'text-indigo-500' : 'text-gray-300'}`} />
+        <ArrowUpDown className={`w-3 h-3 ${current.key === sortKey ? 'text-brand-500' : 'text-gray-300'}`} />
       </span>
     </th>
   )
@@ -936,7 +936,7 @@ export default function ReportsPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
       </div>
     )
   }
@@ -958,7 +958,7 @@ export default function ReportsPage() {
           <select
             value={isAllLocations ? 'all' : (activeLocationId ?? '')}
             onChange={e => setActiveLocation(e.target.value)}
-            className="appearance-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="appearance-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             <option value="all">All Locations</option>
             {locations.map(l => (
@@ -976,7 +976,7 @@ export default function ReportsPage() {
             onClick={() => setPeriod(p.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
               period === p.value
-                ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200'
+                ? 'bg-brand-100 text-brand-700 ring-1 ring-brand-200'
                 : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -986,10 +986,10 @@ export default function ReportsPage() {
       </div>
 
       {/* ═══ AI Report Prompt Bar ═══ */}
-      <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+      <div className="mb-6 rounded-xl border border-brand-100 bg-brand-50/50 p-4">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-indigo-500" />
-          <span className="text-sm font-semibold text-indigo-700">Ask a question about your data</span>
+          <Sparkles className="w-4 h-4 text-brand-500" />
+          <span className="text-sm font-semibold text-brand-700">Ask a question about your data</span>
         </div>
         <div className="flex gap-2">
           <input
@@ -998,13 +998,13 @@ export default function ReportsPage() {
             onChange={e => setAiQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !aiLoading && handleAiQuery()}
             placeholder="e.g. What are our top selling categories this month?"
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-brand-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             disabled={aiLoading}
           />
           <button
             onClick={() => handleAiQuery()}
             disabled={aiLoading || !aiQuery.trim()}
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Ask
@@ -1017,7 +1017,7 @@ export default function ReportsPage() {
               key={prompt}
               onClick={() => { setAiQuery(prompt); handleAiQuery(prompt) }}
               disabled={aiLoading}
-              className="px-2.5 py-1 text-xs rounded-full bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+              className="px-2.5 py-1 text-xs rounded-full bg-white border border-brand-200 text-brand-600 hover:bg-brand-100 disabled:opacity-50 transition-colors"
             >
               {prompt}
             </button>
@@ -1038,10 +1038,10 @@ export default function ReportsPage() {
       )}
 
       {aiResult && (
-        <div className="mb-6 rounded-xl border border-indigo-200 bg-white p-4 shadow-sm">
+        <div className="mb-6 rounded-xl border border-brand-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
+              <Sparkles className="w-4 h-4 text-brand-500" />
               <span className="text-sm font-semibold text-gray-900">{aiResult.question}</span>
             </div>
             <button onClick={() => { setAiResult(null); setAiQuery('') }} className="text-gray-400 hover:text-gray-600">
@@ -1049,7 +1049,7 @@ export default function ReportsPage() {
             </button>
           </div>
           {aiResult.summary && (
-            <p className="text-sm text-gray-700 mb-3 bg-indigo-50 rounded-lg p-3">{aiResult.summary}</p>
+            <p className="text-sm text-gray-700 mb-3 bg-brand-50 rounded-lg p-3">{aiResult.summary}</p>
           )}
           {aiResult.rows.length > 0 ? (
             <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -1086,7 +1086,7 @@ export default function ReportsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
         </div>
       ) : (
         <>
@@ -1103,7 +1103,7 @@ export default function ReportsPage() {
                 icon={TrendingUp}
                 label="Store Earnings"
                 value={`$${storeEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                color="indigo"
+                color="brand"
               />
               <StatCard
                 icon={Users}
@@ -1155,7 +1155,7 @@ export default function ReportsPage() {
                 label="Avg Days to Sell"
                 value={avgDaysToSell}
                 sub="days"
-                color="indigo"
+                color="brand"
               />
               <StatCard
                 icon={DollarSign}
@@ -1181,7 +1181,7 @@ export default function ReportsPage() {
                 {soldInPeriod.length > 0 && (
                   <div className="flex gap-0.5 mt-2 h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-indigo-500 rounded-l-full"
+                      className="bg-brand-500 rounded-l-full"
                       style={{ width: `${fullPriceSales / soldInPeriod.length * 100}%` }}
                     />
                     <div
@@ -1201,7 +1201,7 @@ export default function ReportsPage() {
                 icon={Users}
                 label="Active Consignors"
                 value={activeConsignors}
-                color="indigo"
+                color="brand"
               />
               <StatCard
                 icon={Package}
@@ -1280,7 +1280,7 @@ export default function ReportsPage() {
                         onChange={e => setConsignorSearch(e.target.value)}
                         placeholder="Search consignors..."
                         autoFocus
-                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -1302,7 +1302,7 @@ export default function ReportsPage() {
                           onClick={() => selectConsignor(c.id)}
                           className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                             c.id === selectedConsignorId
-                              ? 'bg-indigo-50 text-indigo-700 font-medium'
+                              ? 'bg-brand-50 text-brand-700 font-medium'
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -1320,7 +1320,7 @@ export default function ReportsPage() {
             {selectedConsignor && (
               consignorItemsLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                  <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1378,7 +1378,7 @@ export default function ReportsPage() {
 
                   {/* Item breakdown */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <StatCard icon={Package} label="Total Items" value={consignorItems.length} color="indigo" />
+                    <StatCard icon={Package} label="Total Items" value={consignorItems.length} color="brand" />
                     <StatCard icon={Clock} label="Pending Pricing" value={crPending} color="amber" />
                     <StatCard icon={Tag} label="Priced / On Floor" value={crPriced} color="emerald" />
                     <StatCard
@@ -1401,7 +1401,7 @@ export default function ReportsPage() {
                       label="Avg Days to Sell"
                       value={crAvgDaysToSell}
                       sub="days"
-                      color="indigo"
+                      color="brand"
                     />
                     {crReturned > 0 && (
                       <StatCard icon={Package} label="Returned/Expired" value={crReturned} color="red" />
@@ -1438,7 +1438,7 @@ export default function ReportsPage() {
                                   <td className="px-4 py-2.5">
                                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                                       i.status === 'sold' ? 'bg-emerald-50 text-emerald-600'
-                                      : i.status === 'priced' ? 'bg-indigo-50 text-indigo-600'
+                                      : i.status === 'priced' ? 'bg-brand-50 text-brand-600'
                                       : i.status === 'pending' ? 'bg-amber-50 text-amber-600'
                                       : i.status === 'donated' ? 'bg-gray-100 text-gray-500'
                                       : 'bg-red-50 text-red-600'
@@ -1567,7 +1567,7 @@ export default function ReportsPage() {
                               <td className="px-4 py-2.5 text-gray-500">{i.category}</td>
                               <td className="px-4 py-2.5">
                                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                  i.status === 'priced' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+                                  i.status === 'priced' ? 'bg-brand-50 text-brand-600' : 'bg-amber-50 text-amber-600'
                                 }`}>{i.status}</span>
                               </td>
                               <td className="px-4 py-2.5 text-right font-medium text-gray-900">{i.daysOnFloor}d</td>
@@ -1705,7 +1705,7 @@ export default function ReportsPage() {
               <StatCard icon={DollarSign} label="Full Price Revenue" value={`$${markdownStats.fullPriceRevenue.toFixed(2)}`} color="emerald" />
               <StatCard icon={TrendingUp} label="Markdown Rate"
                 value={markdownStats.totalSoldCount > 0 ? `${Math.round(markdownStats.markdownCount / markdownStats.totalSoldCount * 100)}%` : '0%'}
-                color={markdownStats.markdownCount > markdownStats.totalSoldCount / 2 ? 'red' : 'indigo'} />
+                color={markdownStats.markdownCount > markdownStats.totalSoldCount / 2 ? 'red' : 'brand'} />
             </div>
 
             {markdownStats.levels.length > 0 && (
@@ -1754,7 +1754,7 @@ export default function ReportsPage() {
             ) : (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <StatCard icon={Target} label="AI-Priced & Sold" value={pricingAccuracy.total} color="indigo" />
+                  <StatCard icon={Target} label="AI-Priced & Sold" value={pricingAccuracy.total} color="brand" />
                   <StatCard icon={Target} label="Within Range"
                     value={`${Math.round(pricingAccuracy.withinRange / pricingAccuracy.total * 100)}%`}
                     sub={`${pricingAccuracy.withinRange} items`} color="emerald" />
@@ -1891,8 +1891,8 @@ export default function ReportsPage() {
                   <StatCard icon={Gift} label="Items Donated" value={donationTaxData.totalItems} color="gray" />
                   <StatCard icon={DollarSign} label="Total Fair Market Value"
                     value={`$${donationTaxData.totalFMV.toFixed(2)}`}
-                    sub="based on original asking price" color="indigo" />
-                  <StatCard icon={FileText} label="Consignors" value={donationTaxData.groups.length} color="indigo" />
+                    sub="based on original asking price" color="brand" />
+                  <StatCard icon={FileText} label="Consignors" value={donationTaxData.groups.length} color="brand" />
                 </div>
 
                 {donationTaxData.groups.map(group => (

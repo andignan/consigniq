@@ -276,7 +276,7 @@ export function IntakeQueue({
         <button
           type="button"
           onClick={addRow}
-          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-brand-600 hover:bg-brand-50 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add another item
@@ -295,7 +295,7 @@ export function IntakeQueue({
           type="button"
           onClick={handleSaveAll}
           disabled={saveAllLoading || unsavedCount === 0}
-          className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
         >
           {saveAllLoading ? (
             <>
@@ -399,7 +399,7 @@ function IntakeRow({
   return (
     <div
       className={`p-4 transition-colors ${
-        draft.saving ? 'bg-indigo-50' : draft.saved ? 'bg-emerald-50' : identifying ? 'bg-violet-50' : 'bg-white hover:bg-gray-50/50'
+        draft.saving ? 'bg-brand-50' : draft.saved ? 'bg-emerald-50' : identifying ? 'bg-violet-50' : 'bg-white hover:bg-gray-50/50'
       }`}
     >
       {/* Photo upload drop zone */}
@@ -431,7 +431,7 @@ function IntakeRow({
               </button>
               {identifying && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
-                  <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                  <div className="flex items-center gap-2 text-sm text-brand-600 font-medium">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Identifying item...
                   </div>
@@ -443,7 +443,7 @@ function IntakeRow({
               type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={isDisabled}
-              className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:opacity-50"
             >
               <Camera className="w-5 h-5" />
               Upload a photo to auto-identify
@@ -456,7 +456,7 @@ function IntakeRow({
         {/* Row number / status */}
         <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-medium flex items-center justify-center shrink-0 mt-2.5">
           {draft.saving ? (
-            <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
+            <Loader2 className="w-3 h-3 animate-spin text-brand-500" />
           ) : draft.saved ? (
             <Check className="w-3 h-3 text-emerald-600" />
           ) : (
@@ -480,7 +480,7 @@ function IntakeRow({
               }}
               placeholder={identifying ? 'Identifying item...' : 'Item name'}
               disabled={isDisabled}
-              className="item-name-input flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
+              className="item-name-input flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition"
             />
 
             <div className="relative w-40 shrink-0">
@@ -489,7 +489,7 @@ function IntakeRow({
                 value={draft.category}
                 onChange={e => onChange(draft.id, 'category', e.target.value)}
                 disabled={isDisabled}
-                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
+                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
               >
                 {ITEM_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -504,7 +504,7 @@ function IntakeRow({
                 value={draft.condition}
                 onChange={e => onChange(draft.id, 'condition', e.target.value as ItemCondition)}
                 disabled={isDisabled}
-                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
+                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition bg-white"
               >
                 {(Object.entries(CONDITION_LABELS) as [ItemCondition, string][]).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>
@@ -523,7 +523,7 @@ function IntakeRow({
               placeholder={identifying ? 'Identifying...' : 'Notes / description (brand, size, color, markings, damage...)'}
               disabled={isDisabled}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition resize-none"
             />
             {(() => {
               const hint = getDescriptionHint(draft.category, draft.description)

@@ -100,14 +100,14 @@ async function ConsignorList({ locationId, accountId }: { locationId: string; ac
   if (!consignors?.length) {
     return (
       <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
-        <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Plus className="w-6 h-6 text-indigo-600" />
+        <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Plus className="w-6 h-6 text-brand-600" />
         </div>
         <p className="text-sm font-medium text-gray-600 mb-1">No consignors yet</p>
         <p className="text-xs text-gray-400 mb-4">Add your first consignor to get started</p>
         <Link
           href="/dashboard/consignors/new"
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Consignor
@@ -166,7 +166,7 @@ export default async function ConsignorsPage({
         </div>
         <Link
           href="/dashboard/consignors/new"
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New Consignor
@@ -182,7 +182,7 @@ export default async function ConsignorsPage({
         <input
           type="text"
           placeholder="Search consignors…"
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-white"
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition bg-white"
         />
       </div>
 

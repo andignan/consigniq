@@ -92,7 +92,7 @@ function InviteContent() {
           <button
             onClick={handleClick}
             disabled={clicked}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
             {clicked
               ? 'Redirecting...'

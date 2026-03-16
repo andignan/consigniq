@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { APP } from '@/lib/constants'
+import Logo from '@/components/Logo'
 
 const EyeIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,9 +62,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-50">
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">{APP.name}</h1>
-          <p className="mt-1 text-sm text-stone-500">{APP.tagline}</p>
+        <div className="mb-10 flex justify-center">
+          <Logo size="lg" showSubtitle />
         </div>
 
         {/* Form */}
@@ -78,7 +78,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-3 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
               />
             </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  className="w-full px-3 py-2 pr-10 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 pr-10 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                 />
                 <button
                   type="button"
@@ -113,7 +113,7 @@ export default function LoginPage() {
             <button
               onClick={handleLogin}
               disabled={loading || !email || !password}
-              className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+              className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
@@ -141,7 +141,7 @@ export default function LoginPage() {
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="w-full px-3 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                   />
                   <button
                     onClick={async () => {

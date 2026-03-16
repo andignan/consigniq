@@ -24,7 +24,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 **Network Pricing Intelligence:** Total price_history records, sold items count, top 5 categories by record count, avg days to sell.
 
-**Implementation:** All counts use `{ count: 'exact', head: true }` — no data transfer, 19 parallel queries.
+**Implementation:** All counts use `{ count: 'exact', head: true }` — no data transfer, 19 parallel queries. Account queries filter out "ConsignIQ System" via `.neq('name', 'ConsignIQ System')`.
 
 ## Account Management
 
@@ -58,10 +58,18 @@ Cross-account pricing intelligence from `price_history` table:
 
 ## Admin vs Customer Separation
 
-- Separate layout with red/Shield branding sidebar
+- Separate layout with dark navy sidebar (`bg-navy-900`), Logo component + "Admin" badge
+- Active nav: `border-l-2 border-brand-500 text-brand-400 bg-white/5`; inactive: `text-white/65`
+- Primary action buttons use `bg-brand-600` (teal), not red
+- Disable/suspend buttons use amber; delete stays red
 - No "Back to App" link — superadmins live in `/admin` only
-- Sign Out button at sidebar bottom
+- Sign Out button at sidebar bottom (stone-400 text)
 - Superadmin accessing `/dashboard` is redirected to `/admin`
+
+## Stats Filtering
+
+- `/api/admin/stats` excludes the "ConsignIQ System" account from all account counts (total, by tier, by status) via `.neq('name', 'ConsignIQ System')`
+- Item, consignor, location, and user counts are unfiltered
 
 ## Sidebar User Identity Pattern
 
@@ -69,4 +77,4 @@ Both dashboard and admin sidebars follow the same pattern at the bottom:
 - **Line 1:** Display name (bold, `text-sm font-medium`)
 - **Line 2:** Email address (muted, `text-xs`, truncated)
 - Falls back to email if `full_name` is empty
-- Admin sidebar: Overview, Users, Accounts
+- Admin sidebar: Overview, Users, Accounts (dark navy theme with Logo component)

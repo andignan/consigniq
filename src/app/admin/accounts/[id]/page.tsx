@@ -228,13 +228,13 @@ export default function AccountDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
       </div>
     )
   }
 
   if (!account) {
-    return <div className="p-6 text-sm text-red-600">Account not found.</div>
+    return <div className="p-6 text-sm text-gray-600">Account not found.</div>
   }
 
   return (
@@ -260,7 +260,7 @@ export default function AccountDetailPage() {
             </span>
           )}
           {account.account_type === 'complimentary' && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-600">
               Complimentary{account.complimentary_tier ? ` (${account.complimentary_tier})` : ''}
             </span>
           )}
@@ -297,7 +297,7 @@ export default function AccountDetailPage() {
               value={editTier}
               onChange={e => setEditTier(e.target.value)}
               disabled={saving}
-              className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
             >
               {TIER_OPTIONS.map(t => (
                 <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
@@ -306,7 +306,7 @@ export default function AccountDetailPage() {
             <button
               onClick={saveTier}
               disabled={saving || editTier === account.tier}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               Save
@@ -321,7 +321,7 @@ export default function AccountDetailPage() {
               value={editStatus}
               onChange={e => setEditStatus(e.target.value)}
               disabled={saving}
-              className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
             >
               {STATUS_OPTIONS.map(s => (
                 <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -330,7 +330,7 @@ export default function AccountDetailPage() {
             <button
               onClick={saveStatus}
               disabled={saving || editStatus === account.status}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               Save
@@ -360,7 +360,7 @@ export default function AccountDetailPage() {
             <button
               onClick={() => patchAccount({ account_type: 'complimentary', is_complimentary: true, complimentary_tier: account.tier })}
               disabled={actionSaving}
-              className="px-3 py-2 text-sm font-medium rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 transition-colors"
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 disabled:opacity-50 transition-colors"
             >
               Convert to Complimentary
             </button>
@@ -379,7 +379,7 @@ export default function AccountDetailPage() {
             disabled={actionSaving}
             className={`px-3 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors ${
               account.status === 'active'
-                ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                 : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
             }`}
           >
@@ -413,19 +413,19 @@ export default function AccountDetailPage() {
           </div>
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-lg font-bold text-amber-600">{items.pending}</p>
+              <p className="text-lg font-bold text-gray-900">{items.pending}</p>
               <p className="text-xs text-gray-500">Pending</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-blue-600">{items.priced}</p>
+              <p className="text-lg font-bold text-gray-900">{items.priced}</p>
               <p className="text-xs text-gray-500">Priced</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-emerald-600">{items.sold}</p>
+              <p className="text-lg font-bold text-gray-900">{items.sold}</p>
               <p className="text-xs text-gray-500">Sold</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-500">{items.donated}</p>
+              <p className="text-lg font-bold text-gray-900">{items.donated}</p>
               <p className="text-xs text-gray-500">Donated</p>
             </div>
           </div>
@@ -501,12 +501,12 @@ export default function AccountDetailPage() {
                       }
                     }}
                     disabled={saving}
-                    className="text-xs font-medium px-2 py-1 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                    className="text-xs font-medium px-2 py-1 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 disabled:opacity-50 transition-colors"
                   >
                     Reset Password
                   </button>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    u.role === 'owner' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-600'
+                    u.role === 'owner' ? 'bg-brand-50 text-brand-600' : 'bg-gray-100 text-gray-600'
                   }`}>
                     {u.role}
                   </span>

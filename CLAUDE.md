@@ -113,7 +113,7 @@ Three client factories:
 - Admin layout checks via service role client (bypasses RLS)
 - All admin API routes use `checkSuperadmin()` + `createAdminClient()` → 403 for non-superadmins
 - All admin queries are cross-account (no `account_id` scoping)
-- Admin has own sidebar (red/Shield branding). No "Back to App" link — superadmins live in `/admin` only
+- Admin has own sidebar (dark navy `bg-navy-900`, Logo + "Admin" badge, teal active nav). No "Back to App" link — superadmins live in `/admin` only
 - **Critical**: every Supabase Auth user MUST have a `users` table row. Auth alone is not enough.
 - All superadmin checks MUST use service role client (superadmin may not satisfy RLS)
 

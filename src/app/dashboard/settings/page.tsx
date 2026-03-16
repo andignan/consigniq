@@ -58,7 +58,7 @@ interface Invitation {
 const TIER_COLORS: Record<string, string> = {
   solo: 'bg-slate-100 text-slate-600',
   starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-indigo-50 text-indigo-600',
+  standard: 'bg-brand-50 text-brand-600',
   pro: 'bg-amber-50 text-amber-600',
 }
 
@@ -283,7 +283,7 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
       </div>
     )
   }
@@ -303,7 +303,7 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('billing')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'billing'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-500 text-brand-600'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
@@ -316,7 +316,7 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('profile')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'profile'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-500 text-brand-600'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
@@ -332,7 +332,7 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('location')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'location'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-brand-500 text-brand-600'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
@@ -346,7 +346,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('locations')}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'locations'
-                    ? 'border-indigo-500 text-indigo-600'
+                    ? 'border-brand-500 text-brand-600'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
               >
@@ -361,7 +361,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('account')}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === 'account'
-                    ? 'border-indigo-500 text-indigo-600'
+                    ? 'border-brand-500 text-brand-600'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
               >
@@ -379,7 +379,7 @@ export default function SettingsPage() {
       {activeTab === 'location' && (
         locationLoading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
           </div>
         ) : !locationDraft ? (
           <p className="text-sm text-gray-400">No location assigned to your account.</p>
@@ -396,7 +396,7 @@ export default function SettingsPage() {
                     value={locationDraft.name}
                     onChange={e => updateDraft('name', e.target.value)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
                 <div>
@@ -406,7 +406,7 @@ export default function SettingsPage() {
                     value={locationDraft.phone ?? ''}
                     onChange={e => updateDraft('phone', e.target.value || null)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function SettingsPage() {
                     value={locationDraft.address ?? ''}
                     onChange={e => updateDraft('address', e.target.value || null)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                     placeholder="123 Main St"
                   />
                 </div>
@@ -428,7 +428,7 @@ export default function SettingsPage() {
                     value={locationDraft.city ?? ''}
                     onChange={e => updateDraft('city', e.target.value || null)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
                 <div>
@@ -438,7 +438,7 @@ export default function SettingsPage() {
                     value={locationDraft.state ?? ''}
                     onChange={e => updateDraft('state', e.target.value || null)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                     maxLength={2}
                     placeholder="IL"
                   />
@@ -466,7 +466,7 @@ export default function SettingsPage() {
                       updateDraft('default_split_consignor', 100 - val)
                     }}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
                 <div>
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                       updateDraft('default_split_store', 100 - val)
                     }}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
               </div>
@@ -510,7 +510,7 @@ export default function SettingsPage() {
                     value={locationDraft.agreement_days}
                     onChange={e => updateDraft('agreement_days', parseInt(e.target.value) || 60)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                   <p className="text-[11px] text-gray-400 mt-1">Number of days items stay on the floor before expiry</p>
                 </div>
@@ -525,7 +525,7 @@ export default function SettingsPage() {
                     value={locationDraft.grace_days}
                     onChange={e => updateDraft('grace_days', parseInt(e.target.value) || 0)}
                     disabled={!isOwner}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                   <p className="text-[11px] text-gray-400 mt-1">Days after expiry before items are eligible for donation</p>
                 </div>
@@ -551,7 +551,7 @@ export default function SettingsPage() {
                   onClick={() => isOwner && updateDraft('markdown_enabled', !locationDraft.markdown_enabled)}
                   disabled={!isOwner}
                   className={`relative w-11 h-6 rounded-full transition-colors ${
-                    locationDraft.markdown_enabled ? 'bg-indigo-500' : 'bg-gray-300'
+                    locationDraft.markdown_enabled ? 'bg-brand-500' : 'bg-gray-300'
                   } ${!isOwner ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                 <button
                   onClick={saveLocation}
                   disabled={locationSaving || !locationDirty || !splitValid}
-                  className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-indigo-500 rounded-xl hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
                 >
                   {locationSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save Location Settings
@@ -609,7 +609,7 @@ export default function SettingsPage() {
       {activeTab === 'account' && isOwner && (
         accountLoading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
           </div>
         ) : !account ? (
           <p className="text-sm text-gray-400">Failed to load account settings.</p>
@@ -625,7 +625,7 @@ export default function SettingsPage() {
                     type="text"
                     value={accountNameDraft}
                     onChange={e => setAccountNameDraft(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -642,7 +642,7 @@ export default function SettingsPage() {
                 <button
                   onClick={saveAccountName}
                   disabled={accountSaving || accountNameDraft === account.name}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-xl hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
                 >
                   {accountSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save
@@ -671,10 +671,10 @@ export default function SettingsPage() {
               {account.tier === 'starter' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {/* Standard card */}
-                  <div className="border border-indigo-200 rounded-xl p-4 bg-indigo-50/30">
+                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30">
                     <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-indigo-600" />
-                      <h3 className="text-sm font-bold text-indigo-700">Standard</h3>
+                      <Zap className="w-4 h-4 text-brand-600" />
+                      <h3 className="text-sm font-bold text-brand-700">Standard</h3>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 mb-2">$79<span className="text-sm font-normal text-gray-500">/mo</span></p>
                     <ul className="text-xs text-gray-600 space-y-1 mb-3">
@@ -686,17 +686,17 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleCheckout('standard')}
                       disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                     >
                       {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Standard'}
                     </button>
                   </div>
 
                   {/* Pro card */}
-                  <div className="border border-amber-200 rounded-xl p-4 bg-amber-50/30">
+                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30">
                     <div className="flex items-center gap-2 mb-2">
-                      <Crown className="w-4 h-4 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-700">Pro</h3>
+                      <Crown className="w-4 h-4 text-brand-600" />
+                      <h3 className="text-sm font-bold text-brand-700">Pro</h3>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
                     <ul className="text-xs text-gray-600 space-y-1 mb-3">
@@ -709,7 +709,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleCheckout('pro')}
                       disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                     >
                       {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
                     </button>
@@ -719,10 +719,10 @@ export default function SettingsPage() {
 
               {account.tier === 'standard' && (
                 <div className="mb-4">
-                  <div className="border border-amber-200 rounded-xl p-4 bg-amber-50/30 mb-3">
+                  <div className="border border-brand-200 rounded-xl p-4 bg-brand-50/30 mb-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Crown className="w-4 h-4 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-700">Upgrade to Pro</h3>
+                      <Crown className="w-4 h-4 text-brand-600" />
+                      <h3 className="text-sm font-bold text-brand-700">Upgrade to Pro</h3>
                     </div>
                     <p className="text-2xl font-bold text-gray-900 mb-2">$129<span className="text-sm font-normal text-gray-500">/mo</span></p>
                     <ul className="text-xs text-gray-600 space-y-1 mb-3">
@@ -734,7 +734,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleCheckout('pro')}
                       disabled={billingLoading}
-                      className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                     >
                       {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Pro'}
                     </button>
@@ -759,7 +759,7 @@ export default function SettingsPage() {
                 <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Team Members</h2>
                 <button
                   onClick={() => setInviteOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Invite User
@@ -797,7 +797,7 @@ export default function SettingsPage() {
                               } catch { setAccountError('Failed to update role') }
                               setTimeout(() => setAccountError(''), 3000)
                             }}
-                            className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                           >
                             <option value="owner">Owner</option>
                             <option value="staff">Staff</option>
@@ -840,7 +840,7 @@ export default function SettingsPage() {
                           <Mail className="w-3.5 h-3.5 text-gray-400" />
                           <span className="text-sm text-gray-700">{inv.email}</span>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${
-                            inv.role === 'owner' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
+                            inv.role === 'owner' ? 'bg-amber-50 text-amber-600' : 'bg-brand-50 text-brand-600'
                           }`}>
                             {inv.role}
                           </span>
@@ -884,7 +884,7 @@ export default function SettingsPage() {
                   const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
                   return (
                     <div
-                      className={`h-2 rounded-full transition-all ${pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-indigo-500'}`}
+                      className={`h-2 rounded-full transition-all ${pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-brand-500'}`}
                       style={{ width: `max(8px, ${pct}%)` }}
                     />
                   )
@@ -916,7 +916,7 @@ export default function SettingsPage() {
                 finally { setBillingLoading(false) }
               }}
               disabled={billingLoading}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors mb-4"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-brand-700 bg-brand-50 rounded-lg hover:bg-brand-100 disabled:opacity-50 transition-colors mb-4"
             >
               Buy 50 more lookups — $5
             </button>
@@ -935,9 +935,9 @@ export default function SettingsPage() {
           </div>
 
           {/* Upgrade CTA — only Starter */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5">
+          <div className="bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-indigo-600" />
+              <Zap className="w-4 h-4 text-brand-600" />
               <h3 className="text-sm font-bold text-gray-900">Upgrade to Starter</h3>
             </div>
             <p className="text-2xl font-bold text-gray-900 mb-2">$49<span className="text-sm font-normal text-gray-500">/mo</span></p>
@@ -950,7 +950,7 @@ export default function SettingsPage() {
             <button
               onClick={() => handleCheckout('starter')}
               disabled={billingLoading}
-              className="w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              className="w-full px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
             >
               {billingLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Upgrade to Starter'}
             </button>
@@ -995,7 +995,7 @@ export default function SettingsPage() {
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
                   placeholder="user@example.com"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -1005,7 +1005,7 @@ export default function SettingsPage() {
                   <select
                     value={inviteRole}
                     onChange={e => setInviteRole(e.target.value as 'owner' | 'staff')}
-                    className="w-full appearance-none px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full appearance-none px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   >
                     <option value="staff">Staff</option>
                     <option value="owner">Owner</option>
@@ -1034,7 +1034,7 @@ export default function SettingsPage() {
                 <button
                   onClick={sendInvite}
                   disabled={inviteSending || !inviteEmail.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-xl hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-xl hover:bg-brand-600 disabled:opacity-40 transition-colors"
                 >
                   {inviteSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                   Send Invite
@@ -1149,7 +1149,7 @@ function LocationsTab({
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">All Locations</h2>
           <button
             onClick={() => setShowNewForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Location
@@ -1162,16 +1162,16 @@ function LocationsTab({
               key={loc.id}
               className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-colors ${
                 loc.id === activeLocationId
-                  ? 'border-indigo-200 bg-indigo-50'
+                  ? 'border-brand-200 bg-brand-50'
                   : 'border-gray-100 hover:border-gray-200 bg-white'
               }`}
             >
               <div className="flex items-center gap-3">
-                <MapPin className={`w-4 h-4 ${loc.id === activeLocationId ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <MapPin className={`w-4 h-4 ${loc.id === activeLocationId ? 'text-brand-500' : 'text-gray-400'}`} />
                 <div>
                   <span className="text-sm font-medium text-gray-900">{loc.name}</span>
                   {loc.id === activeLocationId && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600 ml-2">Active</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-600 ml-2">Active</span>
                   )}
                   {(loc.address || loc.phone) && (
                     <p className="text-xs text-gray-400">{[loc.address, loc.phone].filter(Boolean).join(' · ')}</p>
@@ -1180,7 +1180,7 @@ function LocationsTab({
               </div>
               <button
                 onClick={() => onLocationSelect(loc.id)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit
@@ -1207,7 +1207,7 @@ function LocationsTab({
                 type="text"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="Downtown Store"
               />
             </div>
@@ -1217,7 +1217,7 @@ function LocationsTab({
                 type="text"
                 value={newPhone}
                 onChange={e => setNewPhone(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="(555) 123-4567"
               />
             </div>
@@ -1227,7 +1227,7 @@ function LocationsTab({
                 type="text"
                 value={newAddress}
                 onChange={e => setNewAddress(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="123 Main St"
               />
             </div>
@@ -1237,7 +1237,7 @@ function LocationsTab({
                 type="text"
                 value={newCity}
                 onChange={e => setNewCity(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
@@ -1246,7 +1246,7 @@ function LocationsTab({
                 type="text"
                 value={newState}
                 onChange={e => setNewState(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 maxLength={2}
                 placeholder="IL"
               />
@@ -1269,7 +1269,7 @@ function LocationsTab({
                     setNewSplitStore(val)
                     setNewSplitConsignor(100 - val)
                   }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
               <div>
@@ -1284,7 +1284,7 @@ function LocationsTab({
                     setNewSplitConsignor(val)
                     setNewSplitStore(100 - val)
                   }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
             </div>
@@ -1302,7 +1302,7 @@ function LocationsTab({
                   min={1}
                   value={newAgreementDays}
                   onChange={e => setNewAgreementDays(parseInt(e.target.value) || 60)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
               <div>
@@ -1312,7 +1312,7 @@ function LocationsTab({
                   min={0}
                   value={newGraceDays}
                   onChange={e => setNewGraceDays(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
             </div>
@@ -1325,7 +1325,7 @@ function LocationsTab({
               <button
                 onClick={() => setNewMarkdownEnabled(!newMarkdownEnabled)}
                 className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                  newMarkdownEnabled ? 'bg-indigo-500' : 'bg-gray-300'
+                  newMarkdownEnabled ? 'bg-brand-500' : 'bg-gray-300'
                 }`}
               >
                 <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
@@ -1352,7 +1352,7 @@ function LocationsTab({
             <button
               onClick={createLocation}
               disabled={saving || !newName.trim() || !newSplitValid}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 rounded-xl transition-colors"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {saving ? 'Creating...' : 'Create Location'}
@@ -1420,7 +1420,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
               type="text"
               value={editName}
               onChange={e => setEditName(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
           <div>
@@ -1434,7 +1434,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
           <button
             onClick={handleSaveName}
             disabled={saving || editName.trim() === (user?.full_name || '')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
@@ -1449,7 +1449,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
         <div className="mt-4 pt-4 border-t border-gray-100">
           <button
             onClick={handleChangePassword}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
           >
             Change Password
           </button>

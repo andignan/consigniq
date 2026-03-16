@@ -26,18 +26,18 @@ export async function GET() {
     // Consignor statuses
     consignorsTotal, activeConsignors, expiredConsignors, graceConsignors, closedConsignors,
   ] = await Promise.all([
-    supabase.from('accounts').select('*', { count: 'exact', head: true }),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System'),
     supabase.from('locations').select('*', { count: 'exact', head: true }),
     supabase.from('users').select('*', { count: 'exact', head: true }),
     // Account tiers
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('tier', 'solo'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('tier', 'starter'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('tier', 'standard'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('tier', 'pro'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('tier', 'solo'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('tier', 'starter'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('tier', 'standard'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('tier', 'pro'),
     // Account statuses
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('status', 'suspended'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('status', 'active'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('status', 'suspended'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).neq('name', 'ConsignIQ System').eq('status', 'cancelled'),
     // Item statuses
     supabase.from('items').select('*', { count: 'exact', head: true }),
     supabase.from('items').select('*', { count: 'exact', head: true }).eq('status', 'pending'),

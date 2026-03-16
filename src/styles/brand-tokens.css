@@ -1,0 +1,36 @@
+/* ConsignIQ Brand Tokens — single source of truth for brand colors */
+:root {
+  --brand-50: #E7F5EF;
+  --brand-100: #C3E8D8;
+  --brand-200: #9BDABD;
+  --brand-300: #6CC9A1;
+  --brand-400: #3DB885;
+  --brand-500: #0A9E78;
+  --brand-600: #088B6A;
+  --brand-700: #077D5F;
+  --brand-800: #056A50;
+  --brand-900: #034D3A;
+
+  --navy-800: #0F1D33;
+  --navy-900: #071020;
+}
+
+/* Dark mode scaffold — uncomment and adjust when implementing dark mode
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand-50: #034D3A;
+    --brand-100: #056A50;
+    --brand-200: #077D5F;
+    --brand-300: #088B6A;
+    --brand-400: #0A9E78;
+    --brand-500: #3DB885;
+    --brand-600: #6CC9A1;
+    --brand-700: #9BDABD;
+    --brand-800: #C3E8D8;
+    --brand-900: #E7F5EF;
+
+    --navy-800: #C3CCD9;
+    --navy-900: #E5EAF0;
+  }
+}
+*/

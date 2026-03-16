@@ -28,7 +28,7 @@ export function ConsignorCard({ consignor }: ConsignorCardProps) {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 truncate group-hover:text-brand-600 transition-colors">
                 {consignor.name}
               </h3>
               {lifecycle.isDonationEligible && (
@@ -74,7 +74,7 @@ export function ConsignorCard({ consignor }: ConsignorCardProps) {
           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${colors.bar}`}
-              style={{ width: `${lifecycle.progressPct}%` }}
+              style={{ width: `max(8px, ${lifecycle.progressPct}%)` }}
             />
           </div>
         </div>

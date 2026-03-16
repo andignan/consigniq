@@ -84,10 +84,10 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;">
-    <h1 style="margin:0 0 4px;font-size:20px;color:#78350f;">${data.storeName}</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">${storeAddr}</p>
-    ${storeContact ? `<p style="margin:4px 0 0;font-size:13px;color:#92400e;">${storeContact}</p>` : ''}
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;">
+    <h1 style="margin:0 0 4px;font-size:20px;color:#ffffff;">${data.storeName}</h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">${storeAddr}</p>
+    ${storeContact ? `<p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">${storeContact}</p>` : ''}
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Consignment Agreement</h2>
@@ -123,9 +123,9 @@ This is an automated message from ConsignIQ.
     </tbody>
   </table>
 
-  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:24px 0;">
-    <h3 style="margin:0 0 8px;font-size:14px;color:#92400e;">How It Works</h3>
-    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#78350f;">
+  <div style="background:#E7F5EF;border:1px solid #C3E8D8;border-radius:8px;padding:16px;margin:24px 0;">
+    <h3 style="margin:0 0 8px;font-size:14px;color:#056A50;">How It Works</h3>
+    <ul style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#077D5F;">
       <li>Your items will be displayed for sale for <strong>${data.agreementDays} days</strong> from intake.</li>
       <li>When an item sells, you receive <strong>${data.splitConsignor}%</strong> of the sale price.</li>
       <li>After ${data.agreementDays} days, if items remain unsold, you have a <strong>${data.graceDays}-day grace period</strong> (until ${formatDate(data.graceEndDate)}) to pick them up.</li>
@@ -199,9 +199,9 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're Invited!</h2>
@@ -221,7 +221,7 @@ This is an automated message from ConsignIQ.
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${landingUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Set Up Your Account
     </a>
   </div>
@@ -273,9 +273,9 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Reset Your Password</h2>
@@ -288,7 +288,7 @@ This is an automated message from ConsignIQ.
   </p>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${landingUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${landingUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Reset Password
     </a>
   </div>
@@ -407,9 +407,9 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">You're now on ${data.tierLabel}!</h2>
@@ -425,7 +425,7 @@ This is an automated message from ConsignIQ.
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.dashboardUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${data.dashboardUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Go to Your Dashboard
     </a>
   </div>
@@ -465,9 +465,9 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Your subscription has been cancelled</h2>
@@ -484,7 +484,7 @@ This is an automated message from ConsignIQ.
   </div>
 
   <div style="text-align:center;margin:28px 0;">
-    <a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
+    <a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
       Resubscribe
     </a>
   </div>
@@ -523,9 +523,9 @@ This is an automated message from ConsignIQ.
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:#f5f0e8;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
-    <h1 style="margin:0 0 4px;font-size:22px;color:#78350f;">ConsignIQ</h1>
-    <p style="margin:0;font-size:13px;color:#92400e;">AI-Powered Consignment Management</p>
+  <div style="background:#071020;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+    <h1 style="margin:0 0 4px;font-size:22px;color:#ffffff;">Consign<span style="color:#0A9E78;">IQ</span></h1>
+    <p style="margin:0;font-size:13px;color:#9ca3af;">AI-Powered Consignment Management</p>
   </div>
 
   <h2 style="font-size:18px;color:#1a1a1a;margin:0 0 16px;">Action required — payment failed</h2>
@@ -536,7 +536,7 @@ This is an automated message from ConsignIQ.
   </p>
 
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:20px 0;">
-    <p style="margin:0;font-size:14px;color:#92400e;">
+    <p style="margin:0;font-size:14px;color:#9ca3af;">
       Stripe will retry the payment automatically, but if it continues to fail, your subscription may be cancelled.
     </p>
   </div>
@@ -602,7 +602,7 @@ interface GraceReminderEmailData { fullName: string; tierLabel: string; periodEn
 
 export function buildGraceReminderEmail(data: GraceReminderEmailData) {
   const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}. After that date, you'll be limited to basic pricing features only.\n\nResubscribe now to keep full access to your consignors, reports, payouts, and all your data: ${data.resubscribeUrl}\n\nYour data is safe and will be preserved.\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your access ends soon</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> access ends on <strong>${data.periodEndDate}</strong>. After that date, you'll be limited to basic pricing features only.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><p style="font-size:13px;color:#6b7280;">Your data is safe and will be preserved.</p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your access ends soon</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> access ends on <strong>${data.periodEndDate}</strong>. After that date, you'll be limited to basic pricing features only.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><p style="font-size:13px;color:#6b7280;">Your data is safe and will be preserved.</p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: `Your ConsignIQ ${data.tierLabel} access ends on ${data.periodEndDate}`, text, html }
 }
 
@@ -611,7 +611,7 @@ interface AccessEndedEmailData { fullName: string; tierLabel: string; resubscrib
 
 export function buildAccessEndedEmail(data: AccessEndedEmailData) {
   const text = `Hi ${data.fullName},\n\nYour ConsignIQ ${data.tierLabel} subscription period has ended. You now have access to basic pricing features only.\n\nAll your data (consignors, items, reports) is preserved and waiting for you. Resubscribe anytime to restore full access: ${data.resubscribeUrl}\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your subscription period has ended</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription period has ended. You now have access to basic pricing features only.</p><p>All your data (consignors, items, reports) is preserved and waiting for you.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Your subscription period has ended</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription period has ended. You now have access to basic pricing features only.</p><p>All your data (consignors, items, reports) is preserved and waiting for you.</p><p><a href="${data.resubscribeUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Resubscribe Now</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: 'Your ConsignIQ subscription period has ended', text, html }
 }
 
@@ -629,6 +629,6 @@ interface WelcomeBackEmailData { fullName: string; tierLabel: string; dashboardU
 
 export function buildWelcomeBackEmail(data: WelcomeBackEmailData) {
   const text = `Hi ${data.fullName},\n\nWelcome back! Your ConsignIQ ${data.tierLabel} subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.\n\nHead to your dashboard: ${data.dashboardUrl}\n\nThanks,\nThe ConsignIQ Team`
-  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Welcome back!</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.</p><p><a href="${data.dashboardUrl}" style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;"><h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Welcome back!</h2><p>Hi ${data.fullName},</p><p>Your ConsignIQ <strong>${data.tierLabel}</strong> subscription is active again. All your data — consignors, items, reports, and settings — is right where you left it.</p><p><a href="${data.dashboardUrl}" style="display:inline-block;background:#0A9E78;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p><hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"><p style="font-size:11px;color:#9ca3af;text-align:center;">This is an automated message from ConsignIQ.</p></body></html>`
   return { subject: 'Welcome back to ConsignIQ!', text, html }
 }

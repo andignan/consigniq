@@ -14,18 +14,18 @@ function StatCard({
   label,
   value,
   sub,
-  color = 'indigo',
+  color = 'brand',
   href,
 }: {
   icon: React.ElementType
   label: string
   value: string | number
   sub?: string
-  color?: 'indigo' | 'amber' | 'red' | 'emerald' | 'gray'
+  color?: 'brand' | 'amber' | 'red' | 'emerald' | 'gray'
   href?: string
 }) {
   const colorMap = {
-    indigo: 'bg-indigo-50 text-indigo-600',
+    brand: 'bg-brand-50 text-brand-600',
     amber: 'bg-amber-50 text-amber-600',
     red: 'bg-red-50 text-red-600',
     emerald: 'bg-emerald-50 text-emerald-600',
@@ -69,7 +69,7 @@ function LocationCard({
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-2 mb-3">
-        <MapPin className="w-4 h-4 text-indigo-500" />
+        <MapPin className="w-4 h-4 text-brand-500" />
         <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -199,14 +199,16 @@ export default async function DashboardPage({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              {firstName ? `Welcome back, ${firstName}!` : 'Dashboard'}
+            </h1>
             <p className="text-sm text-gray-400">
               All Locations &middot; {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
           <Link
             href="/dashboard/consignors/new"
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             New Consignor
@@ -250,7 +252,7 @@ export default async function DashboardPage({
             label="Total Active Consignors"
             value={active.length}
             sub={`across ${locations.length} location${locations.length !== 1 ? 's' : ''}`}
-            color="indigo"
+            color="brand"
           />
           <StatCard
             icon={Package}
@@ -267,7 +269,7 @@ export default async function DashboardPage({
             color="emerald"
           />
           <StatCard
-            icon={Clock}
+            icon={DollarSign}
             label="Total Sold"
             value={soldItems}
             color="gray"
@@ -349,7 +351,7 @@ export default async function DashboardPage({
         {!isSolo && (
           <Link
             href="/dashboard/consignors/new"
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             New Consignor
@@ -358,7 +360,7 @@ export default async function DashboardPage({
         {isSolo && (
           <Link
             href="/dashboard/pricing"
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm"
           >
             <Package className="w-4 h-4" />
             Price an Item
@@ -406,7 +408,7 @@ export default async function DashboardPage({
           label="Active Consignors"
           value={active.length}
           sub={`${expiringSoon.length} expiring soon`}
-          color="indigo"
+          color="brand"
           href="/dashboard/consignors"
         />
         <StatCard

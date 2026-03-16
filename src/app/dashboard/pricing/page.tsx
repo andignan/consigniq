@@ -222,7 +222,7 @@ export default function PriceLookupPage() {
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Price Lookup</h1>
         <p className="text-sm text-gray-400">
-          {isSolo ? 'Price items and save to your inventory' : 'Quick pricing tool — nothing saved to the database'}
+          {isSolo ? 'Price items and save to your inventory' : 'Price items and look up market data'}
         </p>
       </div>
 
@@ -253,7 +253,7 @@ export default function PriceLookupPage() {
             </button>
             {stage === 'identifying' && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
-                <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                <div className="flex items-center gap-2 text-sm text-brand-600 font-medium">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Identifying item...
                 </div>
@@ -264,7 +264,7 @@ export default function PriceLookupPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isRunning}
-            className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:opacity-50"
           >
             <Camera className="w-5 h-5" />
             Upload a photo to auto-identify
@@ -288,7 +288,7 @@ export default function PriceLookupPage() {
               }}
               placeholder="e.g. Waterford Crystal Lismore Vase"
               disabled={isRunning}
-              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
 
@@ -299,7 +299,7 @@ export default function PriceLookupPage() {
                 value={category}
                 onChange={e => setCategory(e.target.value)}
                 disabled={isRunning}
-                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
               >
                 {ITEM_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -312,7 +312,7 @@ export default function PriceLookupPage() {
                 value={condition}
                 onChange={e => setCondition(e.target.value as ItemCondition)}
                 disabled={isRunning}
-                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
               >
                 {Object.entries(CONDITION_LABELS).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>
@@ -329,7 +329,7 @@ export default function PriceLookupPage() {
               placeholder="Brand, size, color, markings, damage..."
               disabled={isRunning}
               rows={2}
-              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
             />
             {(() => {
               const hint = getDescriptionHint(category, description)
@@ -342,7 +342,7 @@ export default function PriceLookupPage() {
           <button
             onClick={runCompsOnly}
             disabled={!name.trim() || isRunning}
-            className="flex-1 flex items-center justify-center gap-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 disabled:border-gray-200 disabled:text-gray-400 font-semibold py-3 rounded-xl transition-colors text-sm"
+            className="flex-1 flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 hover:bg-brand-50 disabled:border-gray-200 disabled:text-gray-400 font-semibold py-3 rounded-xl transition-colors text-sm"
           >
             {isRunning && !suggestion && stage === 'fetching-comps' ? (
               <>
@@ -360,7 +360,7 @@ export default function PriceLookupPage() {
             onClick={() => runFullPricing()}
             disabled={!name.trim() || isRunning}
             title={!name.trim() ? 'Enter an item name to get AI pricing' : undefined}
-            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+            className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
             {isRunning && (stage === 'pricing' || (stage === 'fetching-comps' && !suggestion)) ? (
               <>
@@ -389,10 +389,10 @@ export default function PriceLookupPage() {
       {(stage === 'fetching-comps' || stage === 'pricing') && (
         <div className="flex gap-2 mb-4">
           <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-            stage === 'fetching-comps' ? 'bg-indigo-500 animate-pulse' : 'bg-indigo-500'
+            stage === 'fetching-comps' ? 'bg-brand-500 animate-pulse' : 'bg-brand-500'
           }`} />
           <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-            stage === 'pricing' ? 'bg-indigo-500 animate-pulse' : 'bg-gray-200'
+            stage === 'pricing' ? 'bg-brand-500 animate-pulse' : 'bg-gray-200'
           }`} />
         </div>
       )}
@@ -404,7 +404,7 @@ export default function PriceLookupPage() {
           {suggestion && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <Sparkles className="w-4 h-4 text-brand-500" />
                 <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
               </div>
 
@@ -436,7 +436,7 @@ export default function PriceLookupPage() {
                   <button
                     onClick={saveToInventory}
                     disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Save to My Inventory
@@ -503,7 +503,7 @@ export default function PriceLookupPage() {
           {stage === 'comps-ready' && !suggestion && (
             <button
               onClick={() => runFullPricing(comps)}
-              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
+              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
             >
               <Sparkles className="w-4 h-4" />
               Get AI Suggestion

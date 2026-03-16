@@ -53,9 +53,12 @@ beforeEach(() => {
         then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),
         single: mockSingle,
       }),
+      neq: jest.fn(),
       single: mockSingle,
       then: jest.fn((resolve) => Promise.resolve(countResult).then(resolve)),
     }
+    // neq returns the same chain (for further .eq() calls)
+    ;(obj.neq as jest.Mock).mockReturnValue(obj)
     return obj
   }
 

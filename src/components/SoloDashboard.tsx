@@ -81,7 +81,7 @@ export default function SoloDashboard() {
           {remaining <= 20 && (
             <button
               onClick={handleBuyLookups}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
             >
               Buy 50 more — $5
             </button>
@@ -106,7 +106,7 @@ export default function SoloDashboard() {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <Link
           href="/dashboard/pricing"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl p-4 text-center transition-colors shadow-sm"
+          className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl p-4 text-center transition-colors shadow-sm"
         >
           <svg className="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
@@ -127,14 +127,14 @@ export default function SoloDashboard() {
       </div>
 
       {/* Upgrade CTA */}
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5">
+      <div className="bg-gradient-to-br from-brand-50 to-brand-100 border border-brand-100 rounded-xl p-5">
         <h3 className="text-sm font-bold text-gray-900 mb-1">Running a consignment shop?</h3>
         <p className="text-xs text-gray-600 mb-3">
           ConsignIQ Starter has everything you need — consignor management, lifecycle tracking, reports, payouts, and more.
         </p>
         <Link
           href="/dashboard/settings?tab=account"
-          className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           Upgrade to Starter — $49/mo
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

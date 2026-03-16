@@ -17,7 +17,7 @@ import IntakeAgreementPrompt from '@/components/IntakeAgreementPrompt'
 function ItemStatusBadge({ status }: { status: Item['status'] }) {
   const map: Record<Item['status'], { label: string; className: string }> = {
     pending: { label: 'Pending Price', className: 'bg-amber-100 text-amber-700' },
-    priced: { label: 'Priced', className: 'bg-indigo-100 text-indigo-700' },
+    priced: { label: 'Priced', className: 'bg-brand-100 text-brand-700' },
     sold: { label: 'Sold', className: 'bg-emerald-100 text-emerald-700' },
     donated: { label: 'Donated', className: 'bg-gray-100 text-gray-600' },
     returned: { label: 'Returned', className: 'bg-gray-100 text-gray-600' },
@@ -160,7 +160,7 @@ export default async function ConsignorDetailPage({
 
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Pending" value={pendingItems.length} highlight={pendingItems.length > 0} />
+          <StatBox label="Pending" value={pendingItems.length} />
           <StatBox label="Priced" value={pricedItems.length} />
           <StatBox label="Sold" value={soldItems.length} />
           <StatBox
@@ -182,7 +182,7 @@ export default async function ConsignorDetailPage({
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Link
           href={`/dashboard/consignors/${params.id}/intake`}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+          className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Items
@@ -220,7 +220,7 @@ export default async function ConsignorDetailPage({
             <p className="text-sm text-gray-400">No items yet</p>
             <Link
               href={`/dashboard/consignors/${params.id}/intake`}
-              className="text-indigo-600 text-sm mt-2 block"
+              className="text-brand-600 text-sm mt-2 block"
             >
               Start intake →
             </Link>
@@ -251,8 +251,8 @@ function StatBox({
   highlight?: boolean
 }) {
   return (
-    <div className={`rounded-lg p-3 text-center ${highlight ? 'bg-indigo-50' : 'bg-gray-50'}`}>
-      <div className={`text-lg font-bold ${highlight ? 'text-indigo-700' : 'text-gray-700'}`}>
+    <div className={`rounded-lg p-3 text-center ${highlight ? 'bg-brand-50' : 'bg-gray-50'}`}>
+      <div className={`text-lg font-bold ${highlight ? 'text-brand-700' : 'text-gray-700'}`}>
         {value}
       </div>
       <div className="text-xs text-gray-400">{label}</div>
@@ -292,7 +292,7 @@ function ItemRow({ item }: { item: Item }) {
         {isPending && (
           <Link
             href={`/dashboard/inventory/${item.id}/price`}
-            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors"
+            className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium bg-brand-50 px-2.5 py-1 rounded-lg transition-colors"
           >
             <Tag className="w-3 h-3" />
             Price
