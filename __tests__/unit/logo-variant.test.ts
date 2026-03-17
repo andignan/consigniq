@@ -46,8 +46,8 @@ describe('Logo component variant prop', () => {
       'utf8'
     )
     expect(source).toContain("size?: 'sm' | 'md' | 'lg'")
-    expect(source).toContain('sm: { markH: 28')
-    expect(source).toContain('md: { markH: 32')
+    expect(source).toContain('sm: { markH: 22')
+    expect(source).toContain('md: { markH: 26')
     expect(source).toContain('lg: { markH: 40')
   })
 

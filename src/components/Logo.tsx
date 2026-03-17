@@ -9,8 +9,8 @@ export default function Logo({
   showSubtitle?: boolean
 }) {
   const sizes = {
-    sm: { markH: 28, text: 'text-lg', sub: 'text-[10px]' },
-    md: { markH: 32, text: 'text-xl', sub: 'text-xs' },
+    sm: { markH: 22, text: 'text-lg', sub: 'text-[10px]' },
+    md: { markH: 26, text: 'text-xl', sub: 'text-xs' },
     lg: { markH: 40, text: 'text-3xl', sub: 'text-sm' },
   }
   const s = sizes[size]
