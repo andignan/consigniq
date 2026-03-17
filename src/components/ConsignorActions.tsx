@@ -104,7 +104,7 @@ export default function ConsignorActions({ consignor }: ConsignorActionsProps) {
       {/* Edit form overlay */}
       {editing && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Edit Consignor</h3>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3">Edit Consignor</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
@@ -147,7 +147,7 @@ export default function ConsignorActions({ consignor }: ConsignorActionsProps) {
       {showDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Consignor</h3>
+            <h3 className="text-lg font-semibold text-navy-800 mb-2">Delete Consignor</h3>
             <p className="text-sm text-gray-600 mb-2">
               This will permanently delete <strong>{consignor.name}</strong> and all their unsold items. This cannot be undone.
             </p>

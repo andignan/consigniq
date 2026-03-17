@@ -34,7 +34,7 @@ export default function TrialExpiredPage() {
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Your trial has ended</h1>
+          <h1 className="text-2xl font-bold text-navy-800 mb-2">Your trial has ended</h1>
           <p className="text-gray-500 mb-8">
             Choose a plan to continue using ConsignIQ. Your data is safe and waiting for you.
           </p>
@@ -44,8 +44,8 @@ export default function TrialExpiredPage() {
               const config = TIER_CONFIGS[tier]
               return (
                 <div key={tier} className="border border-gray-200 rounded-xl p-4 text-left">
-                  <h3 className="font-semibold text-gray-900">{config.label}</h3>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <h3 className="font-semibold text-navy-800">{config.label}</h3>
+                  <p className="text-2xl font-bold text-navy-800 mt-1">
                     ${config.price}<span className="text-sm font-normal text-gray-500">/mo</span>
                   </p>
                   <p className="text-xs text-gray-500 mt-1">

@@ -37,7 +37,7 @@ function StatCard({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-2xl font-bold text-navy-800">{value}</p>
           {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
         </div>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
@@ -70,24 +70,24 @@ function LocationCard({
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-2 mb-3">
         <MapPin className="w-4 h-4 text-brand-500" />
-        <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
+        <h3 className="text-sm font-semibold text-navy-800">{name}</h3>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <p className="text-xs text-gray-400">Consignors</p>
-          <p className="font-semibold text-gray-900">{activeConsignors}</p>
+          <p className="font-semibold text-navy-800">{activeConsignors}</p>
         </div>
         <div>
           <p className="text-xs text-gray-400">Pending</p>
-          <p className="font-semibold text-gray-900">{pendingItems}</p>
+          <p className="font-semibold text-navy-800">{pendingItems}</p>
         </div>
         <div>
           <p className="text-xs text-gray-400">Inventory</p>
-          <p className="font-semibold text-gray-900">${inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+          <p className="font-semibold text-navy-800">${inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
         </div>
         <div>
           <p className="text-xs text-gray-400">Sold</p>
-          <p className="font-semibold text-gray-900">{soldItems}</p>
+          <p className="font-semibold text-navy-800">{soldItems}</p>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@ export default async function DashboardPage({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-navy-800">
               {firstName ? `Welcome back, ${firstName}!` : 'Dashboard'}
             </h1>
             <p className="text-sm text-gray-400">
@@ -341,7 +341,7 @@ export default async function DashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-navy-800">
             {firstName ? `Welcome back, ${firstName}!` : 'Dashboard'}
           </h1>
           <p className="text-sm text-gray-400">

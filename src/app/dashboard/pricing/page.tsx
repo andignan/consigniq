@@ -220,7 +220,7 @@ export default function PriceLookupPage() {
     <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Price Lookup</h1>
+        <h1 className="text-xl font-bold text-navy-800">Price Lookup</h1>
         <p className="text-sm text-gray-400">
           {isSolo ? 'Price items and save to your inventory' : 'Price items and look up market data'}
         </p>
@@ -405,13 +405,13 @@ export default function PriceLookupPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-brand-500" />
-                <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
+                <h2 className="text-sm font-semibold text-navy-800">AI Price Suggestion</h2>
               </div>
 
               <div className="flex items-baseline gap-3 mb-3">
                 <div className="flex items-baseline gap-1">
                   <DollarSign className="w-5 h-5 text-gray-400 self-center" />
-                  <span className="text-3xl font-bold text-gray-900">
+                  <span className="text-3xl font-bold text-navy-800">
                     {suggestion.price.toFixed(2)}
                   </span>
                 </div>
@@ -455,7 +455,7 @@ export default function PriceLookupPage() {
           {/* Comparable sales */}
           {comps.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              <h2 className="text-sm font-semibold text-navy-800 mb-3">
                 eBay Comparable Sales
               </h2>
               <div className="space-y-2">
@@ -481,7 +481,7 @@ export default function PriceLookupPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-navy-800">
                         ${comp.price.toFixed(2)}
                       </span>
                       <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500" />

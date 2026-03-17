@@ -158,7 +158,7 @@ export default function SetupPasswordPage() {
               )}
             </div>
           )}
-          <h2 className="text-lg font-semibold text-stone-900 mb-2">Set Your Password</h2>
+          <h2 className="text-lg font-semibold text-navy-800 mb-2">Set Your Password</h2>
           <p className="text-sm text-stone-500 mb-6">Create a password to access your account.</p>
 
           {expired && !ready && (

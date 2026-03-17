@@ -56,7 +56,7 @@ export default function IntakePage() {
     return (
       <div className="max-w-xl mx-auto px-4 py-8 text-center">
         <p className="text-sm text-red-600">{error ?? 'Consignor not found'}</p>
-        <Link href="/dashboard/consignors" className="text-brand-600 text-sm mt-4 block">
+        <Link href="/dashboard/consignors" className="text-brand-500 hover:text-brand-600 text-sm mt-4 block">
           ← Back to Consignors
         </Link>
       </div>

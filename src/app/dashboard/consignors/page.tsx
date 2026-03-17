@@ -161,7 +161,7 @@ export default async function ConsignorsPage({
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Consignors</h1>
+          <h1 className="text-xl font-bold text-navy-800">Consignors</h1>
           <p className="text-sm text-gray-500">Active agreements &amp; lifecycle tracking</p>
         </div>
         <Link

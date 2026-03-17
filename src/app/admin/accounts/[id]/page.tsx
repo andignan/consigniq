@@ -251,7 +251,7 @@ export default function AccountDetailPage() {
       {/* Account Info */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
         <div className="flex items-center gap-3 mb-3">
-          <h1 className="text-lg font-bold text-gray-900">{account.name}</h1>
+          <h1 className="text-lg font-bold text-navy-800">{account.name}</h1>
           {account.account_type === 'trial' && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
               Trial {(() => {
@@ -410,23 +410,23 @@ export default function AccountDetailPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Package className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Items ({items.total})</h2>
+            <h2 className="text-sm font-semibold text-navy-800">Items ({items.total})</h2>
           </div>
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-lg font-bold text-gray-900">{items.pending}</p>
+              <p className="text-lg font-bold text-navy-800">{items.pending}</p>
               <p className="text-xs text-gray-500">Pending</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{items.priced}</p>
+              <p className="text-lg font-bold text-navy-800">{items.priced}</p>
               <p className="text-xs text-gray-500">Priced</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{items.sold}</p>
+              <p className="text-lg font-bold text-navy-800">{items.sold}</p>
               <p className="text-xs text-gray-500">Sold</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900">{items.donated}</p>
+              <p className="text-lg font-bold text-navy-800">{items.donated}</p>
               <p className="text-xs text-gray-500">Donated</p>
             </div>
           </div>
@@ -437,7 +437,7 @@ export default function AccountDetailPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="w-4 h-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Locations ({locations.length})</h2>
+          <h2 className="text-sm font-semibold text-navy-800">Locations ({locations.length})</h2>
         </div>
         {locations.length === 0 ? (
           <p className="text-sm text-gray-400">No locations.</p>
@@ -464,7 +464,7 @@ export default function AccountDetailPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-3">
           <Users className="w-4 h-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Users ({users.length})</h2>
+          <h2 className="text-sm font-semibold text-navy-800">Users ({users.length})</h2>
         </div>
         {users.length === 0 ? (
           <p className="text-sm text-gray-400">No users.</p>
@@ -524,7 +524,7 @@ export default function AccountDetailPage() {
           <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
             <ShieldX className="w-5 h-5 text-orange-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Suspend Account</h3>
+          <h3 className="text-lg font-semibold text-navy-800">Suspend Account</h3>
         </div>
         <p className="text-sm text-gray-600 mb-6">
           Suspend <strong>{account.name}</strong>? Users will lose access immediately but all data is preserved.
@@ -551,7 +551,7 @@ export default function AccountDetailPage() {
           <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+          <h3 className="text-lg font-semibold text-navy-800">Delete Account</h3>
         </div>
         <p className="text-sm text-gray-600 mb-2">
           {getDeleteDescription()}

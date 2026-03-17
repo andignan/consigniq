@@ -46,7 +46,7 @@ export default function AccountsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Accounts</h1>
+      <h1 className="text-xl font-bold text-navy-800 mb-6">Accounts</h1>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">

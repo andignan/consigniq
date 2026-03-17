@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          <h2 className="text-lg font-semibold text-stone-900 mb-6">Sign in to your account</h2>
+          <h2 className="text-lg font-semibold text-navy-800 mb-6">Sign in to your account</h2>
 
           <div className="space-y-4">
             <div>

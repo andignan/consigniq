@@ -395,7 +395,7 @@ export default function PricingPage() {
     return (
       <div className="max-w-xl mx-auto px-4 py-8 text-center">
         <p className="text-sm text-red-600">{error ?? 'Item not found'}</p>
-        <Link href="/dashboard" className="text-brand-600 text-sm mt-4 block">
+        <Link href="/dashboard" className="text-brand-500 hover:text-brand-600 text-sm mt-4 block">
           &larr; Back to Dashboard
         </Link>
       </div>
@@ -410,7 +410,7 @@ export default function PricingPage() {
       <div className="max-w-xl mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Price Applied</h2>
+          <h2 className="text-lg font-bold text-navy-800 mb-1">Price Applied</h2>
           <p className="text-sm text-gray-500 mb-1">
             {item.name} — <strong>${finalPrice.toFixed(2)}</strong>
           </p>
@@ -567,7 +567,7 @@ export default function PricingPage() {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-gray-900">{item.name}</h1>
+                  <h1 className="text-lg font-bold text-navy-800">{item.name}</h1>
                   <button
                     onClick={startEditing}
                     className="text-gray-300 hover:text-brand-500 transition-colors"
@@ -637,7 +637,7 @@ export default function PricingPage() {
                 className="flex items-center justify-between p-2.5 bg-white/70 rounded-xl"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-800 truncate">{h.name}</p>
+                  <p className="text-sm text-gray-700 truncate">{h.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-gray-500">{h.condition}</span>
                     {h.days_to_sell != null && (
@@ -712,19 +712,19 @@ export default function PricingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white/70 rounded-xl p-2.5 text-center">
               <p className="text-xs text-blue-600 mb-0.5">Avg Price</p>
-              <p className="text-sm font-bold text-gray-900">${marketStats.avg_sold_price.toFixed(2)}</p>
+              <p className="text-sm font-bold text-navy-800">${marketStats.avg_sold_price.toFixed(2)}</p>
             </div>
             <div className="bg-white/70 rounded-xl p-2.5 text-center">
               <p className="text-xs text-blue-600 mb-0.5">Median</p>
-              <p className="text-sm font-bold text-gray-900">${marketStats.median_sold_price.toFixed(2)}</p>
+              <p className="text-sm font-bold text-navy-800">${marketStats.median_sold_price.toFixed(2)}</p>
             </div>
             <div className="bg-white/70 rounded-xl p-2.5 text-center">
               <p className="text-xs text-blue-600 mb-0.5">Range</p>
-              <p className="text-sm font-bold text-gray-900">${marketStats.min_sold_price.toFixed(2)} – ${marketStats.max_sold_price.toFixed(2)}</p>
+              <p className="text-sm font-bold text-navy-800">${marketStats.min_sold_price.toFixed(2)} – ${marketStats.max_sold_price.toFixed(2)}</p>
             </div>
             <div className="bg-white/70 rounded-xl p-2.5 text-center">
               <p className="text-xs text-blue-600 mb-0.5">Avg Days</p>
-              <p className="text-sm font-bold text-gray-900">{marketStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
+              <p className="text-sm font-bold text-navy-800">{marketStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
             </div>
           </div>
         </div>
@@ -828,13 +828,13 @@ export default function PricingPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-brand-500" />
-                <h2 className="text-sm font-semibold text-gray-900">AI Price Suggestion</h2>
+                <h2 className="text-sm font-semibold text-navy-800">AI Price Suggestion</h2>
               </div>
 
               <div className="flex items-baseline gap-3 mb-3">
                 <div className="flex items-baseline gap-1">
                   <DollarSign className="w-5 h-5 text-gray-400 self-center" />
-                  <span className="text-3xl font-bold text-gray-900">
+                  <span className="text-3xl font-bold text-navy-800">
                     {suggestion.price.toFixed(2)}
                   </span>
                 </div>
@@ -853,7 +853,7 @@ export default function PricingPage() {
           {/* Comparable sales */}
           {comps.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              <h2 className="text-sm font-semibold text-navy-800 mb-3">
                 eBay Comparable Sales
               </h2>
               <div className="space-y-2">
@@ -879,7 +879,7 @@ export default function PricingPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-navy-800">
                         ${comp.price.toFixed(2)}
                       </span>
                       <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500" />

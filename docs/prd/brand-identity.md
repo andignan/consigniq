@@ -32,6 +32,19 @@
 - **Emerald** (`emerald-*`): Success states (saved items, confirmations)
 - **Orange** (`orange-*`): Warning alerts (expiring agreements)
 
+## Typography Colors
+
+| Role | Hex | Tailwind | Usage |
+|------|-----|----------|-------|
+| Headings | `#0d1f3c` | `text-navy-800` | h1/h2/h3, stat values, bold labels, modal titles, price displays |
+| Body text | `#374151` | `text-gray-700` | Paragraphs, descriptions, table body text |
+| Metadata | `#6B7280` | `text-gray-500` | Timestamps, secondary labels, captions |
+| Placeholder | `#9CA3AF` | `text-gray-400` | Hints, helper text, empty states |
+| Links | `#0A9E78` | `text-brand-500` | Standalone text links (not buttons/badges) |
+| Link hover | `#077D5F` | `hover:text-brand-600` | Link hover state |
+| Form input text | `#111827` | `text-gray-900` | Input, textarea, select values (kept for contrast) |
+| Email headings | `#0d1f3c` | — | `EMAIL_COLORS.textPrimary` |
+
 ## Logo
 
 ### Wordmark
@@ -100,7 +113,7 @@
 ### Admin Panel Styling
 - Admin sidebar: `bg-navy-900` (dark), Logo component + "Admin" badge, teal active nav (`border-l-2 border-brand-500 text-brand-400 bg-white/5`), white/stone text
 - Admin buttons: `bg-brand-600` (primary), amber (disable/suspend), red (delete only)
-- Admin stat numbers: standardized `text-gray-900` (no per-status colors)
+- Admin stat numbers: standardized `text-navy-800` (no per-status colors)
 - Admin stats filter: excludes "ConsignIQ System" account from all counts
 
 ### Preserved Semantic Colors

@@ -28,7 +28,7 @@ export function ConsignorCard({ consignor }: ConsignorCardProps) {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 truncate group-hover:text-brand-600 transition-colors">
+              <h3 className="font-semibold text-navy-800 truncate group-hover:text-brand-600 transition-colors">
                 {consignor.name}
               </h3>
               {lifecycle.isDonationEligible && (

@@ -55,7 +55,7 @@ export default function AdminOverview() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Admin Overview</h1>
+      <h1 className="text-xl font-bold text-navy-800 mb-6">Admin Overview</h1>
 
       {/* Top-level stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -69,7 +69,7 @@ export default function AdminOverview() {
       <div className="grid md:grid-cols-2 gap-6">
         {/* Accounts by tier */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Accounts by Tier</h2>
+          <h2 className="text-sm font-semibold text-navy-800 mb-4">Accounts by Tier</h2>
           <div className="space-y-3">
             <TierRow label="Solo" count={stats.accounts.byTier.solo} total={stats.accounts.total} color="bg-slate-400" />
             <TierRow label="Shop" count={stats.accounts.byTier.shop} total={stats.accounts.total} color="bg-brand-500" />
@@ -79,7 +79,7 @@ export default function AdminOverview() {
 
         {/* Account status */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Account Status</h2>
+          <h2 className="text-sm font-semibold text-navy-800 mb-4">Account Status</h2>
           <div className="space-y-3">
             <TierRow label="Active" count={stats.accounts.byStatus.active} total={stats.accounts.total} color="bg-emerald-500" />
             <TierRow label="Suspended" count={stats.accounts.byStatus.suspended} total={stats.accounts.total} color="bg-orange-500" />
@@ -89,7 +89,7 @@ export default function AdminOverview() {
 
         {/* Items by status */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Items by Status</h2>
+          <h2 className="text-sm font-semibold text-navy-800 mb-4">Items by Status</h2>
           <div className="space-y-3">
             <TierRow label="Pending" count={stats.items.byStatus.pending} total={stats.items.total} color="bg-amber-400" />
             <TierRow label="Priced" count={stats.items.byStatus.priced} total={stats.items.total} color="bg-brand-500" />
@@ -100,7 +100,7 @@ export default function AdminOverview() {
 
         {/* Consignors by status */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Consignors by Status</h2>
+          <h2 className="text-sm font-semibold text-navy-800 mb-4">Consignors by Status</h2>
           <div className="space-y-3">
             <TierRow label="Active" count={stats.consignors.byStatus.active} total={stats.consignors.total} color="bg-emerald-500" />
             <TierRow label="Expired" count={stats.consignors.byStatus.expired} total={stats.consignors.total} color="bg-red-500" />
@@ -116,16 +116,16 @@ export default function AdminOverview() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-5 h-5 text-blue-500" />
-              <h2 className="text-sm font-semibold text-gray-900">Network Pricing Intelligence</h2>
+              <h2 className="text-sm font-semibold text-navy-800">Network Pricing Intelligence</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <p className="text-xs text-gray-500">Total Records</p>
-                <p className="text-xl font-bold text-gray-900">{networkStats.total_records.toLocaleString()}</p>
+                <p className="text-xl font-bold text-navy-800">{networkStats.total_records.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Sold Items</p>
-                <p className="text-xl font-bold text-gray-900">{networkStats.sold_items.toLocaleString()}</p>
+                <p className="text-xl font-bold text-navy-800">{networkStats.sold_items.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Sell-Through</p>
@@ -135,7 +135,7 @@ export default function AdminOverview() {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Avg Days to Sell</p>
-                <p className="text-xl font-bold text-gray-900">{networkStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
+                <p className="text-xl font-bold text-navy-800">{networkStats.avg_days_to_sell?.toFixed(0) ?? '—'}</p>
               </div>
             </div>
             {networkStats.top_categories.length > 0 && (
@@ -145,7 +145,7 @@ export default function AdminOverview() {
                   {networkStats.top_categories.map(cat => (
                     <div key={cat.category} className="flex items-center justify-between">
                       <span className="text-sm text-gray-700">{cat.category}</span>
-                      <span className="text-sm font-medium text-gray-900">{cat.count.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-navy-800">{cat.count.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -162,7 +162,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: React.ComponentTy
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <Icon className={`w-5 h-5 text-${color}-500 mb-2`} />
-      <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+      <p className="text-2xl font-bold text-navy-800">{value.toLocaleString()}</p>
       <p className="text-xs text-gray-500">{label}</p>
     </div>
   )
@@ -174,7 +174,7 @@ function TierRow({ label, count, total, color }: { label: string; count: number;
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-sm text-gray-700">{label}</span>
-        <span className="text-sm font-medium text-gray-900">{count}</span>
+        <span className="text-sm font-medium text-navy-800">{count}</span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />

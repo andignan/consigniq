@@ -287,7 +287,7 @@ export default function SettingsPage() {
   return (
     <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-xl font-bold text-navy-800">Settings</h1>
         <p className="text-sm text-gray-400">{isSolo ? 'Manage your account and billing' : 'Manage your location and account settings'}</p>
       </div>
 
@@ -1346,7 +1346,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
         <div className="mt-4 pt-4 border-t border-gray-100">
           <button
             onClick={handleChangePassword}
-            className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+            className="text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors"
           >
             Change Password
           </button>

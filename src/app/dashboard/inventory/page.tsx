@@ -393,7 +393,7 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{isSolo ? 'My Inventory' : 'Inventory'}</h1>
+          <h1 className="text-xl font-bold text-navy-800">{isSolo ? 'My Inventory' : 'Inventory'}</h1>
           <p className="text-sm text-gray-400">
             {items.length} item{items.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
@@ -581,7 +581,7 @@ export default function InventoryPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate">
+                    <h3 className="text-sm font-semibold text-navy-800 truncate">
                       {item.name}
                     </h3>
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_BADGE[item.status] ?? 'bg-gray-100 text-gray-500'}`}>

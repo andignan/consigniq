@@ -103,7 +103,7 @@ export default async function ConsignorDetailPage({
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-4">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{consignor.name}</h1>
+            <h1 className="text-xl font-bold text-navy-800">{consignor.name}</h1>
             <div className="flex items-center gap-3 mt-1">
               {consignor.phone && (
                 <span className="flex items-center gap-1 text-sm text-gray-500">
@@ -220,7 +220,7 @@ export default async function ConsignorDetailPage({
             <p className="text-sm text-gray-400">No items yet</p>
             <Link
               href={`/dashboard/consignors/${params.id}/intake`}
-              className="text-brand-600 text-sm mt-2 block"
+              className="text-brand-500 hover:text-brand-600 text-sm mt-2 block"
             >
               Start intake →
             </Link>
@@ -278,7 +278,7 @@ function ItemRow({ item }: { item: Item }) {
       <div className="flex items-center gap-3 shrink-0">
         {item.price != null && (
           <div className="text-right">
-            <div className="text-sm font-semibold text-gray-800">
+            <div className="text-sm font-semibold text-navy-800">
               ${item.price.toFixed(2)}
             </div>
             {item.low_price != null && item.high_price != null && (

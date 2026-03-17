@@ -204,7 +204,7 @@ export default function HelpWidget() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-brand-500" />
-                <h2 className="text-sm font-semibold text-gray-900">Help</h2>
+                <h2 className="text-sm font-semibold text-navy-800">Help</h2>
                 <span className="text-[10px] font-medium text-brand-500 bg-brand-50 px-1.5 py-0.5 rounded-full">
                   {tierLabel}
                 </span>
@@ -243,7 +243,7 @@ export default function HelpWidget() {
               )}
               {aiAnswer && !searching && (
                 <div className="mb-4 p-3 bg-brand-50 rounded-xl">
-                  <p className="text-sm text-gray-800 leading-relaxed">{aiAnswer}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{aiAnswer}</p>
                   <p className="text-[10px] text-brand-400 mt-2">Powered by AI</p>
                 </div>
               )}

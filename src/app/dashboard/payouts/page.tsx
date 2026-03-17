@@ -152,7 +152,7 @@ export default function PayoutsPage() {
     <div className="w-full lg:max-w-5xl lg:mx-auto p-4 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payouts</h1>
+          <h1 className="text-2xl font-bold text-navy-800">Payouts</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage consignor payouts</p>
         </div>
         <button
@@ -175,7 +175,7 @@ export default function PayoutsPage() {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-500">Consignors with Balance</p>
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-2xl font-bold text-navy-800">
             {payouts.filter(p => p.summary.unpaid_items > 0).length}
           </p>
         </div>

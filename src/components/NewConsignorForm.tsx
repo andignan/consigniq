@@ -215,15 +215,15 @@ export function NewConsignorForm({
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-0.5">Intake Date</div>
-            <div className="text-sm font-semibold text-gray-800">{formatDisplayDate(intakeDate)}</div>
+            <div className="text-sm font-semibold text-navy-800">{formatDisplayDate(intakeDate)}</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-0.5">Agreement Expires</div>
-            <div className="text-sm font-semibold text-gray-800">{formatDisplayDate(expiryDate)}</div>
+            <div className="text-sm font-semibold text-navy-800">{formatDisplayDate(expiryDate)}</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500 mb-0.5">Grace Period Ends</div>
-            <div className="text-sm font-semibold text-gray-800">{formatDisplayDate(graceEndDate)}</div>
+            <div className="text-sm font-semibold text-navy-800">{formatDisplayDate(graceEndDate)}</div>
           </div>
           <div className="bg-brand-50 rounded-lg p-3 text-center">
             <div className="text-xs text-brand-600 mb-0.5">Split</div>
@@ -251,9 +251,9 @@ export function NewConsignorForm({
                 className="flex-1 accent-brand-600"
               />
               <div className="flex items-center gap-1 text-sm font-semibold w-24 justify-center">
-                <span className="text-gray-800">{form.split_store}%</span>
+                <span className="text-gray-700">{form.split_store}%</span>
                 <span className="text-gray-400">/</span>
-                <span className="text-gray-800">{form.split_consignor}%</span>
+                <span className="text-gray-700">{form.split_consignor}%</span>
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-1.5">

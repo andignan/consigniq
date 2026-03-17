@@ -151,7 +151,7 @@ function StatCard({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-2xl font-bold text-navy-800">{value}</p>
           {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
         </div>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
@@ -946,7 +946,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Reports</h1>
+          <h1 className="text-xl font-bold text-navy-800">Reports</h1>
           <p className="text-sm text-gray-400">{periodLabel}</p>
         </div>
       </div>
@@ -1042,7 +1042,7 @@ export default function ReportsPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-brand-500" />
-              <span className="text-sm font-semibold text-gray-900">{aiResult.question}</span>
+              <span className="text-sm font-semibold text-navy-800">{aiResult.question}</span>
             </div>
             <button onClick={() => { setAiResult(null); setAiQuery('') }} className="text-gray-400 hover:text-gray-600">
               <X className="w-4 h-4" />
@@ -1173,7 +1173,7 @@ export default function ReportsPage() {
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <p className="text-xs font-medium text-gray-400 mb-1">Full Price vs Markdown</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-gray-900">{fullPriceSales}</span>
+                  <span className="text-2xl font-bold text-navy-800">{fullPriceSales}</span>
                   <span className="text-xs text-gray-400">full</span>
                   <span className="text-lg font-bold text-amber-600">{markdownSales}</span>
                   <span className="text-xs text-gray-400">markdown</span>
@@ -1328,7 +1328,7 @@ export default function ReportsPage() {
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-base font-bold text-gray-900">{selectedConsignor.name}</h3>
+                        <h3 className="text-base font-bold text-navy-800">{selectedConsignor.name}</h3>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                           {selectedConsignor.phone && (
                             <span className="flex items-center gap-1">
@@ -1664,7 +1664,7 @@ export default function ReportsPage() {
                       <span className="text-sm text-gray-700">{row.label}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-900">{row.thisWeek}</span>
+                      <span className="text-sm font-semibold text-navy-800">{row.thisWeek}</span>
                       <span className="text-xs text-gray-400">vs {row.lastWeek}</span>
                       {pctChange !== 0 && (
                         <span className={`text-xs font-semibold ${pctChange > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -1681,7 +1681,7 @@ export default function ReportsPage() {
                   <span className="text-sm text-gray-700">Revenue</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-gray-900">${weeklyOps.thisWeek.revenue.toFixed(2)}</span>
+                  <span className="text-sm font-semibold text-navy-800">${weeklyOps.thisWeek.revenue.toFixed(2)}</span>
                   <span className="text-xs text-gray-400">vs ${weeklyOps.lastWeek.revenue.toFixed(2)}</span>
                   {weeklyOps.lastWeek.revenue > 0 && (() => {
                     const pct = Math.round((weeklyOps.thisWeek.revenue - weeklyOps.lastWeek.revenue) / weeklyOps.lastWeek.revenue * 100)
@@ -1968,7 +1968,7 @@ function ActivityRow({
         <Icon className="w-4 h-4 text-gray-400" />
         <span className="text-sm text-gray-700">{label}</span>
       </div>
-      <span className="text-sm font-semibold text-gray-900">{value}</span>
+      <span className="text-sm font-semibold text-navy-800">{value}</span>
     </div>
   )
 }

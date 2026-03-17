@@ -17,5 +17,8 @@ After completing the task:
    Confirm all tests pass.
 4. Update CLAUDE.md to reflect everything built,
    changed, or fixed in this task.
-5. commit and push all changes to github with message
+5. Update any relevant PRD files in /docs/prd/ to reflect
+   changes made — new features, changed behavior,
+   resolved decisions, or updated architecture.
+6. Commit and push all changes to github with message
    "[descriptive message], [X] tests passing"

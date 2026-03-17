@@ -53,7 +53,7 @@ export default function SoloDashboard() {
   return (
     <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">
+        <h1 className="text-xl font-bold text-navy-800">
           Welcome back{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''}!
         </h1>
         <p className="text-sm text-gray-400">
@@ -64,7 +64,7 @@ export default function SoloDashboard() {
       {/* Usage Meter */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-gray-900">AI Lookups</h2>
+          <h2 className="text-sm font-semibold text-navy-800">AI Lookups</h2>
           <span className="text-xs text-gray-500">
             {totalUsed} of {totalAvailable} used
           </span>
@@ -82,7 +82,7 @@ export default function SoloDashboard() {
           {remaining <= 20 && (
             <button
               onClick={handleBuyLookups}
-              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+              className="text-xs font-semibold text-brand-500 hover:text-brand-600"
             >
               Buy 50 more — $5
             </button>

@@ -29,7 +29,7 @@ function InviteContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-2">{APP.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-navy-800 mb-2">{APP.name}</h1>
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 mt-6">
             <p className="text-sm text-red-600 font-medium">This link is invalid or has expired.</p>
             <p className="text-xs text-stone-400 mt-2">Please request a new invite from your administrator.</p>
@@ -47,7 +47,7 @@ function InviteContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-2">{APP.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-navy-800 mb-2">{APP.name}</h1>
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 mt-6">
             <p className="text-sm text-red-600 font-medium">This link is invalid.</p>
           </div>
@@ -67,21 +67,21 @@ function InviteContent() {
     <div className="min-h-screen flex items-center justify-center bg-stone-50">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">{APP.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-navy-800">{APP.name}</h1>
           <p className="mt-1 text-sm text-stone-500">{APP.tagline}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 text-center">
           {isReset ? (
             <>
-              <h2 className="text-lg font-semibold text-stone-900 mb-2">Reset Your Password</h2>
+              <h2 className="text-lg font-semibold text-navy-800 mb-2">Reset Your Password</h2>
               <p className="text-sm text-stone-500 mb-6">
                 {name ? `Hi ${name}, click` : 'Click'} the button below to set a new password for your {APP.name} account.
               </p>
             </>
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-stone-900 mb-2">You&apos;re Invited!</h2>
+              <h2 className="text-lg font-semibold text-navy-800 mb-2">You&apos;re Invited!</h2>
               <p className="text-sm text-stone-500 mb-6">
                 {name ? `Hi ${name}, y` : 'Y'}ou&apos;ve been invited to join
                 {account ? <> <strong>{account}</strong></> : ''} on {APP.name}.

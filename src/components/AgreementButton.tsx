@@ -81,7 +81,7 @@ export default function AgreementButton({
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => !sending && setShowModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
+            <h3 className="text-lg font-bold text-navy-800 mb-2">
               {isResend ? 'Resend Agreement Email?' : 'Send Agreement Email?'}
             </h3>
             <p className="text-sm text-gray-600 mb-4">

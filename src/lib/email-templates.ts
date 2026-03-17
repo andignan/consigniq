@@ -6,7 +6,7 @@ import { APP } from '@/lib/constants'
 const EMAIL_COLORS = {
   brandPrimary: '#0A9E78',
   headerBg: '#071020',
-  textPrimary: '#1a1a1a',
+  textPrimary: '#0d1f3c',
   textBody: '#374151',
   textMuted: '#6b7280',
   textFaint: '#9ca3af',

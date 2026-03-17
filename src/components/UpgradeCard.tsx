@@ -55,12 +55,12 @@ export default function UpgradeCard({ targetTier, context = 'inline', onUpgrade,
     <div className="bg-brand-50 border border-brand-100 rounded-xl p-5">
       <div className="flex items-center gap-2 mb-2">
         <Zap className="w-4 h-4 text-brand-600" />
-        <h3 className="text-sm font-bold text-gray-900">{headline}</h3>
+        <h3 className="text-sm font-bold text-navy-800">{headline}</h3>
       </div>
       {context === 'dashboard' && (
         <p className="text-xs text-gray-600 mb-3">{config.description}</p>
       )}
-      <p className="text-2xl font-bold text-gray-900 mb-2">
+      <p className="text-2xl font-bold text-navy-800 mb-2">
         ${tierConfig.price}<span className="text-sm font-normal text-gray-500">/mo</span>
       </p>
       <ul className="text-xs text-gray-600 space-y-1 mb-3">

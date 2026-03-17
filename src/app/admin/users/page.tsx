@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Users</h1>
+        <h1 className="text-xl font-bold text-navy-800">Users</h1>
         {isSuperAdmin && (
           <button
             onClick={() => { resetForm(); setShowModal(true) }}

@@ -202,7 +202,7 @@ export function IntakeQueue({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-navy-800">
             Item Intake
           </h2>
           <p className="text-sm text-gray-500">
@@ -227,7 +227,7 @@ export function IntakeQueue({
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="text-sm text-gray-800 truncate">{item.name}</span>
+                  <span className="text-sm text-gray-700 truncate">{item.name}</span>
                   <span className="text-xs text-gray-400 shrink-0">{item.category}</span>
                   <span className="text-xs text-gray-400 shrink-0">· {CONDITION_LABELS[item.condition]}</span>
                 </div>
