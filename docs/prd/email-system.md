@@ -28,8 +28,8 @@ All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, ht
 | 8 | `buildPaymentFinalWarningEmail()` | Webhook: `invoice.payment_failed` (attempt 3+) | Owner | Final warning, subscription will be cancelled |
 | 9 | `buildAccountDeletedEmail()` | Admin: `/api/admin/accounts/delete` | Owner | Paid: scheduled for deletion. Free: permanently deleted |
 | 10 | `buildGraceReminderEmail()` | Cron: `/api/billing/check-grace-periods` (3 days before period_end) | Owner | Tier label, access end date, resubscribe CTA |
-| 11 | `buildAccessEndedEmail()` | Server-side: grace→limited transition | Owner | Tier label, data preserved, resubscribe CTA |
-| 12 | `buildWelcomeBackEmail()` | Webhook: `checkout.session.completed` (resubscription) | Owner | Tier label, data restored, dashboard CTA |
+| 11 | `buildAccessEndedEmail()` | Cron: `/api/billing/check-grace-periods` (grace→limited transition) | Owner | Tier label, data preserved, resubscribe CTA |
+| 12 | `buildWelcomeBackEmail()` | Webhook: `checkout.session.completed` (resubscription) or `customer.subscription.updated` (portal resubscribe) | Owner | Tier label, data restored, dashboard CTA |
 
 ## Email-Triggering Endpoints
 

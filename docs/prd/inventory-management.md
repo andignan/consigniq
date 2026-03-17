@@ -16,16 +16,16 @@ Defined in `src/types/index.ts` as `ItemCondition` type and `CONDITION_LABELS` m
 | `pending` | Intake'd, not yet priced | (creation) | `priced`, `archived` |
 | `priced` | Has a price assigned | `pending`, `archived` (restore) | `sold`, `donated`, `archived` |
 | `sold` | Sold to customer | `priced` | (terminal — cannot delete) |
-| `donated` | Donated after grace period | `priced` | `archived` |
-| `archived` | Soft archive, hidden from All tab | `pending`, `priced`, `donated` | `priced` (restore if price), `pending` (restore if no price) |
+| `donated` | Donated after grace period | `priced` | (terminal — can only delete) |
+| `archived` | Soft archive, hidden from All tab | `pending`, `priced` | `priced` (restore if price), `pending` (restore if no price) |
 
 ## Item Actions
 
 | Action | Description | Available on | Button |
 |---|---|---|---|
-| **Archive** | Hides item from main inventory. Reversible. | pending, priced, donated | Archive icon |
-| **Restore** | Returns archived item to active inventory | archived | "Restore" button |
-| **Delete** | Permanently removes item from database. Irreversible. | pending, priced, donated, archived (NOT sold) | Trash icon with confirmation |
+| **Archive** | Hides item from main inventory. Reversible. | pending, priced | Archive icon |
+| **Restore** | Returns archived item to active inventory | archived | "Restore" button + RotateCcw icon |
+| **Delete** | Permanently removes item from database. Irreversible. | pending, priced, donated, archived (NOT sold) | Trash icon with `confirm()` dialog |
 | **Sell** | Marks item as sold, records sold_price | priced only | "Sell" button |
 | **Donate** | Marks item as donated | priced only | Gift icon |
 
@@ -45,12 +45,12 @@ When an item is marked sold, a `price_history` record is automatically inserted:
 - `sold: true`
 - Wrapped in try/catch — failure is non-fatal
 
-## Solo vs Starter+ Inventory
+## Solo vs Shop+ Inventory
 
-| Aspect | Solo | Starter+ |
+| Aspect | Solo | Shop+ |
 |---|---|---|
 | Page title | "My Inventory" | "Inventory" |
-| Status tabs | All / Priced / Sold / Archived | All / Pending / Priced / Sold / Donated |
+| Status tabs | All / Priced / Sold / Archived | All / Pending / Priced / Sold / Donated / Archived |
 | Consignor filter | Hidden | Shown ("All Consignors" dropdown) |
 | `consignor_id` | null (no consignors) | Required (linked to consignor) |
 | Empty state | "No items yet" + "Price an Item" CTA | "No items found" |
@@ -86,13 +86,14 @@ Client-side export with columns: name, category, condition, status, price, sold_
 
 **Label content:** Item name (2-line max), category + condition, price (with strikethrough for markdowns), consignor (first name + last initial), location name, short item ID (last 6 chars), ConsignIQ branding.
 
-**Technology:** `pdf-lib` with Helvetica/HelveticaBold. One page per item. Returns PDF blob.
+**Technology:** `pdf-lib` with Helvetica/HelveticaBold. One page per item. Returns PDF blob. Client opens PDF via dynamically created `<a>` tag click (instead of `window.open`) to avoid Safari popup blocker.
 
 ## Bulk Actions
 
-- Checkbox selection on each item row
+- "Print Labels" toggle button enters selection mode (checkboxes appear on each item row)
 - "Select All" checkbox in header
-- Bulk label printing: select items → choose size → print
+- Bulk actions bar appears when items selected: count, label size picker, Print Labels button, Clear
+- Single-item label printing: print icon button on priced items (no selection mode needed)
 - Label size picker (2.25"x1.25" or 4"x2")
 
 ## API
@@ -102,3 +103,5 @@ Client-side export with columns: name, category, condition, status, price, sold_
 **POST `/api/items`:** Required: `account_id`, `location_id`, `consignor_id`, `name`, `category`, `condition`. Sets `status: 'pending'`, `intake_date: today`, `current_markdown_pct: 0`.
 
 **PATCH `/api/items`:** Takes `{ id, ...updates }`. Handles auto-timestamps and price_history write.
+
+**DELETE `/api/items`:** Takes `{ id }`. Blocks deletion of sold items (returns 400 — "Cannot delete sold items — this would affect payout history"). Hard deletes the row from the database.

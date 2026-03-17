@@ -80,7 +80,7 @@ Add: `cancelled_grace`, `cancelled_limited`
 | From | To | Trigger | Action |
 |---|---|---|---|
 | active (paid) | cancelled_grace | `customer.subscription.deleted` webhook | Set `account_type='cancelled_grace'`, `subscription_cancelled_at=now`, `cancelled_tier=current tier`, `subscription_period_end=sub.current_period_end`. Send cancellation email. |
-| cancelled_grace | cancelled_limited | Dashboard layout detects `subscription_period_end < now` | Set `account_type='cancelled_limited'`. Send "access ended" email. |
+| cancelled_grace | cancelled_limited | Cron: `/api/billing/check-grace-periods` detects `subscription_period_end < now` | Set `account_type='cancelled_limited'`. Send "access ended" email. |
 | cancelled_limited | active | `checkout.session.completed` webhook (resubscribe) | Set `account_type='paid'`, `tier=new_tier`, clear `subscription_cancelled_at`, `subscription_period_end`, `cancelled_tier`. Send welcome-back email. |
 | active (trial) | trial_expired | Dashboard layout detects `trial_ends_at < now` | No DB change — layout renders `TrialExpiredPage`. |
 | trial_expired | active | `checkout.session.completed` webhook | Set `account_type='paid'`, `tier=purchased_tier`. Send upgrade email. |
@@ -96,18 +96,18 @@ Add: `cancelled_grace`, `cancelled_limited`
 
 1. Look up account via `metadata.account_id`
 2. If `metadata.product === 'topup_50'`: add 50 to `bonus_lookups`, return
-3. Set `tier` to `metadata.tier`
-4. If `account_type` is `trial`: set `account_type='paid'` (trial→paid conversion)
-5. If `account_type` is `cancelled_grace` or `cancelled_limited`: set `account_type='paid'`, clear `subscription_cancelled_at`, `subscription_period_end`, `cancelled_tier` (resubscription)
-6. Create/update `stripe_customer_id` if needed
-7. Send upgrade email (new sub) or welcome-back email (resub)
+3. Map tier from metadata (backward-compat: starter/standard → shop, pro → enterprise)
+4. Check if resubscription (`account_type` is `cancelled_grace` or `cancelled_limited`)
+5. Set `tier`, `account_type='paid'`, clear `trial_ends_at`, `subscription_cancelled_at`, `subscription_period_end`, `cancelled_tier`
+6. Send welcome-back email (resub) or upgrade email (new sub) using `TIER_CONFIGS` for label/price
 
 ### `customer.subscription.updated`
 
 1. Look up account via `stripe_customer_id`
-2. Sync `tier` from subscription price metadata
-3. If subscription status changed to `past_due`: log warning (payment retry in progress)
-4. Update `subscription_period_end` from `current_period_end`
+2. Sync `tier` from subscription metadata if available
+3. Update `subscription_period_end` from `current_period_end`
+4. If subscription status is `active` AND account is `cancelled_grace` or `cancelled_limited`: resubscribe via Stripe portal — set `account_type='paid'`, clear `subscription_cancelled_at`, `cancelled_tier`. Send welcome-back email.
+5. If subscription status changed to `past_due`: log warning (payment retry in progress)
 
 ### `customer.subscription.deleted`
 
@@ -119,12 +119,6 @@ Add: `cancelled_grace`, `cancelled_limited`
 6. Set `subscription_period_end` from subscription's `current_period_end`
 7. Do NOT change `tier` yet — user keeps access until `period_end`
 8. Send cancellation confirmation email to owner
-
-### `invoice.payment_succeeded`
-
-1. Look up account via `stripe_customer_id`
-2. No action needed (Stripe handles subscription continuation)
-3. Optional: log success for monitoring
 
 ### `invoice.payment_failed`
 
@@ -248,7 +242,7 @@ Add: `cancelled_grace`, `cancelled_limited`
 
 ## Relationship to Existing Features
 
-### Already built
+### Implemented
 - Admin deletion: `/api/admin/accounts/delete` — hard delete for comp/trial, soft delete for paid
 - Stripe webhook: `/api/billing/webhook` — handles `checkout.session.completed`, `subscription.updated`, `subscription.deleted`, `invoice.payment_failed`
 - Cancellation email: `buildCancellationEmail()` in email-templates.ts
@@ -257,28 +251,17 @@ Add: `cancelled_grace`, `cancelled_limited`
 - Account deleted email: `buildAccountDeletedEmail()` in email-templates.ts
 - Trial expired page: `TrialExpiredPage` component
 - Trial banner: `TrialBanner` component
+- Database migration: `20260315020000` adds `subscription_cancelled_at`, `subscription_period_end`, `cancelled_tier`
+- Webhook handler: `subscription.deleted` sets `cancelled_grace`, `checkout.session.completed` handles resubscription (clears cancellation fields)
+- Webhook handler: `subscription.updated` detects resubscribe via Stripe portal (cancelled_grace/limited → paid + welcome back email)
+- Grace period cron: `/api/billing/check-grace-periods` — sends reminders 3 days before `period_end`, auto-transitions overdue `cancelled_grace` → `cancelled_limited`
+- Email templates: `buildGraceReminderEmail()`, `buildAccessEndedEmail()`, `buildPaymentFinalWarningEmail()`, `buildWelcomeBackEmail()`
+- Feature gating: `cancelled_grace` and `cancelled_limited` in `AccountType` type, handled by `feature-gates.ts`
+- Backward-compat: webhook maps old tier names (starter/standard → shop, pro → enterprise) from in-flight Stripe sessions
 
-### To be built
-- cancelled_grace and cancelled_limited account type handling
-- Grace period banner component (`CancellationBanner`)
-- Dashboard layout grace→limited auto-transition
-- Resubscribe flow (checkout with previous tier)
-- Grace period reminder cron
-- New email templates (grace reminder, access ended, final warning, welcome back, suspension)
-- Staff-specific messaging for cancelled accounts
+### Deferred
 - Suspension page component
-
-### Implementation Order
-1. Database migration (add columns)
-2. Update webhook handler (cancelled_grace flow)
-3. Dashboard layout (grace→limited auto-transition)
-4. CancellationBanner component
-5. Feature gating for cancelled_limited (solo-only access)
-6. Resubscribe flow (checkout + webhook handler)
-7. New email templates
-8. Grace period reminder cron
-9. Suspension page
-10. Staff messaging
+- Staff-specific messaging for cancelled accounts
 
 ---
 
@@ -295,15 +278,15 @@ ALTER TABLE accounts ADD COLUMN cancelled_tier text;
 Current: `paid`, `trial`, `complimentary`
 Add: `cancelled_grace`, `cancelled_limited`
 
-### Key Functions to Modify
-- `isAccountActive()` in `feature-gates.ts` — must handle `cancelled_grace` (active) and `cancelled_limited` (limited)
-- `getEffectiveTier()` in `feature-gates.ts` — return `cancelled_tier` for grace, `'solo'` for limited
-- Dashboard layout — check `subscription_period_end` for auto-transition
-- Webhook handler — new logic for `subscription.deleted` and resubscribe
+### Key Functions Modified
+- `isAccountActive()` in `feature-gates.ts` — handles `cancelled_grace` (active) and `cancelled_limited` (limited)
+- `getEffectiveTier()` in `feature-gates.ts` — returns `cancelled_tier` for grace, `'solo'` for limited
+- Webhook handler (`/api/billing/webhook`) — `subscription.deleted` sets `cancelled_grace`, `checkout.session.completed` handles resubscribe, `subscription.updated` handles portal resubscribe
+- Cron (`/api/billing/check-grace-periods`) — auto-transitions overdue `cancelled_grace` → `cancelled_limited`
 
-### Auto-Transition Logic (Dashboard Layout)
-On each dashboard page load:
-1. If `account_type === 'cancelled_grace'` AND `subscription_period_end < now`:
-   - Update account: `account_type = 'cancelled_limited'`
-   - Send "access ended" email (fire-and-forget)
-2. This runs server-side in the layout, before rendering children
+### Auto-Transition Logic (Cron)
+Handled by `/api/billing/check-grace-periods` (CRON_SECRET auth):
+1. Finds all `cancelled_grace` accounts where `subscription_period_end < now`
+2. Updates each to `account_type = 'cancelled_limited'`
+3. Sends "access ended" email (non-critical)
+4. Also sends grace reminders 3 days before `period_end` for accounts still in `cancelled_grace`

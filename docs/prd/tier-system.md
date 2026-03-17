@@ -34,6 +34,10 @@
 
 Simple numeric comparison. A higher tier inherits all features of lower tiers.
 
+`getUpgradeMessage(feature)` → human-readable string: `"{label} requires the {tierLabel} plan (${price}/mo). Upgrade to unlock this feature."`
+
+`getTotalAvailableLookups(tier, bonusLookups)` → returns `aiPricingLimit + bonusLookups` for solo, `null` (unlimited) for shop/enterprise.
+
 ## How requireFeature() Works
 
 Server-side guard in `src/lib/tier-guard.ts`:
@@ -85,3 +89,24 @@ Used at top of: consignors page, reports layout, payouts layout.
 - `cancelled_grace`: full tier access until `subscription_period_end`
 - `cancelled_limited`: solo-only access, data preserved
 - See `/docs/prd/subscription-lifecycle.md` for details
+
+## Tier Rename (March 2026)
+
+Migration `20260316030000` renamed tiers:
+- `starter` / `standard` → `shop`
+- `pro` → `enterprise`
+- `solo` unchanged
+
+Migrated columns: `accounts.tier`, `accounts.complimentary_tier`, `accounts.cancelled_tier`. CHECK constraint updated to `(tier IN ('solo', 'shop', 'enterprise'))`.
+
+**Stripe webhook backward-compat:** `checkout.session.completed` maps old tier names from in-flight Stripe sessions (`starter`/`standard` → `shop`, `pro` → `enterprise`) before writing to the database. This handles sessions created before the rename that complete after migration.
+
+## Stripe Webhook Events
+
+Handled events in `/api/billing/webhook`:
+- `checkout.session.completed` — sets tier (with old-name mapping), clears cancellation fields, detects resubscription (sends welcome-back vs upgrade email)
+- `customer.subscription.updated` — syncs tier from metadata, updates `subscription_period_end`, detects reactivation from cancelled states
+- `customer.subscription.deleted` — sets `cancelled_grace`, preserves previous tier in `cancelled_tier`, sends cancellation email
+- `invoice.payment_failed` — sends payment failed email (escalates to final warning on attempt 3+)
+
+Email templates used: `buildUpgradeEmail`, `buildCancellationEmail`, `buildPaymentFailedEmail`, `buildPaymentFinalWarningEmail`, `buildWelcomeBackEmail`. All non-critical (wrapped in try/catch).

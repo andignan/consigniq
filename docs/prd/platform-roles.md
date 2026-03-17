@@ -31,24 +31,24 @@ All three roles grant access to `/admin` routes via `checkSuperadmin()`. Only `s
 - Used to filter system accounts from admin stats and account lists
 
 ### Legacy: `users.is_superadmin`
-- Retained for rollback safety — not read by application code
+- Retained for rollback safety — still read as fallback in all access-control paths (dual-read pattern with `platform_role`)
 - Migration populated `platform_role = 'super_admin'` for all `is_superadmin = true` users
 
 ## Access Control
 
 ### `checkSuperadmin()` (`src/lib/supabase/admin.ts`)
-- Reads `platform_role` (not `is_superadmin`)
+- Reads both `platform_role` and `is_superadmin` (dual-read for backward compatibility)
 - Returns `{ authorized: true, userId, platformRole }` on success
 - Returns `{ authorized: false, status: 401|403 }` on failure
 - All admin API routes check `auth.authorized` — backward compatible
 
 ### `/api/auth/check-superadmin`
 - Returns `{ is_superadmin: boolean, platform_role: string|null }`
-- `is_superadmin` derived from `!!platform_role` for backward compatibility with login flow
+- `is_superadmin` derived from `!!platform_role || is_superadmin === true` (dual-read for backward compatibility with login flow)
 
 ### Layout Gates
-- `/admin/layout.tsx`: redirects to `/dashboard` if no `platform_role`
-- `/dashboard/layout.tsx`: redirects to `/admin` if `platform_role` is set
+- `/admin/layout.tsx`: redirects to `/dashboard` if no `platform_role` and no `is_superadmin` (dual-read fallback)
+- `/dashboard/layout.tsx`: redirects to `/admin` if `platform_role` is set or `is_superadmin` is true (dual-read fallback)
 
 ## Role Management
 
@@ -59,9 +59,9 @@ All three roles grant access to `/admin` routes via `checkSuperadmin()`. Only `s
 - Blocks removing the last `super_admin`
 
 ### UI: Admin Users Page
-- "Platform Role" column with color-coded badges
-- Click badge or "Set role" link to edit (dropdown)
-- Role editing only visible to `super_admin` users
+- "Platform Role" column visible to `super_admin` and `support` users (color-coded badges: red/blue/amber)
+- Click badge or "Set role" link to edit via inline dropdown (`super_admin` only)
+- "Add User" button with customer/platform toggle (`super_admin` only)
 - Last super_admin protection (API-side)
 
 ## Stats Filtering
@@ -73,8 +73,10 @@ Admin accounts list (`/api/admin/accounts`) filters system accounts by default. 
 ## How to Add a New Platform User
 
 1. **Existing user:** PATCH `/api/admin/users` with `{ user_id, platform_role: 'super_admin'|'support'|'finance' }`
-2. **New user:** Create via admin panel (POST `/api/admin/users`), then set platform role via PATCH
+2. **New user:** POST `/api/admin/users` with `{ email, full_name, platform_role }` — creates auth user + users row on system account in one step (super_admin only)
 3. **Direct DB:** `UPDATE users SET platform_role = 'super_admin' WHERE email = '...'`
+
+Platform user invite emails use `buildInviteEmail()` with `isPlatformUser: true`, which omits the Plan line and uses `accountName: 'ConsignIQ'`.
 
 ## Migration
 

@@ -10,6 +10,7 @@
 - Only `super_admin` can modify platform roles on other users
 - All admin queries are cross-account (no `account_id` scoping)
 - Login redirect: platform role users go to `/admin`, never `/dashboard`
+- `/api/auth/check-superadmin` returns `{ is_superadmin, platform_role }` — used by admin UI to determine role-based visibility
 
 ## Admin Dashboard (`/admin`)
 
@@ -39,17 +40,30 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 ## User Management (`/admin/users`)
 
-**List:** Search by email/name, filter by account type and tier. Table shows email, name, account, tier badge, account type badge, platform role badge.
+**List:** Search by email/name, filter by account type and tier. Table shows email, name, account, tier badge, account type badge, platform role badge (conditionally). Fetches current user's `platform_role` via `/api/auth/check-superadmin` on mount to determine UI visibility.
 
-**Platform Role Management:** Super admins can click a role badge or "Set role" link to assign/remove platform roles (super_admin/support/finance) via dropdown.
+**Platform Role Management:** Super admins can click a role badge or "Set role" link to assign/remove platform roles (super_admin/support/finance) via inline dropdown. Includes last-super-admin protection — cannot remove `super_admin` role if only one remains. Cancel button to dismiss without saving.
 
-**Add User modal:**
-- Fields: Email, Full Name, Account Name, Tier (solo/shop/enterprise), Account Type (paid/trial/complimentary)
-- Creates: account row → location row → auth user → users table row (upsert) → recovery link → invite email via Resend
+**Role-based visibility:**
+- Platform Role column: visible to `super_admin` and `support` roles
+- Add User button: visible to `super_admin` only
+- Set/edit platform role: `super_admin` only (inline dropdown on click)
+- Non-super_admin support/finance users see platform role badges but cannot edit them
+
+**Add User modal (super_admin only):**
+- User type selector (radio): Customer User or Platform User
+- **Customer User fields:** Email, Full Name, Account Name, Tier (solo/shop/enterprise), Account Type (paid/trial/complimentary)
+  - Creates: account row → location row → auth user → users table row (upsert) → recovery link → invite email via Resend
+- **Platform User fields:** Email, Full Name, Platform Role (super_admin/support/finance)
+  - Creates: auth user → users table row (upsert on system account/location) → recovery link → platform invite email via Resend
+  - Uses system account (`is_system=true`) and its location — does not create new account/location
+  - Only `super_admin` can create platform users (server-enforced)
 - Invite email is non-critical — returns `invite_warning` if it fails
 - Recovery link type (not invite) for 24-hour expiry
 
 **Reset Password:** Per-user button on account detail page. Generates recovery link, sends branded reset email.
+
+**Shared UI:** Uses `Modal` component (`src/components/ui/Modal.tsx`) for Add User form — escape-to-close, backdrop click, scroll lock. Style constants from `src/lib/style-constants.ts` (`TIER_BADGE_CLASSES`, `MODAL_BACKDROP`, `MODAL_CONTAINER`).
 
 ## Network Stats (`/api/admin/network-stats`)
 
@@ -65,9 +79,10 @@ Cross-account pricing intelligence from `price_history` table:
 - Active nav: `border-l-2 border-brand-500 text-brand-400 bg-white/5`; inactive: `text-white/65`
 - Primary action buttons use `bg-brand-600` (teal), not red
 - Disable/suspend buttons use amber; delete stays red
-- No "Back to App" link — superadmins live in `/admin` only
+- No "Back to App" link — platform users live in `/admin` only
 - Sign Out button at sidebar bottom (stone-400 text)
 - Superadmin accessing `/dashboard` is redirected to `/admin`
+- Mobile: fixed top header bar with hamburger menu → slide-out overlay sidebar (same nav content)
 
 ## Stats Filtering
 
