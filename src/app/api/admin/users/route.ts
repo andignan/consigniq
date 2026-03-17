@@ -86,16 +86,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'System account not found — configuration error' }, { status: 500 })
     }
 
-    // Find system location
-    const { data: systemLocation, error: sysLocErr } = await supabase
+    // Find or create system location
+    let systemLocation: { id: string }
+    const { data: existingLoc } = await supabase
       .from('locations')
       .select('id')
       .eq('account_id', systemAccount.id)
       .limit(1)
       .single()
 
-    if (sysLocErr || !systemLocation) {
-      return NextResponse.json({ error: 'System location not found — configuration error' }, { status: 500 })
+    if (existingLoc) {
+      systemLocation = existingLoc
+    } else {
+      const { data: newLoc, error: createLocErr } = await supabase
+        .from('locations')
+        .insert({
+          account_id: systemAccount.id,
+          name: 'System',
+          default_split_store: 60,
+          default_split_consignor: 40,
+          agreement_days: 60,
+          grace_days: 14,
+          markdown_enabled: false,
+        })
+        .select('id')
+        .single()
+
+      if (createLocErr || !newLoc) {
+        return NextResponse.json({ error: 'Failed to create system location' }, { status: 500 })
+      }
+      systemLocation = newLoc
     }
 
     // Create auth user

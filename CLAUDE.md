@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (528 tests across unit + API)
+- `npm test` — Jest test suite (529 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -57,7 +57,7 @@ Three client factories:
 **Admin (superadmin only):**
 - `/api/admin/stats` — cross-account platform stats
 - `/api/admin/accounts` — GET list/detail, PATCH tier/status/account_type. Filters: `?id=`, `?tier=`, `?status=`
-- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates customer user (account+location+auth+users row) or platform user (when `platform_role` provided — uses system account, super_admin only). Sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
+- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates customer user (account+location+auth+users row) or platform user (when `platform_role` provided — uses system account, auto-creates system location if missing, super_admin only). Sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
 - `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
 - `/api/admin/network-stats` — cross-account pricing intelligence stats
 - `/api/admin/accounts/delete` — POST, takes `{ account_id, reason? }`. Complimentary/trial: hard deletes all data + auth users. Paid with Stripe: cancels subscription, soft deletes (status='deleted', deleted_at set). Sends notification email
@@ -306,7 +306,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**528 Jest tests passing.** 5 Playwright E2E specs. 37 manual test plans at `/docs/test-plans/`.
+**529 Jest tests passing.** 5 Playwright E2E specs. 38 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```

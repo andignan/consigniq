@@ -406,6 +406,82 @@ describe('POST /api/admin/users', () => {
     )
   })
 
+  it('auto-creates system location when none exists for platform user', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    const locationInsertMock = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: { id: 'new-sys-loc' }, error: null }),
+      }),
+    })
+    const usersUpsertMock = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: { id: 'usr-plat-new', platform_role: 'finance' }, error: null }),
+      }),
+    })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-acc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'locations') {
+        return {
+          // First call: select (lookup existing) — returns null
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+              }),
+            }),
+          }),
+          // Second call: insert (auto-create)
+          insert: locationInsertMock,
+        }
+      }
+      if (table === 'users') return { upsert: usersUpsertMock }
+      return {}
+    })
+
+    mockSupabaseAuth.admin.createUser.mockResolvedValue({
+      data: { user: { id: 'auth-plat-new' } },
+      error: null,
+    })
+    mockSupabaseAuth.admin.generateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://consigniq.com/auth/setup?token=abc' } },
+      error: null,
+    })
+    mockSendEmail.mockResolvedValue({ id: 'msg-new' })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'finance@consigniq.com',
+        full_name: 'Finance User',
+        platform_role: 'finance',
+      }),
+    }))
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.location.id).toBe('new-sys-loc')
+
+    // Verify system location was created with correct defaults
+    expect(locationInsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account_id: 'sys-acc',
+        name: 'System',
+      })
+    )
+  })
+
   it('returns 403 when non-super_admin tries to create platform user', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'support' })
 
