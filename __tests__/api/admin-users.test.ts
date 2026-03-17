@@ -249,6 +249,162 @@ describe('POST /api/admin/users', () => {
     )
   })
 
+  it('creates platform user with system account when platform_role provided', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    // System account + location lookups
+    const systemSelectMock = jest.fn()
+    const systemLocSelectMock = jest.fn()
+    const usersUpsertMock = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: { id: 'usr-plat1', platform_role: 'support' }, error: null }),
+      }),
+    })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: systemSelectMock.mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-acc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'locations') {
+        return {
+          select: systemLocSelectMock.mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-loc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'users') return { upsert: usersUpsertMock }
+      return {}
+    })
+
+    mockSupabaseAuth.admin.createUser.mockResolvedValue({
+      data: { user: { id: 'auth-plat1' } },
+      error: null,
+    })
+    mockSupabaseAuth.admin.generateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://consigniq.com/auth/setup?token=abc' } },
+      error: null,
+    })
+    mockSendEmail.mockResolvedValue({ id: 'msg-plat' })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'platform@consigniq.com',
+        full_name: 'Platform User',
+        platform_role: 'support',
+      }),
+    }))
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.account.id).toBe('sys-acc')
+    expect(body.location.id).toBe('sys-loc')
+
+    // Verify upsert includes platform_role
+    expect(usersUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account_id: 'sys-acc',
+        location_id: 'sys-loc',
+        platform_role: 'support',
+      }),
+      { onConflict: 'id' }
+    )
+  })
+
+  it('returns 403 when non-super_admin tries to create platform user', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'support' })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'platform@consigniq.com',
+        full_name: 'Platform User',
+        platform_role: 'support',
+      }),
+    }))
+
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toContain('super admin')
+  })
+
+  it('returns 400 for invalid platform_role value on create', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'platform@consigniq.com',
+        full_name: 'Platform User',
+        platform_role: 'invalid_role',
+      }),
+    }))
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('platform_role')
+  })
+
+  it('returns 500 when system account not found', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    mockSupabaseFrom.mockImplementation(() => ({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+          }),
+        }),
+      }),
+    }))
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'platform@consigniq.com',
+        full_name: 'Platform User',
+        platform_role: 'support',
+      }),
+    }))
+
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error).toContain('System account not found')
+  })
+
+  it('without platform_role uses customer path (unchanged)', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
+    setupPostMocks()
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'customer@test.com',
+        full_name: 'Customer User',
+        account_name: 'Customer Shop',
+        tier: 'shop',
+        account_type: 'paid',
+      }),
+    }))
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.account.id).toBe('acc1')
+    expect(body.location.id).toBe('loc1')
+  })
+
   it('returns 201 with warning if invite email fails', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
     setupPostMocks()

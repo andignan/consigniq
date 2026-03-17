@@ -87,10 +87,14 @@ export default function AdminUsersPage() {
   const [formAccountName, setFormAccountName] = useState('')
   const [formTier, setFormTier] = useState('shop')
   const [formAccountType, setFormAccountType] = useState('paid')
-  // formComplimentaryTier removed — Tier dropdown value is used for complimentary_tier
+  const [formUserType, setFormUserType] = useState<'customer' | 'platform'>('customer')
+  const [formPlatformRole, setFormPlatformRole] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
+
+  const isSuperAdmin = currentPlatformRole === 'super_admin'
+  const showPlatformRoleColumn = currentPlatformRole === 'super_admin' || currentPlatformRole === 'support'
 
   async function loadUsers() {
     setLoading(true)
@@ -157,27 +161,43 @@ export default function AdminUsersPage() {
     setFormSuccess('')
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let body: Record<string, unknown>
+
+      if (formUserType === 'platform') {
+        if (!formPlatformRole) {
+          setFormError('Platform role is required')
+          setSubmitting(false)
+          return
+        }
+        body = {
+          email: formEmail,
+          full_name: formName,
+          account_name: 'ConsignIQ System',
+          tier: 'solo',
+          account_type: 'paid',
+          platform_role: formPlatformRole,
+        }
+      } else {
+        body = {
           email: formEmail,
           full_name: formName,
           account_name: formAccountName,
           tier: formTier,
           account_type: formAccountType,
           complimentary_tier: formAccountType === 'complimentary' ? formTier : undefined,
-        }),
+        }
+      }
+
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       })
 
       if (res.ok) {
         setFormSuccess('User created successfully')
-        setFormEmail('')
-        setFormName('')
-        setFormAccountName('')
-        setFormTier('shop')
-        setFormAccountType('paid')
+        resetForm()
         loadUsers()
         setTimeout(() => {
           setShowModal(false)
@@ -200,6 +220,8 @@ export default function AdminUsersPage() {
     setFormAccountName('')
     setFormTier('shop')
     setFormAccountType('paid')
+    setFormUserType('customer')
+    setFormPlatformRole('')
     setFormError('')
     setFormSuccess('')
   }
@@ -208,13 +230,15 @@ export default function AdminUsersPage() {
     <div className="max-w-5xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Users</h1>
-        <button
-          onClick={() => { resetForm(); setShowModal(true) }}
-          className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add User
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => { resetForm(); setShowModal(true) }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add User
+          </button>
+        )}
       </div>
 
       {/* Search + Filters */}
@@ -273,7 +297,9 @@ export default function AdminUsersPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Account</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Tier</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Platform Role</th>
+                  {showPlatformRoleColumn && (
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Platform Role</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -290,43 +316,45 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <AccountTypeBadge user={u} />
                     </td>
-                    <td className="px-4 py-3">
-                      {roleEditingUserId === u.id ? (
-                        <div className="flex items-center gap-1">
-                          <select
-                            defaultValue={u.platform_role || ''}
-                            onChange={e => handleRoleChange(u.id, e.target.value || null)}
-                            disabled={roleUpdating}
-                            className="text-xs px-1.5 py-1 rounded border border-gray-200 bg-white text-gray-700"
+                    {showPlatformRoleColumn && (
+                      <td className="px-4 py-3">
+                        {isSuperAdmin && roleEditingUserId === u.id ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              defaultValue={u.platform_role || ''}
+                              onChange={e => handleRoleChange(u.id, e.target.value || null)}
+                              disabled={roleUpdating}
+                              className="text-xs px-1.5 py-1 rounded border border-gray-200 bg-white text-gray-700"
+                            >
+                              <option value="">None</option>
+                              <option value="super_admin">Super Admin</option>
+                              <option value="support">Support</option>
+                              <option value="finance">Finance</option>
+                            </select>
+                            <button onClick={() => setRoleEditingUserId(null)} className="text-xs text-gray-400 hover:text-gray-600">
+                              Cancel
+                            </button>
+                          </div>
+                        ) : u.platform_role ? (
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${PLATFORM_ROLE_BADGE_CLASSES[u.platform_role] ?? 'bg-gray-100 text-gray-600'} ${isSuperAdmin ? 'cursor-pointer' : ''}`}
+                            onClick={() => isSuperAdmin && setRoleEditingUserId(u.id)}
                           >
-                            <option value="">None</option>
-                            <option value="super_admin">Super Admin</option>
-                            <option value="support">Support</option>
-                            <option value="finance">Finance</option>
-                          </select>
-                          <button onClick={() => setRoleEditingUserId(null)} className="text-xs text-gray-400 hover:text-gray-600">
-                            Cancel
+                            <Shield className="w-3 h-3" />
+                            {PLATFORM_ROLE_LABELS[u.platform_role] ?? u.platform_role}
+                          </span>
+                        ) : isSuperAdmin ? (
+                          <button
+                            onClick={() => setRoleEditingUserId(u.id)}
+                            className="text-xs text-gray-400 hover:text-brand-600"
+                          >
+                            Set role
                           </button>
-                        </div>
-                      ) : u.platform_role ? (
-                        <span
-                          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${PLATFORM_ROLE_BADGE_CLASSES[u.platform_role] ?? 'bg-gray-100 text-gray-600'} ${currentPlatformRole === 'super_admin' ? 'cursor-pointer' : ''}`}
-                          onClick={() => currentPlatformRole === 'super_admin' && setRoleEditingUserId(u.id)}
-                        >
-                          <Shield className="w-3 h-3" />
-                          {PLATFORM_ROLE_LABELS[u.platform_role] ?? u.platform_role}
-                        </span>
-                      ) : currentPlatformRole === 'super_admin' ? (
-                        <button
-                          onClick={() => setRoleEditingUserId(u.id)}
-                          className="text-xs text-gray-400 hover:text-brand-600"
-                        >
-                          Set role
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-400">&mdash;</span>
-                      )}
-                    </td>
+                        ) : (
+                          <span className="text-xs text-gray-400">&mdash;</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -338,6 +366,34 @@ export default function AdminUsersPage() {
       {/* Add User Modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Add User">
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* User type selector — only for super_admin */}
+          {isSuperAdmin && (
+            <div className="flex gap-4 p-3 bg-gray-50 rounded-lg">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="userType"
+                  value="customer"
+                  checked={formUserType === 'customer'}
+                  onChange={() => setFormUserType('customer')}
+                  className="text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-gray-700">Customer User</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="userType"
+                  value="platform"
+                  checked={formUserType === 'platform'}
+                  onChange={() => setFormUserType('platform')}
+                  className="text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-gray-700">Platform User</span>
+              </label>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Email *</label>
             <input
@@ -360,43 +416,65 @@ export default function AdminUsersPage() {
               placeholder="Jane Smith"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Account Name *</label>
-            <input
-              type="text"
-              required
-              value={formAccountName}
-              onChange={e => setFormAccountName(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder="Treasure Trove Consignment"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          {formUserType === 'customer' && (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Account Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formAccountName}
+                  onChange={e => setFormAccountName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder="Treasure Trove Consignment"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Tier</label>
+                  <select
+                    value={formTier}
+                    onChange={e => setFormTier(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="solo">Solo</option>
+                    <option value="shop">Shop</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Account Type</label>
+                  <select
+                    value={formAccountType}
+                    onChange={e => setFormAccountType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="paid">Paid</option>
+                    <option value="trial">Trial</option>
+                    <option value="complimentary">Complimentary</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {formUserType === 'platform' && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tier</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Platform Role *</label>
               <select
-                value={formTier}
-                onChange={e => setFormTier(e.target.value)}
+                value={formPlatformRole}
+                onChange={e => setFormPlatformRole(e.target.value)}
+                required
                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
-                <option value="solo">Solo</option>
-                <option value="shop">Shop</option>
-                <option value="enterprise">Enterprise</option>
+                <option value="">Select a role...</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="support">Support</option>
+                <option value="finance">Finance</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Account Type</label>
-              <select
-                value={formAccountType}
-                onChange={e => setFormAccountType(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-              >
-                <option value="paid">Paid</option>
-                <option value="trial">Trial</option>
-                <option value="complimentary">Complimentary</option>
-              </select>
-            </div>
-          </div>
+          )}
 
           {formError && <p className="text-xs text-red-600">{formError}</p>}
           {formSuccess && <p className="text-xs text-emerald-600">{formSuccess}</p>}

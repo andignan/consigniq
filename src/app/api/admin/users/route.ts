@@ -58,7 +58,121 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminClient()
   const body = await request.json()
-  const { email, full_name, account_name, tier, account_type, complimentary_tier } = body
+  const { email, full_name, platform_role } = body
+
+  // Platform user creation path
+  if (platform_role) {
+    if (auth.platformRole !== 'super_admin') {
+      return NextResponse.json({ error: 'Only super admins can create platform users' }, { status: 403 })
+    }
+
+    if (!VALID_PLATFORM_ROLES.includes(platform_role)) {
+      return NextResponse.json({ error: `platform_role must be one of: ${VALID_PLATFORM_ROLES.join(', ')}` }, { status: 400 })
+    }
+
+    if (!email || !full_name) {
+      return NextResponse.json({ error: 'email and full_name are required' }, { status: 400 })
+    }
+
+    // Find system account
+    const { data: systemAccount, error: sysAccErr } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('is_system', true)
+      .limit(1)
+      .single()
+
+    if (sysAccErr || !systemAccount) {
+      return NextResponse.json({ error: 'System account not found — configuration error' }, { status: 500 })
+    }
+
+    // Find system location
+    const { data: systemLocation, error: sysLocErr } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('account_id', systemAccount.id)
+      .limit(1)
+      .single()
+
+    if (sysLocErr || !systemLocation) {
+      return NextResponse.json({ error: 'System location not found — configuration error' }, { status: 500 })
+    }
+
+    // Create auth user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: { full_name },
+    })
+
+    if (authError) {
+      return NextResponse.json({ error: `Failed to create auth user: ${authError.message}` }, { status: 500 })
+    }
+
+    // Create users table row with platform_role
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .upsert({
+        id: authData.user.id,
+        email,
+        full_name,
+        account_id: systemAccount.id,
+        location_id: systemLocation.id,
+        role: 'owner',
+        is_superadmin: false,
+        platform_role,
+      }, { onConflict: 'id' })
+      .select()
+      .single()
+
+    if (userError) {
+      await supabase.auth.admin.deleteUser(authData.user.id)
+      return NextResponse.json({ error: `Failed to create user record: ${userError.message}` }, { status: 500 })
+    }
+
+    // Send invite email (non-critical)
+    let inviteError: string | undefined
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: { redirectTo: `${appUrl}/auth/setup-password` },
+      })
+
+      if (linkError) {
+        inviteError = `Failed to generate invite link: ${linkError.message}`
+      } else if (linkData?.properties?.action_link) {
+        let setupLink = linkData.properties.action_link
+        try {
+          const linkUrl = new URL(setupLink)
+          linkUrl.searchParams.set('redirect_to', `${appUrl}/auth/setup-password`)
+          setupLink = linkUrl.toString()
+        } catch {
+          // If URL parsing fails, use the link as-is
+        }
+        const emailContent = buildInviteEmail({
+          fullName: full_name,
+          accountName: 'ConsignIQ',
+          tier: 'solo',
+          setupLink,
+        })
+        await sendEmail({ to: email, ...emailContent })
+      }
+    } catch (err) {
+      inviteError = `Invite email failed: ${err instanceof Error ? err.message : String(err)}`
+    }
+
+    return NextResponse.json({
+      account: systemAccount,
+      user,
+      location: systemLocation,
+      ...(inviteError ? { invite_warning: inviteError } : {}),
+    }, { status: 201 })
+  }
+
+  // Customer user creation path
+  const { account_name, tier, account_type, complimentary_tier } = body
 
   if (!email || !full_name || !account_name) {
     return NextResponse.json({ error: 'email, full_name, and account_name are required' }, { status: 400 })

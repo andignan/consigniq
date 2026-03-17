@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (453 tests across unit + API)
+- `npm test` — Jest test suite (473 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -57,7 +57,7 @@ Three client factories:
 **Admin (superadmin only):**
 - `/api/admin/stats` — cross-account platform stats
 - `/api/admin/accounts` — GET list/detail, PATCH tier/status/account_type. Filters: `?id=`, `?tier=`, `?status=`
-- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates account+location+auth user+users row (upsert for trigger compat), sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
+- `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates customer user (account+location+auth+users row) or platform user (when `platform_role` provided — uses system account, super_admin only). Sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
 - `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
 - `/api/admin/network-stats` — cross-account pricing intelligence stats
 - `/api/admin/accounts/delete` — POST, takes `{ account_id, reason? }`. Complimentary/trial: hard deletes all data + auth users. Paid with Stripe: cancels subscription, soft deletes (status='deleted', deleted_at set). Sends notification email
@@ -255,7 +255,7 @@ intake_date → expiry_date → grace_end_date. `getLifecycleStatus()` in `src/t
 - **Payouts** (`/dashboard/payouts`): consignor split calcs, mark as paid, filter tabs, CSV export
 - **Settings** (`/dashboard/settings`): tier-aware tabs. Solo: Billing+Profile. Shop+: Location Settings, Locations (owner), Account Settings (owner)
 - **Sidebar**: tier-aware nav, location switcher (owner), expiring consignor badge, role/tier label
-- **Admin** (`/admin`): Overview stats, Users (CRUD + invite), Accounts (detail + tier/status/type management, reset password)
+- **Admin** (`/admin`): Overview stats, Users (CRUD + invite + platform user creation, role-based column/button visibility), Accounts (detail + tier/status/type management, reset password)
 - **Help**: Tooltips, floating widget (`HelpWidget` — tier-aware quick links, page-aware ordering, client+server response caching with 24h TTL), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
 
 ## UI Standards
@@ -304,7 +304,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**453 Jest tests passing.** 5 Playwright E2E specs. 35 manual test plans at `/docs/test-plans/`.
+**473 Jest tests passing.** 5 Playwright E2E specs. 36 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -331,7 +331,8 @@ __tests__/
 │   ├── subscription-lifecycle.test.ts — All state transitions, cancelled_grace/limited access
 │   ├── logo-variant.test.ts          — Logo dark/light variant, sidebar usage, welcome message consistency
 │   ├── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
-│   └── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
+│   ├── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
+│   └── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -349,7 +350,7 @@ __tests__/
 │   ├── admin-network-stats.test.ts — superadmin enforcement
 │   ├── payouts.test.ts            — GET/PATCH, auth, filters, split calcs, mark as paid
 │   ├── agreements.test.ts         — send + notify-expiring, auth, validation, templates
-│   ├── admin-users.test.ts        — GET/POST, superadmin enforcement, invite email
+│   ├── admin-users.test.ts        — GET/POST, superadmin enforcement, invite email, platform user creation
 │   ├── trial-check-expiry.test.ts — auth, reminder emails, expired count
 │   ├── password-flow.test.ts      — reset-password, forgot-password
 │   ├── critical-security.test.ts  — UUID validation (5), tier enforcement (8)
