@@ -66,7 +66,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 **Delete User:** Per-user "Remove" button on account detail page. Confirmation dialog, deletes users table row + Supabase auth user. Cannot delete last super_admin. API: DELETE `/api/admin/users/[userId]` (superadmin only, UUID validated).
 
-**Shared UI:** Uses `Modal` component (`src/components/ui/Modal.tsx`) for Add User form — escape-to-close, backdrop click, scroll lock. Style constants from `src/lib/style-constants.ts` (`TIER_BADGE_CLASSES`, `MODAL_BACKDROP`, `MODAL_CONTAINER`).
+**Shared UI:** Uses `Modal` component (`src/components/ui/Modal.tsx`) for Add User form — escape-to-close, backdrop click, scroll lock. Uses `ConfirmModal` (`src/components/ui/ConfirmModal.tsx`) for destructive confirmations (remove user, delete item) — replaces native `confirm()` dialogs with styled modals. Style constants from `src/lib/style-constants.ts` (`TIER_BADGE_CLASSES`, `MODAL_BACKDROP`, `MODAL_CONTAINER`).
 
 ## Network Stats (`/api/admin/network-stats`)
 

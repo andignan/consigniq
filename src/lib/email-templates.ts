@@ -201,7 +201,7 @@ export function buildInviteEmail(data: InviteEmailData) {
   const firstName = data.fullName.split(' ')[0]
   const landingUrl = `${appUrl}/auth/invite?link=${encodeURIComponent(encodedLink)}&name=${encodeURIComponent(firstName)}&account=${encodeURIComponent(data.accountName)}`
 
-  const displayAccount = data.isPlatformUser ? 'ConsignIQ (Platform)' : data.accountName
+  const displayAccount = data.isPlatformUser ? 'ConsignIQ System' : data.accountName
 
   const text = `Hi ${data.fullName},
 

@@ -77,7 +77,7 @@ Admin accounts list (`/api/admin/accounts`) filters system accounts by default. 
 2. **New user:** POST `/api/admin/users` with `{ email, full_name, platform_role }` — creates auth user + users row on system account in one step (super_admin only). Auto-creates a "System" location for the system account if none exists.
 3. **Direct DB:** `UPDATE users SET platform_role = 'super_admin' WHERE email = '...'`
 
-Platform user invite emails use `buildInviteEmail()` with `isPlatformUser: true`, which omits the Plan line and uses `accountName: 'ConsignIQ'`.
+Platform user invite emails use `buildInviteEmail()` with `isPlatformUser: true`, which omits the Plan line and displays "ConsignIQ System" as the account name.
 
 ## Migration
 

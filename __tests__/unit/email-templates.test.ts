@@ -83,12 +83,12 @@ describe('buildInviteEmail — platform user (isPlatformUser true)', () => {
     expect(result.html).not.toContain('>Solo Pricer<')
   })
 
-  it('shows ConsignIQ (Platform) as account name in text', () => {
-    expect(result.text).toContain('Account: ConsignIQ (Platform)')
+  it('shows ConsignIQ System as account name in text', () => {
+    expect(result.text).toContain('Account: ConsignIQ System')
   })
 
-  it('shows ConsignIQ (Platform) as account name in HTML', () => {
-    expect(result.html).toContain('ConsignIQ (Platform)')
+  it('shows ConsignIQ System as account name in HTML', () => {
+    expect(result.html).toContain('ConsignIQ System')
   })
 })
 

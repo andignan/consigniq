@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (544 tests across unit + API)
+- `npm test` — Jest test suite (558 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -307,7 +307,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**544 Jest tests passing.** 5 Playwright E2E specs. 41 manual test plans at `/docs/test-plans/`.
+**558 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -336,7 +336,8 @@ __tests__/
 │   ├── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
 │   ├── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
 │   ├── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction, platform user/system account tier hiding
-│   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency
+│   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency, ConsignIQ System account name
+│   ├── confirm-modal.test.ts        — ConfirmModal component contract, confirm() removal verification
 │   └── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping

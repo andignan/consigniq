@@ -20,7 +20,7 @@ All templates in `src/lib/email-templates.ts`. Each returns `{ subject, text, ht
 |---|---|---|---|---|
 | 1 | `buildAgreementEmail()` | Manual: "Send Agreement" button | Consignor | Store header, dates, splits, item list (**no prices**), pickup instructions |
 | 2 | `buildExpiryReminderEmail()` | Cron: `/api/agreements/notify-expiring` (3 days before expiry) | Consignor | Store name, expiry date, grace end date, store phone |
-| 3 | `buildInviteEmail()` | Admin creates new user | New user | Account name, tier, setup password link. `isPlatformUser: true` omits Plan row and shows "ConsignIQ (Platform)" as account |
+| 3 | `buildInviteEmail()` | Admin creates new user | New user | Account name, tier, setup password link. `isPlatformUser: true` omits Plan row and shows "ConsignIQ System" as account |
 | 4 | `buildPasswordResetEmail()` | Admin reset password or forgot password | User | Reset password CTA, 24-hour expiry note |
 | 5 | `buildUpgradeEmail()` | Webhook: `checkout.session.completed` (new subscription) | Owner | Plan name, price, dashboard CTA |
 | 6 | `buildCancellationEmail()` | Webhook: `customer.subscription.deleted` | Owner | Previous tier, data-safe notice, resubscribe CTA |

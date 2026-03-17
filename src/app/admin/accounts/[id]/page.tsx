@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Loader2, Save, MapPin, Users, Package, AlertTriangle, ShieldX } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 interface AccountDetail {
   id: string
@@ -68,6 +69,8 @@ export default function AccountDetailPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [deleteReason, setDeleteReason] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [removeUserId, setRemoveUserId] = useState<string | null>(null)
+  const [removeUserLabel, setRemoveUserLabel] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -507,29 +510,7 @@ export default function AccountDetailPage() {
                     Reset Password
                   </button>
                   <button
-                    onClick={async () => {
-                      if (!confirm(`Remove ${u.full_name || u.email} from this account? This will delete their login.`)) return
-                      setSaving(true)
-                      setSaveMsg('')
-                      try {
-                        const res = await fetch(`/api/admin/users/${u.id}`, {
-                          method: 'DELETE',
-                          credentials: 'include',
-                        })
-                        if (res.ok) {
-                          setUsers(prev => prev.filter(x => x.id !== u.id))
-                          setSaveMsg(`${u.full_name || u.email} removed`)
-                        } else {
-                          const data = await res.json()
-                          setSaveMsg(data.error || 'Failed to remove user')
-                        }
-                      } catch {
-                        setSaveMsg('Failed to remove user')
-                      } finally {
-                        setSaving(false)
-                        setTimeout(() => setSaveMsg(''), 4000)
-                      }
-                    }}
+                    onClick={() => { setRemoveUserId(u.id); setRemoveUserLabel(u.full_name || u.email) }}
                     disabled={saving}
                     className="text-xs font-medium px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                   >
@@ -618,6 +599,41 @@ export default function AccountDetailPage() {
           </button>
         </div>
       </Modal>
+
+      {/* Remove User Modal */}
+      <ConfirmModal
+        open={!!removeUserId}
+        onClose={() => setRemoveUserId(null)}
+        title="Remove User"
+        message={`Remove ${removeUserLabel} from this account? This will delete their login.`}
+        confirmLabel="Remove"
+        destructive
+        loading={saving}
+        onConfirm={async () => {
+          if (!removeUserId) return
+          setSaving(true)
+          setSaveMsg('')
+          try {
+            const res = await fetch(`/api/admin/users/${removeUserId}`, {
+              method: 'DELETE',
+              credentials: 'include',
+            })
+            if (res.ok) {
+              setUsers(prev => prev.filter(x => x.id !== removeUserId))
+              setSaveMsg(`${removeUserLabel} removed`)
+            } else {
+              const data = await res.json()
+              setSaveMsg(data.error || 'Failed to remove user')
+            }
+          } catch {
+            setSaveMsg('Failed to remove user')
+          } finally {
+            setSaving(false)
+            setRemoveUserId(null)
+            setTimeout(() => setSaveMsg(''), 4000)
+          }
+        }}
+      />
     </div>
   )
 }

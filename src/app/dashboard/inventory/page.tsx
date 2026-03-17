@@ -13,6 +13,7 @@ import { ITEM_CATEGORIES, CONDITION_LABELS } from '@/types'
 import { useUser } from '@/contexts/UserContext'
 import { useLocation } from '@/contexts/LocationContext'
 import Modal from '@/components/ui/Modal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 interface ConsignorOption {
   id: string
@@ -91,6 +92,7 @@ export default function InventoryPage() {
   const [labelSize, setLabelSize] = useState<'2x1' | '4x2'>('2x1')
   const [printingLabels, setPrintingLabels] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ItemWithConsignor | null>(null)
 
   function toggleItem(id: string) {
     setSelectedItems(prev => {
@@ -257,7 +259,6 @@ export default function InventoryPage() {
   }
 
   async function deleteItem(item: ItemWithConsignor) {
-    if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return
     try {
       const res = await fetch('/api/items', {
         method: 'DELETE',
@@ -267,13 +268,11 @@ export default function InventoryPage() {
       })
       if (res.ok) {
         fetchItems()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to delete')
       }
     } catch {
-      alert('Failed to delete item')
+      // handled silently
     }
+    setDeleteConfirmItem(null)
   }
 
   function closeModal() {
@@ -677,7 +676,7 @@ export default function InventoryPage() {
                   )}
                   {item.status !== 'sold' && (
                     <button
-                      onClick={() => deleteItem(item)}
+                      onClick={() => setDeleteConfirmItem(item)}
                       title="Delete item permanently"
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
@@ -831,6 +830,17 @@ export default function InventoryPage() {
           </>
         )}
       </Modal>
+
+      {/* ─── Delete confirm modal ──────────────────────────── */}
+      <ConfirmModal
+        open={!!deleteConfirmItem}
+        onClose={() => setDeleteConfirmItem(null)}
+        title="Delete Item"
+        message={`Delete "${deleteConfirmItem?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => deleteConfirmItem && deleteItem(deleteConfirmItem)}
+      />
     </div>
   )
 }

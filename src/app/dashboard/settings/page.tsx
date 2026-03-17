@@ -15,6 +15,7 @@ import { canUseFeature } from '@/lib/feature-gates'
 import { type Tier } from '@/lib/tier-limits'
 import { TIER_BADGE_CLASSES } from '@/lib/style-constants'
 import Modal from '@/components/ui/Modal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 // ─── Types ────────────────────────────────────────────────────
 interface LocationSettings {
@@ -131,6 +132,10 @@ export default function SettingsPage() {
   const [accountSaving, setAccountSaving] = useState(false)
   const [accountError, setAccountError] = useState('')
   const [accountSuccess, setAccountSuccess] = useState('')
+
+  // Remove member modal
+  const [removeMemberId, setRemoveMemberId] = useState<string | null>(null)
+  const [removeMemberLabel, setRemoveMemberLabel] = useState('')
 
   // Invite modal
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -734,17 +739,7 @@ export default function SettingsPage() {
                         <td className="px-4 py-2.5 text-right">
                           {u.id !== user?.id && (
                             <button
-                              onClick={async () => {
-                                if (!confirm(`Remove ${u.full_name || u.email} from your team?`)) return
-                                try {
-                                  const res = await fetch(`/api/settings/team/${u.id}`, {
-                                    method: 'DELETE', credentials: 'include',
-                                  })
-                                  if (res.ok) { setAccountError('Member removed'); loadAccountSettings() }
-                                  else { const d = await res.json(); setAccountError(d.error || 'Failed') }
-                                } catch { setAccountError('Failed to remove') }
-                                setTimeout(() => setAccountError(''), 3000)
-                              }}
+                              onClick={() => { setRemoveMemberId(u.id); setRemoveMemberLabel(u.full_name || u.email) }}
                               className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors"
                             >
                               Remove
@@ -941,6 +936,28 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Remove Member Modal */}
+      <ConfirmModal
+        open={!!removeMemberId}
+        onClose={() => setRemoveMemberId(null)}
+        title="Remove Team Member"
+        message={`Remove ${removeMemberLabel} from your team?`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={async () => {
+          if (!removeMemberId) return
+          try {
+            const res = await fetch(`/api/settings/team/${removeMemberId}`, {
+              method: 'DELETE', credentials: 'include',
+            })
+            if (res.ok) { setAccountError('Member removed'); loadAccountSettings() }
+            else { const d = await res.json(); setAccountError(d.error || 'Failed') }
+          } catch { setAccountError('Failed to remove') }
+          setRemoveMemberId(null)
+          setTimeout(() => setAccountError(''), 3000)
+        }}
+      />
     </div>
   )
 }
