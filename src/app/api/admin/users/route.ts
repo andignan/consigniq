@@ -199,6 +199,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'email, full_name, and account_name are required' }, { status: 400 })
   }
 
+  // Prevent creating a customer account that duplicates a system account name
+  const { data: existingSystem } = await supabase
+    .from('accounts')
+    .select('id')
+    .eq('is_system', true)
+    .ilike('name', account_name)
+    .limit(1)
+    .maybeSingle()
+
+  if (existingSystem) {
+    return NextResponse.json({ error: 'This account name is reserved for system use' }, { status: 400 })
+  }
+
   if (!tier || !['solo', 'shop', 'enterprise'].includes(tier)) {
     return NextResponse.json({ error: 'tier must be solo, shop, or enterprise' }, { status: 400 })
   }

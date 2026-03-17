@@ -60,8 +60,18 @@ function setupPostMocks() {
     }),
   })
 
+  const systemNameCheckMock = jest.fn().mockReturnValue({
+    eq: jest.fn().mockReturnValue({
+      ilike: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+    }),
+  })
+
   mockSupabaseFrom.mockImplementation((table: string) => {
-    if (table === 'accounts') return { insert: accountInsertMock }
+    if (table === 'accounts') return { insert: accountInsertMock, select: systemNameCheckMock }
     if (table === 'locations') return { insert: locationInsertMock }
     if (table === 'users') return { upsert: usersUpsertMock }
     return {}
@@ -612,6 +622,43 @@ describe('POST /api/admin/users', () => {
     const body = await res.json()
     expect(body.account.id).toBe('acc1')
     expect(body.location.id).toBe('loc1')
+  })
+
+  it('rejects customer account creation when name matches a system account', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
+
+    // System name check returns a match
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              ilike: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'sys-acc' }, error: null }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      return {}
+    })
+
+    const res = await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'dup@test.com',
+        full_name: 'Dup User',
+        account_name: 'ConsignIQ System',
+        tier: 'shop',
+        account_type: 'paid',
+      }),
+    }))
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('reserved for system use')
   })
 
   it('returns 201 with warning if invite email fails', async () => {
