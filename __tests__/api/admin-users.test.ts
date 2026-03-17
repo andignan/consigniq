@@ -516,6 +516,56 @@ describe('POST /api/admin/users', () => {
     expect(body.error).toContain('platform_role')
   })
 
+  it('looks up system account by is_system flag not by name', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    const eqMock = jest.fn()
+    const selectMock = jest.fn().mockReturnValue({
+      eq: eqMock.mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: { id: 'sys-acc' }, error: null }),
+        }),
+      }),
+    })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'accounts') return { select: selectMock }
+      if (table === 'locations') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-loc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'users') {
+        return {
+          upsert: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({ data: { id: 'u1' }, error: null }),
+            }),
+          }),
+        }
+      }
+      return {}
+    })
+
+    mockSupabaseAuth.admin.createUser.mockResolvedValue({ data: { user: { id: 'a1' } }, error: null })
+    mockSupabaseAuth.admin.generateLink.mockResolvedValue({ data: { properties: { action_link: 'https://x.com/setup?t=1' } }, error: null })
+    mockSendEmail.mockResolvedValue({ id: 'm1' })
+
+    await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'p@c.com', full_name: 'P', platform_role: 'finance' }),
+    }))
+
+    // Verify the system account lookup uses is_system=true, not name matching
+    expect(eqMock).toHaveBeenCalledWith('is_system', true)
+  })
+
   it('returns 500 when system account not found', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
 

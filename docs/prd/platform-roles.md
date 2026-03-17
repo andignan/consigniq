@@ -87,3 +87,5 @@ Migration: `20260316020000_platform_roles.sql`
 - Migrates `is_superadmin = true` → `platform_role = 'super_admin'`
 - Migrates `name = 'ConsignIQ System'` → `is_system = true`
 - Creates partial index on `platform_role`
+
+**Data integrity note:** There must be exactly one account with `is_system = true`. The system account lookup in `/api/admin/users` uses `.eq('is_system', true).limit(1).single()`. If duplicates exist (e.g., a second "ConsignIQ System" account created via the customer flow before the `is_system` flag existed), platform users may be split across accounts. The platform user creation path auto-creates a system location if none exists.

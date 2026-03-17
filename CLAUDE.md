@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (533 tests across unit + API)
+- `npm test` — Jest test suite (534 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -306,7 +306,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**533 Jest tests passing.** 5 Playwright E2E specs. 39 manual test plans at `/docs/test-plans/`.
+**534 Jest tests passing.** 5 Playwright E2E specs. 40 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
