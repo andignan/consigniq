@@ -1,36 +1,48 @@
-/* ConsignIQ Brand Tokens — single source of truth for brand colors */
+/* ============================================================
+   ConsignIQ Brand Tokens
+   Drop into /styles/brand-tokens.css and import in globals.css
+   ============================================================ */
+
 :root {
-  --brand-50: #E7F5EF;
-  --brand-100: #C3E8D8;
-  --brand-200: #9BDABD;
-  --brand-300: #6CC9A1;
-  --brand-400: #3DB885;
-  --brand-500: #0A9E78;
-  --brand-600: #088B6A;
-  --brand-700: #077D5F;
-  --brand-800: #056A50;
-  --brand-900: #034D3A;
+  /* ── Primary Teal ─────────────────────────────────────────── */
+  --ciq-teal-50:  #E7F5EF;
+  --ciq-teal-100: #BDECD8;
+  --ciq-teal-400: #1FC896;
+  --ciq-teal-500: #0A9E78;   /* PRIMARY brand teal              */
+  --ciq-teal-600: #077D5F;   /* hover / deep                    */
+  --ciq-teal-700: #055C46;
 
-  --navy-800: #0F1D33;
-  --navy-900: #071020;
+  /* ── Navy ─────────────────────────────────────────────────── */
+  --ciq-navy-900: #071020;   /* dark sidebar / app icon bg      */
+  --ciq-navy-800: #0d1f3c;   /* primary text on light           */
+  --ciq-navy-700: #152d55;
+  --ciq-navy-600: #1e3f74;
+  --ciq-navy-200: #c5d4e8;
+  --ciq-navy-100: #e2ecf6;
+
+  /* ── Semantic aliases ─────────────────────────────────────── */
+  --ciq-brand:         var(--ciq-teal-500);
+  --ciq-brand-hover:   var(--ciq-teal-600);
+  --ciq-brand-light:   var(--ciq-teal-50);
+  --ciq-brand-text:    var(--ciq-navy-800);
+  --ciq-bg-dark:       var(--ciq-navy-900);
+
+  /* ── Tagline ──────────────────────────────────────────────── */
+  --ciq-tagline: "AI-Powered Pricing & Inventory";
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --ciq-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --ciq-font-mono: 'SF Mono', 'Fira Code', Menlo, monospace;
+  --ciq-wordmark-tracking: -0.04em;
+
+  /* ── Radius ────────────────────────────────────────────────── */
+  --ciq-radius-sm:  6px;
+  --ciq-radius-md:  10px;
+  --ciq-radius-lg:  14px;
+  --ciq-radius-xl:  20px;
+
+  /* ── Shadows ───────────────────────────────────────────────── */
+  --ciq-shadow-sm: 0 1px 3px rgba(7,16,32,0.08), 0 1px 2px rgba(7,16,32,0.06);
+  --ciq-shadow-md: 0 4px 12px rgba(7,16,32,0.10), 0 2px 4px rgba(7,16,32,0.06);
+  --ciq-shadow-lg: 0 10px 32px rgba(7,16,32,0.14), 0 4px 8px rgba(7,16,32,0.06);
 }
-
-/* Dark mode scaffold — uncomment and adjust when implementing dark mode
-@media (prefers-color-scheme: dark) {
-  :root {
-    --brand-50: #034D3A;
-    --brand-100: #056A50;
-    --brand-200: #077D5F;
-    --brand-300: #088B6A;
-    --brand-400: #0A9E78;
-    --brand-500: #3DB885;
-    --brand-600: #6CC9A1;
-    --brand-700: #9BDABD;
-    --brand-800: #C3E8D8;
-    --brand-900: #E7F5EF;
-
-    --navy-800: #C3CCD9;
-    --navy-900: #E5EAF0;
-  }
-}
-*/

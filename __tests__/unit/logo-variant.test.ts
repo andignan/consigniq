@@ -46,9 +46,9 @@ describe('Logo component variant prop', () => {
       'utf8'
     )
     expect(source).toContain("size?: 'sm' | 'md' | 'lg'")
-    expect(source).toContain('sm: { mark: 28')
-    expect(source).toContain('md: { mark: 32')
-    expect(source).toContain('lg: { mark: 40')
+    expect(source).toContain('sm: { markH: 28')
+    expect(source).toContain('md: { markH: 32')
+    expect(source).toContain('lg: { markH: 40')
   })
 
   it('admin sidebar uses variant="dark"', () => {

@@ -1,5 +1,9 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="8" fill="#0A9E78"/>
-  <path d="M9 16.5C9 12.36 12.36 9 16.5 9H17V12H16.5C14.01 12 12 14.01 12 16.5C12 18.99 14.01 21 16.5 21C18.99 21 21 18.99 21 16.5V16H24V16.5C24 20.64 20.64 24 16.5 24C12.36 24 9 20.64 9 16.5Z" fill="white"/>
-  <circle cx="22" cy="12" r="2.5" fill="white"/>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#071020"/>
+  <path d="M38,20 H51 C53.2,20 55,21.8 55,24 V40 C55,42.2 53.2,44 51,44 H38 L28,32 Z" fill="#0A9E78"/>
+  <circle cx="31" cy="32" r="4.5" fill="#071020"/>
+  <circle cx="31" cy="32" r="2" fill="#0A9E78"/>
+  <line x1="39" y1="28.5" x2="51" y2="28.5" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+  <line x1="39" y1="32" x2="51" y2="32" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.25"/>
+  <line x1="39" y1="35.5" x2="47" y2="35.5" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.15"/>
 </svg>

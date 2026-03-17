@@ -2,25 +2,29 @@
 
 ## Brand Colors
 
-### Primary — Brand Teal
-| Token | Hex | Usage |
-|---|---|---|
-| brand-50 | #E7F5EF | Light backgrounds, badges |
-| brand-100 | #C3E8D8 | Hover backgrounds |
-| brand-200 | #9BDABD | Borders, rings |
-| brand-300 | #6CC9A1 | Disabled states |
-| brand-400 | #3DB885 | Secondary text on dark bg |
-| brand-500 | #0A9E78 | **Primary brand color** — buttons, active states, "IQ" wordmark |
-| brand-600 | #088B6A | Button default |
-| brand-700 | #077D5F | Button hover |
-| brand-800 | #056A50 | Bold text on light bg |
-| brand-900 | #034D3A | Darkest accent |
+### Primary — Brand Teal (v1.1)
+| CSS Variable | Tailwind | Hex | Usage |
+|---|---|---|---|
+| `--ciq-teal-50` | brand-50 | #E7F5EF | Light backgrounds, badges |
+| `--ciq-teal-100` | brand-100 | #BDECD8 | Hover backgrounds |
+| — | brand-200 | #9BDABD | Borders, rings (hardcoded) |
+| — | brand-300 | #6CC9A1 | Disabled states (hardcoded) |
+| `--ciq-teal-400` | brand-400 | #1FC896 | Secondary text on dark bg |
+| `--ciq-teal-500` | brand-500 | #0A9E78 | **Primary brand color** — buttons, active states, "IQ" wordmark |
+| `--ciq-teal-600` | brand-600 | #077D5F | Button default / hover |
+| `--ciq-teal-700` | brand-700 | #055C46 | Deep accents |
+| — | brand-800 | #056A50 | Bold text on light bg (hardcoded) |
+| — | brand-900 | #034D3A | Darkest accent (hardcoded) |
 
-### Secondary — Navy
-| Token | Hex | Usage |
-|---|---|---|
-| navy-800 | #0F1D33 | Dark UI borders |
-| navy-900 | #071020 | **Sidebar background**, email headers |
+### Secondary — Navy (v1.1)
+| CSS Variable | Tailwind | Hex | Usage |
+|---|---|---|---|
+| `--ciq-navy-100` | navy-100 | #e2ecf6 | Light navy backgrounds |
+| `--ciq-navy-200` | navy-200 | #c5d4e8 | Navy borders |
+| `--ciq-navy-600` | navy-600 | #1e3f74 | Navy accents |
+| `--ciq-navy-700` | navy-700 | #152d55 | Dark navy text |
+| `--ciq-navy-800` | navy-800 | #0d1f3c | Primary text on light bg |
+| `--ciq-navy-900` | navy-900 | #071020 | **Sidebar background**, email headers |
 
 ### Preserved Colors
 - **Amber** (`amber-500`): Expiring consignor badge (warning semantics)
@@ -35,21 +39,34 @@
 - `variant="dark"`: "Consign" renders white (`#ffffff`) for use on dark backgrounds (sidebar, admin)
 - `variant="light"` (default): "Consign" uses `text-current` (inherits parent color)
 - Component: `src/components/Logo.tsx`
-- Sizes: sm (28px mark), md (32px), lg (40px)
+- Sizes: sm (44x28), md (50x32), lg (62x40) — ~1.56:1 aspect ratio
 - Optional subtitle: "AI-Powered Pricing & Inventory"
 
 ### Mark
-- Rounded square (#0A9E78) with white price tag icon (tag shape + circle cutout)
-- Files: `public/logo-mark.svg`, `public/favicon.svg`
+- Landscape price tag (56x36) — teal tag body with white grommet ring and text hint lines
+- Files: `public/logo-mark.svg` (56x36), `public/favicon.svg` (64x64 dark bg)
+
+## Official Brand Files (v1.1)
+
+| File | Dimensions | Description |
+|---|---|---|
+| `src/styles/brand-tokens.css` | — | CSS custom properties (`--ciq-*` prefix) |
+| `public/logo-mark.svg` | 56x36 | Landscape price tag mark (teal) |
+| `public/favicon.svg` | 64x64 | Tag on dark navy rounded square |
+| `public/wordmark-dark.svg` | 160x36 | Full lockup — mark + wordmark, white text (for dark backgrounds) |
+| `public/wordmark-light.svg` | 160x36 | Full lockup — mark + wordmark, navy text (for light backgrounds) |
+| `public/email-logo.png` | 200x130 | PNG render of mark on white background (for email) |
+| `src/components/Logo.tsx` | — | React component with size/variant props |
 
 ## Implementation
 
-### CSS Tokens
+### CSS Tokens (v1.1)
 - File: `src/styles/brand-tokens.css`
-- CSS custom properties in `:root` block
+- CSS custom properties use `--ciq-*` prefix (e.g., `--ciq-teal-500`, `--ciq-navy-900`)
+- Semantic aliases: `--ciq-brand`, `--ciq-brand-hover`, `--ciq-brand-light`, `--ciq-brand-text`, `--ciq-bg-dark`
 - Consumed by Tailwind via `tailwind.config.ts` → `extend.colors.brand` and `extend.colors.navy`
+- Shades without CSS vars (200, 300, 800, 900) use hardcoded hex in Tailwind config
 - Semantic tokens in Tailwind: `surface` (DEFAULT/page/section/muted), `border` (DEFAULT/subtle), `content` (DEFAULT/secondary/tertiary/muted)
-- Dark mode scaffold included (commented out)
 
 ### Shared Style Constants
 - File: `src/lib/style-constants.ts` — single source of truth for repeated class strings
