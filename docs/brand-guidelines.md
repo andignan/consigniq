@@ -157,8 +157,3 @@ All dashboard views display "Welcome back, [firstName]!" as the page heading whe
 - **Prices**: Derived from `TIER_CONFIGS[targetTier].price` — never hardcoded
 - **`onUpgrade` pattern**: Parent page handles Stripe redirect; component stays billing-agnostic. Without `onUpgrade`, renders as `<Link>` to settings
 - **Rule**: Never hardcode upgrade UI — always use UpgradeCard
-
-### Files Modified
-- 6 new files created (brand-tokens.css, Logo.tsx, favicon.svg, logo-mark.svg, brand-identity.md, layout.tsx icons)
-- 27 files modified (sidebar, auth pages, admin sidebar, email templates, 20+ dashboard pages/components)
-- Post-branding review: 15 additional files updated (20 fixes — admin sidebar dark theme, button/badge/tab color consistency, logo mark + sizing, UX fixes)

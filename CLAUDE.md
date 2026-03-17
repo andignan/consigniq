@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (492 tests across unit + API)
+- `npm test` — Jest test suite (528 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -134,6 +134,8 @@ Read the relevant PRD before modifying any of these systems:
 - **Subscription Lifecycle:** `/docs/prd/subscription-lifecycle.md`
 - **Account Deletion:** `/docs/prd/account-deletion.md`
 - **Platform Roles:** `/docs/prd/platform-roles.md`
+
+**Canonical brand reference:** `/docs/brand-guidelines.md` (copy of brand-identity PRD, use for future sessions)
 
 ### Stripe Billing & Tier Enforcement
 
@@ -304,7 +306,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**473 Jest tests passing.** 5 Playwright E2E specs. 36 manual test plans at `/docs/test-plans/`.
+**528 Jest tests passing.** 5 Playwright E2E specs. 37 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -333,7 +335,8 @@ __tests__/
 │   ├── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
 │   ├── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
 │   ├── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction
-│   └── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency
+│   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency
+│   └── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
