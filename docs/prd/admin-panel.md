@@ -30,7 +30,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 
 ## Account Management
 
-**List (`/admin/accounts`):** Filterable by tier and status. Shows name, tier badge, status badge, location count, user count, created date. Click row → detail page.
+**List (`/admin/accounts`):** Filterable by tier and status. Shows name, tier badge, status badge, location count, user count, created date. System account rows (`is_system = true`) show `—` for Tier instead of a badge. Click row → detail page.
 
 **Detail (`/admin/accounts/[id]`):** Account info card, tier/status dropdowns with save buttons, action buttons, item counts grid, locations list, users list with reset password per user.
 

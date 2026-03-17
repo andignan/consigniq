@@ -10,6 +10,7 @@ interface AccountRow {
   name: string
   tier: string
   status: string
+  is_system: boolean
   location_count: number
   user_count: number
   created_at: string
@@ -111,9 +112,13 @@ export default function AccountsPage() {
                     <tr className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{a.name}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[a.tier] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {a.tier}
-                        </span>
+                        {a.is_system ? (
+                          <span className="text-xs text-gray-400">&mdash;</span>
+                        ) : (
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[a.tier] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {a.tier}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE_CLASSES[a.status] ?? 'bg-gray-100 text-gray-600'}`}>

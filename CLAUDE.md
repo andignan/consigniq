@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (535 tests across unit + API)
+- `npm test` — Jest test suite (537 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -306,7 +306,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**535 Jest tests passing.** 5 Playwright E2E specs. 40 manual test plans at `/docs/test-plans/`.
+**537 Jest tests passing.** 5 Playwright E2E specs. 40 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -334,7 +334,7 @@ __tests__/
 │   ├── logo-variant.test.ts          — Logo dark/light variant, sidebar usage, welcome message consistency
 │   ├── upgrade-card.test.ts          — UpgradeCard config, price derivation, features, headline variants
 │   ├── platform-roles.test.ts        — PlatformRole type validation, checkSuperadmin contract
-│   ├── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction, platform user tier/type hiding
+│   ├── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction, platform user/system account tier hiding
 │   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency
 │   └── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
 ├── api/

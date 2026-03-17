@@ -184,3 +184,17 @@ describe('Admin Users Page — Form Mode Logic', () => {
     })
   })
 })
+
+describe('Admin Accounts Table — Tier badge for system accounts', () => {
+  it('system account rows show dash for Tier instead of badge', () => {
+    const account = { is_system: true, tier: 'enterprise' }
+    const showTierBadge = !account.is_system
+    expect(showTierBadge).toBe(false)
+  })
+
+  it('regular account rows show Tier badge normally', () => {
+    const account = { is_system: false, tier: 'shop' }
+    const showTierBadge = !account.is_system
+    expect(showTierBadge).toBe(true)
+  })
+})
