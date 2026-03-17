@@ -3,7 +3,7 @@
 // Usage: node scripts/generate-email-logo.mjs
 
 import sharp from 'sharp'
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -17,8 +17,9 @@ const svg = readFileSync(svgPath)
 
 await sharp(svg)
   .resize({ width: 200, height: 130, fit: 'inside' })
+  .flatten({ background: { r: 255, g: 255, b: 255 } })
   .png()
   .toFile(outPath)
 
-const { size } = await sharp(outPath).metadata().then(m => ({ size: m.size }))
-console.log(`Created ${outPath} (${size ?? 'unknown'} bytes)`)
+const { size } = statSync(outPath)
+console.log(`Created ${outPath} (${size} bytes)`)
