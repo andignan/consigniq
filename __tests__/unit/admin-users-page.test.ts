@@ -71,6 +71,32 @@ describe('Admin Users Page — Form Mode Logic', () => {
     })
   })
 
+  describe('Tier and Type columns for platform users', () => {
+    it('platform user rows show dash for Tier instead of badge', () => {
+      const user = { platform_role: 'support', accounts: { tier: 'solo' } }
+      const showTierBadge = !user.platform_role
+      expect(showTierBadge).toBe(false)
+    })
+
+    it('platform user rows show dash for Type instead of AccountTypeBadge', () => {
+      const user = { platform_role: 'finance', accounts: { account_type: 'paid' } }
+      const showTypeBadge = !user.platform_role
+      expect(showTypeBadge).toBe(false)
+    })
+
+    it('customer user rows show Tier badge normally', () => {
+      const user = { platform_role: null, accounts: { tier: 'shop' } }
+      const showTierBadge = !user.platform_role
+      expect(showTierBadge).toBe(true)
+    })
+
+    it('customer user rows show Type badge normally', () => {
+      const user = { platform_role: null, accounts: { account_type: 'paid' } }
+      const showTypeBadge = !user.platform_role
+      expect(showTypeBadge).toBe(true)
+    })
+  })
+
   describe('Form field visibility by user type', () => {
     it('customer mode shows Account Name, Tier, Account Type fields', () => {
       const formUserType = 'customer' as const

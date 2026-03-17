@@ -60,6 +60,7 @@ All three roles grant access to `/admin` routes via `checkSuperadmin()`. Only `s
 
 ### UI: Admin Users Page
 - "Platform Role" column visible to `super_admin` and `support` users (color-coded badges: red/blue/amber)
+- Tier and Type columns show `—` for platform user rows (these fields are only meaningful for customer users)
 - Click badge or "Set role" link to edit via inline dropdown (`super_admin` only)
 - "Add User" button with customer/platform toggle (`super_admin` only)
 - Last super_admin protection (API-side)

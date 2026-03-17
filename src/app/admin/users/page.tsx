@@ -309,12 +309,20 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3 text-gray-700">{u.full_name || '--'}</td>
                     <td className="px-4 py-3 text-gray-700">{u.accounts?.name || '--'}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[u.accounts?.tier ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {u.accounts?.tier ?? '--'}
-                      </span>
+                      {u.platform_role ? (
+                        <span className="text-xs text-gray-400">&mdash;</span>
+                      ) : (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TIER_BADGE_CLASSES[u.accounts?.tier ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {u.accounts?.tier ?? '--'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      <AccountTypeBadge user={u} />
+                      {u.platform_role ? (
+                        <span className="text-xs text-gray-400">&mdash;</span>
+                      ) : (
+                        <AccountTypeBadge user={u} />
+                      )}
                     </td>
                     {showPlatformRoleColumn && (
                       <td className="px-4 py-3">
