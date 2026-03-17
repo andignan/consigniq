@@ -20,7 +20,7 @@ export async function requireFeature(feature: Feature) {
     .eq('id', user.id)
     .single()
 
-  const tier = ((profile?.accounts as { tier?: string } | null)?.tier ?? 'starter') as Tier
+  const tier = ((profile?.accounts as { tier?: string } | null)?.tier ?? 'shop') as Tier
 
   if (!canUseFeature(tier, feature)) {
     redirect('/dashboard')

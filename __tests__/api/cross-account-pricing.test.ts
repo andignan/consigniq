@@ -58,9 +58,9 @@ beforeEach(() => {
   mockIlike.mockReturnValue(defaultChain)
   mockNot.mockReturnValue(defaultChain)
 
-  // Profile lookup — default pro tier
+  // Profile lookup — default enterprise tier
   mockSingle.mockResolvedValue({
-    data: { account_id: 'acc-1', accounts: { tier: 'pro' } },
+    data: { account_id: 'acc-1', accounts: { tier: 'enterprise' } },
     error: null,
   })
 
@@ -82,9 +82,9 @@ describe('GET /api/pricing/cross-account', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 403 for non-Pro tier (starter)', async () => {
+  it('returns 403 for non-Enterprise tier (shop)', async () => {
     mockSingle.mockResolvedValue({
-      data: { account_id: 'acc-1', accounts: { tier: 'starter' } },
+      data: { account_id: 'acc-1', accounts: { tier: 'shop' } },
       error: null,
     })
     const req = makeRequest('http://localhost:3000/api/pricing/cross-account?category=Furniture')
@@ -92,9 +92,9 @@ describe('GET /api/pricing/cross-account', () => {
     expect(res.status).toBe(403)
   })
 
-  it('returns 403 for standard tier', async () => {
+  it('returns 403 for solo tier', async () => {
     mockSingle.mockResolvedValue({
-      data: { account_id: 'acc-1', accounts: { tier: 'standard' } },
+      data: { account_id: 'acc-1', accounts: { tier: 'solo' } },
       error: null,
     })
     const req = makeRequest('http://localhost:3000/api/pricing/cross-account?category=Furniture')

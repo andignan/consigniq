@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest) {
 
   // Build allowed updates
   const allowed: Record<string, unknown> = {}
-  if (updates.tier && ['solo', 'starter', 'standard', 'pro'].includes(updates.tier)) {
+  if (updates.tier && ['solo', 'shop', 'enterprise'].includes(updates.tier)) {
     allowed.tier = updates.tier
   }
   if (updates.status && ['active', 'suspended', 'cancelled', 'inactive'].includes(updates.status)) {
@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest) {
   if (typeof updates.is_complimentary === 'boolean') {
     allowed.is_complimentary = updates.is_complimentary
   }
-  if (updates.complimentary_tier && ['solo', 'starter', 'standard', 'pro'].includes(updates.complimentary_tier)) {
+  if (updates.complimentary_tier && ['solo', 'shop', 'enterprise'].includes(updates.complimentary_tier)) {
     allowed.complimentary_tier = updates.complimentary_tier
   } else if (updates.complimentary_tier === null) {
     allowed.complimentary_tier = null

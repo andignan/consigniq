@@ -6,9 +6,8 @@ import { ERRORS } from '@/lib/errors'
 
 function getTierPriceId(tier: string): string | undefined {
   if (tier === 'solo') return process.env.STRIPE_SOLO_PRICE_ID
-  if (tier === 'starter') return process.env.STRIPE_STARTER_PRICE_ID
-  if (tier === 'standard') return process.env.STRIPE_STANDARD_PRICE_ID
-  if (tier === 'pro') return process.env.STRIPE_PRO_PRICE_ID
+  if (tier === 'shop') return process.env.STRIPE_SHOP_PRICE_ID
+  if (tier === 'enterprise') return process.env.STRIPE_ENTERPRISE_PRICE_ID
   return undefined
 }
 
@@ -99,7 +98,7 @@ export async function POST(request: NextRequest) {
 
   const priceId = tier ? getTierPriceId(tier) : undefined
   if (!tier || !priceId) {
-    return NextResponse.json({ error: 'Invalid tier. Must be "solo", "starter", "standard", or "pro"' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid tier. Must be "solo", "shop", or "enterprise"' }, { status: 400 })
   }
 
   try {

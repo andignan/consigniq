@@ -53,7 +53,7 @@
 
 ### Shared Style Constants
 - File: `src/lib/style-constants.ts` — single source of truth for repeated class strings
-- `TIER_BADGE_CLASSES` — tier badge colors (solo/starter/standard/pro), used by settings, admin users, admin accounts
+- `TIER_BADGE_CLASSES` — tier badge colors (solo/shop/enterprise), used by settings, admin users, admin accounts
 - `STATUS_BADGE_CLASSES` — account status badge colors (active/suspended/cancelled/deleted), used by admin accounts
 - `CARD_CLASSES` / `CARD_CLASSES_LG` — card containers (uses semantic tokens)
 - `MODAL_BACKDROP` / `MODAL_CONTAINER` — modal overlay and panel classes
@@ -118,7 +118,7 @@ All dashboard views display "Welcome back, [firstName]!" as the page heading whe
 
 ### UpgradeCard Component
 - **File**: `src/components/UpgradeCard.tsx` — single source of truth for all upgrade CTAs
-- **Props**: `targetTier` (starter/standard/pro), `context` (dashboard/settings/inline), `onUpgrade` (callback), `loading`
+- **Props**: `targetTier` (shop/enterprise), `context` (dashboard/settings/inline), `onUpgrade` (callback), `loading`
 - **Config**: `UPGRADE_CARD_CONFIG` object holds all copy/features per tier — change once, updates everywhere
 - **Prices**: Derived from `TIER_CONFIGS[targetTier].price` — never hardcoded
 - **`onUpgrade` pattern**: Parent page handles Stripe redirect; component stays billing-agnostic. Without `onUpgrade`, renders as `<Link>` to settings

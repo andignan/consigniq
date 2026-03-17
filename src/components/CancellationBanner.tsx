@@ -18,7 +18,7 @@ export default function CancellationBanner() {
     const endDate = periodEnd
       ? new Date(periodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       : 'soon'
-    const cancelledTier = (acc.cancelled_tier || acc.tier || 'starter') as Tier
+    const cancelledTier = (acc.cancelled_tier || acc.tier || 'shop') as Tier
     const tierLabel = TIER_CONFIGS[cancelledTier]?.label || 'your plan'
 
     return (
@@ -55,7 +55,7 @@ export default function CancellationBanner() {
   }
 
   if (accountType === 'cancelled_limited') {
-    const cancelledTier = (acc.cancelled_tier || 'starter') as Tier
+    const cancelledTier = (acc.cancelled_tier || 'shop') as Tier
     const tierLabel = TIER_CONFIGS[cancelledTier]?.label || 'your plan'
     const endDate = acc.subscription_period_end
       ? new Date(acc.subscription_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Pro-tier only
-  const tier = (profile.accounts as unknown as { tier: string })?.tier as Tier ?? 'starter'
+  const tier = (profile.accounts as unknown as { tier: string })?.tier as Tier ?? 'shop'
   if (!canUseFeature(tier, 'cross_customer_pricing')) {
     return NextResponse.json({ error: 'Cross-customer pricing requires Pro tier' }, { status: 403 })
   }

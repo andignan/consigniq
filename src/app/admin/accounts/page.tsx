@@ -56,9 +56,9 @@ export default function AccountsPage() {
           className="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           <option value="">All Tiers</option>
-          <option value="starter">Starter</option>
-          <option value="standard">Standard</option>
-          <option value="pro">Pro</option>
+          <option value="solo">Solo</option>
+          <option value="shop">Shop</option>
+          <option value="enterprise">Enterprise</option>
         </select>
         <select
           value={statusFilter}

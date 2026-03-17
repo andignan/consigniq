@@ -45,8 +45,8 @@ beforeEach(() => {
   mockInsert.mockReturnValue({ select: jest.fn().mockReturnValue({ single: mockSingle }) })
   mockSingle.mockResolvedValue({ data: { id: 'new-id' }, error: null })
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
-  // Default: starter tier (has consignor_mgmt access)
-  mockUsersSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'starter' } }, error: null })
+  // Default: shop tier (has consignor_mgmt access)
+  mockUsersSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'shop' } }, error: null })
 })
 
 describe('GET /api/consignors', () => {

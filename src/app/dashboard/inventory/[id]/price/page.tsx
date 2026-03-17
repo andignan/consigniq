@@ -27,7 +27,7 @@ export default function PricingPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const currentUser = useUser()
-  const accountTier = (currentUser?.accounts?.tier ?? 'starter') as Tier
+  const accountTier = (currentUser?.accounts?.tier ?? 'shop') as Tier
 
   const [item, setItem] = useState<Item | null>(null)
   const [comps, setComps] = useState<CompResult[]>([])

@@ -18,7 +18,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 **Stat cards:** Accounts total, Locations total, Users total, Items total, Consignors total
 
 **Breakdowns:**
-- Accounts by tier: Solo, Starter, Standard, Pro
+- Accounts by tier: Solo, Shop, Enterprise
 - Accounts by status: Active, Suspended, Cancelled
 - Items by status: Pending, Priced, Sold, Donated
 - Consignors by status: Active, Expired, Grace, Closed
@@ -44,7 +44,7 @@ Stats from two endpoints: `/api/admin/stats` (counts) + `/api/admin/network-stat
 **Platform Role Management:** Super admins can click a role badge or "Set role" link to assign/remove platform roles (super_admin/support/finance) via dropdown.
 
 **Add User modal:**
-- Fields: Email, Full Name, Account Name, Tier (solo/starter/standard/pro), Account Type (paid/trial/complimentary)
+- Fields: Email, Full Name, Account Name, Tier (solo/shop/enterprise), Account Type (paid/trial/complimentary)
 - Creates: account row → location row → auth user → users table row (upsert) → recovery link → invite email via Resend
 - Invite email is non-critical — returns `invite_warning` if it fails
 - Recovery link type (not invite) for 24-hour expiry

@@ -11,16 +11,12 @@ describe('AI Lookup Limits', () => {
       expect(TIER_CONFIGS.solo.aiPricingLimit).toBe(200)
     })
 
-    it('starter has unlimited lookups', () => {
-      expect(TIER_CONFIGS.starter.aiPricingLimit).toBeNull()
+    it('shop has unlimited lookups', () => {
+      expect(TIER_CONFIGS.shop.aiPricingLimit).toBeNull()
     })
 
-    it('standard has unlimited lookups', () => {
-      expect(TIER_CONFIGS.standard.aiPricingLimit).toBeNull()
-    })
-
-    it('pro has unlimited lookups', () => {
-      expect(TIER_CONFIGS.pro.aiPricingLimit).toBeNull()
+    it('enterprise has unlimited lookups', () => {
+      expect(TIER_CONFIGS.enterprise.aiPricingLimit).toBeNull()
     })
 
     it('solo at 199/200 is NOT limit reached', () => {
@@ -49,16 +45,12 @@ describe('AI Lookup Limits', () => {
   })
 
   describe('Unlimited tiers', () => {
-    it('starter is never limit reached', () => {
-      expect(isLookupLimitReached('starter', 999999, 0, 0)).toBe(false)
+    it('shop is never limit reached', () => {
+      expect(isLookupLimitReached('shop', 999999, 0, 0)).toBe(false)
     })
 
-    it('standard is never limit reached', () => {
-      expect(isLookupLimitReached('standard', 999999, 0, 0)).toBe(false)
-    })
-
-    it('pro is never limit reached', () => {
-      expect(isLookupLimitReached('pro', 999999, 0, 0)).toBe(false)
+    it('enterprise is never limit reached', () => {
+      expect(isLookupLimitReached('enterprise', 999999, 0, 0)).toBe(false)
     })
   })
 

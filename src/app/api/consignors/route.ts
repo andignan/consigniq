@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     supabase, 'account_id, accounts(tier)'
   )
   if (!auth.error) {
-    const tier = (auth.profile.accounts?.tier ?? 'starter') as Tier
+    const tier = (auth.profile.accounts?.tier ?? 'shop') as Tier
     if (!canUseFeature(tier, 'consignor_mgmt')) {
       return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — consignor management is not available on your plan` }, { status: 403 })
     }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   )
   if (auth.error) return auth.error
 
-  const tier = (auth.profile.accounts?.tier ?? 'starter') as Tier
+  const tier = (auth.profile.accounts?.tier ?? 'shop') as Tier
   if (!canUseFeature(tier, 'consignor_mgmt')) {
     return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — consignor management is not available on your plan` }, { status: 403 })
   }

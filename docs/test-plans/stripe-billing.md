@@ -4,21 +4,21 @@
 Stripe-based subscription billing, tier-based feature gating, AI pricing usage tracking, and billing management UI in Settings.
 
 ## Tier Structure
-- **Starter** (free): 50 AI pricing lookups/month, basic features
-- **Standard** ($79/mo): Unlimited AI pricing, repeat item history, markdown schedules, email notifications
-- **Pro** ($129/mo): Everything in Standard + cross-customer pricing, community feed, "All Locations" dashboard, API access
+- **Solo** ($9/mo): 200 AI pricing lookups/month, pricing-only experience
+- **Shop** ($79/mo): Unlimited AI pricing, full consignment features, multi-location, email notifications
+- **Enterprise** ($129/mo): Everything in Shop + cross-customer pricing, community feed, "All Locations" dashboard, API access
 
 ## Checkout Flow
 
 ### Happy Path
-1. Log in as owner on starter tier
+1. Log in as owner on solo tier
 2. Navigate to Settings → Account tab
-3. Verify tier badge shows "starter"
-4. Verify usage meter shows "X of 50 AI pricing lookups used this month"
-5. Verify two pricing cards: Standard ($79/mo) and Pro ($129/mo)
-6. Click "Upgrade to Standard" → verify redirect to Stripe Checkout
+3. Verify tier badge shows "solo"
+4. Verify usage meter shows "X of 200 AI pricing lookups used this month"
+5. Verify pricing card: Shop ($79/mo) and Enterprise ($129/mo)
+6. Click "Upgrade to Shop" → verify redirect to Stripe Checkout
 7. Complete payment in Stripe → verify redirect to /dashboard?billing=success
-8. Verify account tier updated to "standard" in Settings
+8. Verify account tier updated to "shop" in Settings
 
 ### Edge Cases
 - [ ] Staff users cannot access billing (403)
@@ -30,7 +30,7 @@ Stripe-based subscription billing, tier-based feature gating, AI pricing usage t
 ## Billing Portal
 
 ### Happy Path
-1. Log in as owner on standard/pro tier
+1. Log in as owner on shop/enterprise tier
 2. Navigate to Settings → Account tab
 3. Click "Manage Billing" → verify redirect to Stripe Customer Portal
 4. Verify portal allows: upgrade, downgrade, cancel, update payment method
@@ -45,7 +45,7 @@ Stripe-based subscription billing, tier-based feature gating, AI pricing usage t
 ### Events
 - [ ] `checkout.session.completed` → updates account tier
 - [ ] `customer.subscription.updated` → syncs tier from metadata
-- [ ] `customer.subscription.deleted` → downgrades to starter
+- [ ] `customer.subscription.deleted` → downgrades to solo
 - [ ] `invoice.payment_failed` → logs warning, does NOT downgrade immediately
 - [ ] Invalid webhook signature returns 400
 - [ ] Missing signature returns 400
@@ -59,29 +59,31 @@ Stripe-based subscription billing, tier-based feature gating, AI pricing usage t
 ## AI Pricing Usage Tracking
 
 ### Happy Path
-1. Log in as owner on starter tier with 0 lookups used
+1. Log in as owner on solo tier with 0 lookups used
 2. Run AI pricing on an item → verify count increments to 1
-3. Repeat until 50 → verify 403 error with "limit_reached" message
-4. Upgrade to standard → verify no limit enforced
+3. Repeat until 200 → verify 403 error with "limit_reached" message
+4. Upgrade to shop → verify no limit enforced
 
 ### Edge Cases
 - [ ] Counter resets after 30 days
-- [ ] Standard/pro tiers bypass limit check entirely
+- [ ] Shop/enterprise tiers bypass limit check entirely
 - [ ] Usage meter in Settings shows correct count
 - [ ] Progress bar colors: green (<80%), amber (80-95%), red (95%+)
 
 ## Feature Gating
 
-### Starter Tier — Locked Features
-- [ ] "Priced Before" panel on pricing page → shows UpgradePrompt for "standard"
-- [ ] Markdown schedule toggle in Settings → shows UpgradePrompt for "standard"
+### Solo Tier — Locked Features
+- [ ] Consignor management → shows UpgradePrompt for "shop"
+- [ ] Reports → shows UpgradePrompt for "shop"
+- [ ] Payouts → shows UpgradePrompt for "shop"
 
-### Standard Tier — Available Features
+### Shop Tier — Available Features
+- [ ] All consignment features available
 - [ ] "Priced Before" panel visible and functional
 - [ ] Markdown schedule toggle available
-- [ ] Cross-customer pricing → shows UpgradePrompt for "pro" (when implemented)
+- [ ] Cross-customer pricing → shows UpgradePrompt for "enterprise"
 
-### Pro Tier — All Features
+### Enterprise Tier — All Features
 - [ ] All features available, no UpgradePrompt shown
 
 ### UpgradePrompt Component
@@ -92,18 +94,18 @@ Stripe-based subscription billing, tier-based feature gating, AI pricing usage t
 
 ## Billing UI in Settings
 
-### Starter Tier View
+### Solo Tier View
 - [ ] Usage meter visible with progress bar
-- [ ] Two pricing cards: Standard and Pro with feature lists
+- [ ] Two pricing cards: Shop and Enterprise with feature lists
 - [ ] Each card has CTA button that triggers checkout
-- [ ] "Free plan — no credit card required" text shown
+- [ ] Current tier badge shown
 
-### Standard Tier View
+### Shop Tier View
 - [ ] No usage meter (unlimited)
-- [ ] Pro upgrade card visible
+- [ ] Enterprise upgrade card visible
 - [ ] "Manage Billing" button opens Stripe portal
 
-### Pro Tier View
+### Enterprise Tier View
 - [ ] No usage meter (unlimited)
 - [ ] No upgrade cards
 - [ ] Only "Manage Billing" button shown
@@ -120,15 +122,15 @@ Stripe-based subscription billing, tier-based feature gating, AI pricing usage t
 - [ ] /api/billing/webhook returns 400 for missing signature
 - [ ] /api/billing/webhook returns 400 for invalid signature
 - [ ] /api/billing/webhook updates tier on checkout.session.completed
-- [ ] /api/billing/webhook downgrades to starter on subscription.deleted
+- [ ] /api/billing/webhook downgrades to solo on subscription.deleted
 - [ ] /api/billing/webhook returns 200 for unhandled events
 
 ## Unit Tests (Automated)
-- [ ] canUseFeature() — starter can use ai_pricing, cannot use repeat_item_history
-- [ ] canUseFeature() — standard can use repeat_item_history, cannot use cross_customer_pricing
-- [ ] canUseFeature() — pro can use all features
+- [ ] canUseFeature() — solo cannot use consignor_mgmt
+- [ ] canUseFeature() — shop can use all consignment features including repeat_item_history
+- [ ] canUseFeature() — enterprise can use all features
 - [ ] getUpgradeMessage() — returns correct tier and price
-- [ ] TIER_CONFIGS — starter has 50 AI limit, standard/pro unlimited
+- [ ] TIER_CONFIGS — solo has 200 AI limit, shop/enterprise unlimited
 - [ ] FEATURE_REQUIRED_TIER — maps all features to correct tiers
 
 ## Mobile

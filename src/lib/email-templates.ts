@@ -187,9 +187,8 @@ interface InviteEmailData {
 export function buildInviteEmail(data: InviteEmailData) {
   const tierLabel: Record<string, string> = {
     solo: 'Solo Pricer',
-    starter: 'Starter',
-    standard: 'Standard',
-    pro: 'Pro',
+    shop: 'Shop',
+    enterprise: 'Enterprise',
   }
   const tierName = tierLabel[data.tier] || data.tier
 
@@ -393,9 +392,8 @@ This is an automated message from ConsignIQ.
 
 const TIER_FEATURES: Record<string, string[]> = {
   solo: ['200 AI pricing lookups/month', 'Photo identification', 'Personal inventory', 'CSV export'],
-  starter: ['Unlimited AI pricing lookups', 'Consignor management & lifecycle', 'Payouts & agreements', 'Reports & analytics', 'Staff management'],
-  standard: ['Everything in Starter', 'Repeat item history', 'Markdown schedules', 'Email notifications', 'Multi-location support'],
-  pro: ['Everything in Standard', 'Cross-customer pricing intelligence', 'Community pricing feed', 'All Locations dashboard', 'API access'],
+  shop: ['Unlimited AI pricing lookups', 'Consignor management & lifecycle', 'Multi-location support', 'Payouts & agreements', 'Reports & analytics', 'Staff management', 'Email notifications'],
+  enterprise: ['Everything in Shop', 'Cross-customer pricing intelligence', 'Community pricing feed', 'All Locations dashboard', 'API access'],
 }
 
 interface UpgradeEmailData {
@@ -406,7 +404,7 @@ interface UpgradeEmailData {
 }
 
 export function buildUpgradeEmail(data: UpgradeEmailData) {
-  const features = TIER_FEATURES[data.tierLabel.toLowerCase()] ?? TIER_FEATURES.starter
+  const features = TIER_FEATURES[data.tierLabel.toLowerCase()] ?? TIER_FEATURES.shop
   const featureListText = features.map(f => `• ${f}`).join('\n')
   const featureListHtml = features.map(f => `<li>${f}</li>`).join('')
 

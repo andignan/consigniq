@@ -62,7 +62,7 @@ beforeEach(() => {
     update: mockUpdate,
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { id: 'acct-1', tier: 'standard', account_type: 'paid' }, error: null }),
+        single: jest.fn().mockResolvedValue({ data: { id: 'acct-1', tier: 'shop', account_type: 'paid' }, error: null }),
       }),
     }),
   }))
@@ -96,7 +96,7 @@ describe('POST /api/billing/webhook', () => {
       type: 'checkout.session.completed',
       data: {
         object: {
-          metadata: { account_id: 'acct-1', tier: 'standard' },
+          metadata: { account_id: 'acct-1', tier: 'shop' },
         },
       },
     })
@@ -120,10 +120,10 @@ describe('POST /api/billing/webhook', () => {
     const req = makeWebhookRequest('{}')
     const res = await POST(req)
     expect(res.status).toBe(200)
-    // Should set cancelled_grace, NOT downgrade to starter
+    // Should set cancelled_grace, NOT downgrade to shop
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
       account_type: 'cancelled_grace',
-      cancelled_tier: 'standard',
+      cancelled_tier: 'shop',
     }))
   })
 

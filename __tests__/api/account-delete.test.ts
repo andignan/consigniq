@@ -109,7 +109,7 @@ describe('POST /api/admin/accounts/delete', () => {
   })
 
   it('hard deletes complimentary accounts', async () => {
-    const account = { id: 'acc-1', name: 'Test', tier: 'starter', status: 'active', account_type: 'complimentary', stripe_customer_id: null, is_complimentary: true }
+    const account = { id: 'acc-1', name: 'Test', tier: 'shop', status: 'active', account_type: 'complimentary', stripe_customer_id: null, is_complimentary: true }
     const users = [{ id: 'user-1', email: 'test@test.com', full_name: 'Test', role: 'owner' }]
 
     mockSingle

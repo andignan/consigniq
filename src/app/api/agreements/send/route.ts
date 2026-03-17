@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (auth.error) return auth.error
 
   const profile = auth.profile
-  const tier = (profile.accounts?.tier ?? 'starter') as Tier
+  const tier = (profile.accounts?.tier ?? 'shop') as Tier
   if (!canUseFeature(tier, 'agreements')) {
     return NextResponse.json({ error: `${ERRORS.UPGRADE_REQUIRED} — agreements are not available on your plan` }, { status: 403 })
   }

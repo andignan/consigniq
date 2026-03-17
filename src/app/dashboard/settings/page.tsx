@@ -63,7 +63,7 @@ export default function SettingsPage() {
   const user = useUser()
   const { activeLocationId, locations: allLocations, setActiveLocation } = useLocation()
   const isOwner = user?.role === 'owner'
-  const accountTier = (user?.accounts?.tier ?? 'starter') as Tier
+  const accountTier = (user?.accounts?.tier ?? 'shop') as Tier
   const isSolo = accountTier === 'solo'
 
   // Tab state — solo sees billing+profile, owner sees location+locations+account, staff sees location
@@ -653,7 +653,7 @@ export default function SettingsPage() {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Billing & Subscription</h2>
 
               {/* Usage info for non-solo tiers */}
-              {['starter', 'standard', 'pro'].includes(account.tier) && (
+              {['shop', 'enterprise'].includes(account.tier) && (
                 <div className="mb-5 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-700 font-medium">AI Pricing Lookups</span>
@@ -664,16 +664,9 @@ export default function SettingsPage() {
               )}
 
               {/* Pricing cards */}
-              {account.tier === 'starter' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <UpgradeCard targetTier="standard" context="settings" onUpgrade={() => handleCheckout('standard')} loading={billingLoading} />
-                  <UpgradeCard targetTier="pro" context="settings" onUpgrade={() => handleCheckout('pro')} loading={billingLoading} />
-                </div>
-              )}
-
-              {account.tier === 'standard' && (
+              {account.tier === 'shop' && (
                 <div className="mb-4">
-                  <UpgradeCard targetTier="pro" context="settings" onUpgrade={() => handleCheckout('pro')} loading={billingLoading} />
+                  <UpgradeCard targetTier="enterprise" context="settings" onUpgrade={() => handleCheckout('enterprise')} loading={billingLoading} />
                 </div>
               )}
 
@@ -870,7 +863,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Upgrade CTA — only Starter */}
-          <UpgradeCard targetTier="starter" context="settings" onUpgrade={() => handleCheckout('starter')} loading={billingLoading} />
+          <UpgradeCard targetTier="shop" context="settings" onUpgrade={() => handleCheckout('shop')} loading={billingLoading} />
         </div>
       )}
 

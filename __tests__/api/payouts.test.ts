@@ -60,7 +60,7 @@ beforeEach(() => {
 
   // Profile lookup (includes tier for tier gate checks)
   mockSingle.mockResolvedValue({
-    data: { account_id: 'acc-1', role: 'owner', accounts: { tier: 'starter' } },
+    data: { account_id: 'acc-1', role: 'owner', accounts: { tier: 'shop' } },
     error: null,
   })
 

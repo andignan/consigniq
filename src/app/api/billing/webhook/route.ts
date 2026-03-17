@@ -68,7 +68,11 @@ export async function POST(request: NextRequest) {
               .eq('id', accountId)
           }
         } else if (accountId && session.metadata?.tier) {
-          const tier = session.metadata.tier as Tier
+          // Backward-compat: map old tier names from in-flight Stripe sessions
+          let rawTier = session.metadata.tier
+          if (rawTier === 'starter' || rawTier === 'standard') rawTier = 'shop'
+          if (rawTier === 'pro') rawTier = 'enterprise'
+          const tier = rawTier as Tier
 
           // Check if this is a resubscription (cancelled_grace or cancelled_limited)
           const { data: currentAccount } = await supabase
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
           try {
             const owner = await getAccountOwner(supabase, accountId)
             if (owner?.email) {
-              const tierConfig = TIER_CONFIGS[tier] ?? TIER_CONFIGS.starter
+              const tierConfig = TIER_CONFIGS[tier] ?? TIER_CONFIGS.shop
               if (isResub) {
                 const emailContent = buildWelcomeBackEmail({
                   fullName: owner.full_name || owner.email,
@@ -158,8 +162,8 @@ export async function POST(request: NextRequest) {
             try {
               const owner = await getAccountOwner(supabase, account.id)
               if (owner?.email) {
-                const tier = (subscription.metadata?.tier || 'starter') as Tier
-                const tierConfig = TIER_CONFIGS[tier] ?? TIER_CONFIGS.starter
+                const tier = (subscription.metadata?.tier || 'shop') as Tier
+                const tierConfig = TIER_CONFIGS[tier] ?? TIER_CONFIGS.shop
                 const emailContent = buildWelcomeBackEmail({
                   fullName: owner.full_name || owner.email,
                   tierLabel: tierConfig.label,
@@ -201,7 +205,7 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const previousTier = (account.tier || 'starter') as Tier
+        const previousTier = (account.tier || 'shop') as Tier
         const periodEnd = subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : new Date().toISOString()
@@ -222,7 +226,7 @@ export async function POST(request: NextRequest) {
         try {
           const owner = await getAccountOwner(supabase, account.id)
           if (owner?.email) {
-            const tierConfig = TIER_CONFIGS[previousTier] ?? TIER_CONFIGS.starter
+            const tierConfig = TIER_CONFIGS[previousTier] ?? TIER_CONFIGS.shop
             const emailContent = buildCancellationEmail({
               fullName: owner.full_name || owner.email,
               tierLabel: tierConfig.label,

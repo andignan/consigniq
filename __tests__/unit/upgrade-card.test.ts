@@ -7,10 +7,10 @@
 import { UPGRADE_CARD_CONFIG, type UpgradeTargetTier } from '@/components/UpgradeCard'
 import { TIER_CONFIGS } from '@/lib/tier-limits'
 
-const TARGET_TIERS: UpgradeTargetTier[] = ['starter', 'standard', 'pro']
+const TARGET_TIERS: UpgradeTargetTier[] = ['shop', 'enterprise']
 
 describe('UPGRADE_CARD_CONFIG completeness', () => {
-  it('has entries for starter, standard, and pro', () => {
+  it('has entries for shop and enterprise', () => {
     for (const tier of TARGET_TIERS) {
       expect(UPGRADE_CARD_CONFIG[tier]).toBeDefined()
     }
@@ -32,16 +32,12 @@ describe('UPGRADE_CARD_CONFIG completeness', () => {
 })
 
 describe('Prices derived from TIER_CONFIGS', () => {
-  it('starter price matches TIER_CONFIGS', () => {
-    expect(TIER_CONFIGS.starter.price).toBe(49)
+  it('shop price matches TIER_CONFIGS', () => {
+    expect(TIER_CONFIGS.shop.price).toBe(79)
   })
 
-  it('standard price matches TIER_CONFIGS', () => {
-    expect(TIER_CONFIGS.standard.price).toBe(79)
-  })
-
-  it('pro price matches TIER_CONFIGS', () => {
-    expect(TIER_CONFIGS.pro.price).toBe(129)
+  it('enterprise price matches TIER_CONFIGS', () => {
+    expect(TIER_CONFIGS.enterprise.price).toBe(129)
   })
 
   it('prices are never hardcoded in config — config has no price field', () => {
@@ -59,12 +55,8 @@ describe('Feature lists', () => {
     }
   })
 
-  it('starter has 4 features', () => {
-    expect(UPGRADE_CARD_CONFIG.starter.features).toHaveLength(4)
-  })
-
-  it('pro has 5 features', () => {
-    expect(UPGRADE_CARD_CONFIG.pro.features).toHaveLength(5)
+  it('enterprise has 5 features', () => {
+    expect(UPGRADE_CARD_CONFIG.enterprise.features).toHaveLength(5)
   })
 
   it('all features are non-empty strings', () => {
@@ -90,10 +82,6 @@ describe('Headline variants', () => {
       const label = TIER_CONFIGS[tier].label
       expect(UPGRADE_CARD_CONFIG[tier].headline).toContain(label)
     }
-  })
-
-  it('starter dashboard headline is conversational', () => {
-    expect(UPGRADE_CARD_CONFIG.starter.dashboardHeadline).toBe('Running a consignment shop?')
   })
 })
 

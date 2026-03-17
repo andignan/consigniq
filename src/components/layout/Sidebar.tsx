@@ -103,7 +103,7 @@ export default function Sidebar({ user }: SidebarProps) {
   } = useLocation()
 
   const contextUser = useUser()
-  const accountTier = (contextUser?.accounts?.tier ?? user?.accounts?.tier ?? 'starter') as Tier
+  const accountTier = (contextUser?.accounts?.tier ?? user?.accounts?.tier ?? 'shop') as Tier
   const isSolo = accountTier === 'solo'
   const navItems = isSolo ? SOLO_NAV_ITEMS : FULL_NAV_ITEMS
 

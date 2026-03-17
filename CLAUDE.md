@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (463 tests across unit + API)
+- `npm test` — Jest test suite (453 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -50,9 +50,9 @@ Three client factories:
 
 **Pricing:**
 - `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check. No debug console.logs
-- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton. Tier-aware prompt: solo="resale pricing", starter+="consignment pricing"
+- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton. Tier-aware prompt: solo="resale pricing", shop+="consignment pricing"
 - `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton. All callers compress images client-side via `src/lib/compress-image.ts` (max 1200px, JPEG 0.8 quality)
-- `/api/pricing/cross-account` — Pro-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
+- `/api/pricing/cross-account` — Enterprise-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
 **Admin (superadmin only):**
 - `/api/admin/stats` — cross-account platform stats
@@ -140,27 +140,27 @@ Read the relevant PRD before modifying any of these systems:
 #### Definitive Tier Feature Matrix
 **DO NOT change these gates without explicit instruction.**
 
-| Feature | Solo ($9) | Starter ($49) | Standard ($79) | Pro ($129) |
-|---|---|---|---|---|
-| AI pricing lookups | 200/mo | Unlimited | Unlimited | Unlimited |
-| Price Lookup (AI + eBay comps) | Y | Y | Y | Y |
-| Photo identification | Y | Y | Y | Y |
-| Save to inventory | Y (personal) | Y | Y | Y |
-| CSV export | Y | Y | Y | Y |
-| Consignor management | - | Y | Y | Y |
-| 60-day lifecycle tracking | - | Y | Y | Y |
-| Agreement email generation | - | Y | Y | Y |
-| Payouts | - | Y | Y | Y |
-| Reports & analytics | - | Y | Y | Y |
-| Markdown schedules | - | Y | Y | Y |
-| Staff management | - | Y | Y | Y |
-| Repeat item history | - | - | Y | Y |
-| Email notifications (expiry) | - | - | Y | Y |
-| Multi-location | - | - | Y | Y |
-| Cross-customer pricing intel | - | - | - | Y |
-| Community pricing feed | - | - | - | Y |
-| All Locations dashboard | - | - | - | Y |
-| API access | - | - | - | Y |
+| Feature | Solo ($9) | Shop ($79) | Enterprise ($129) |
+|---|---|---|---|
+| AI pricing lookups | 200/mo | Unlimited | Unlimited |
+| Price Lookup (AI + eBay comps) | Y | Y | Y |
+| Photo identification | Y | Y | Y |
+| Save to inventory | Y (personal) | Y | Y |
+| CSV export | Y | Y | Y |
+| Consignor management | - | Y | Y |
+| 60-day lifecycle tracking | - | Y | Y |
+| Agreement email generation | - | Y | Y |
+| Payouts | - | Y | Y |
+| Reports & analytics | - | Y | Y |
+| Markdown schedules | - | Y | Y |
+| Staff management | - | Y | Y |
+| Repeat item history | - | Y | Y |
+| Email notifications (expiry) | - | Y | Y |
+| Multi-location | - | Y | Y |
+| Cross-customer pricing intel | - | - | Y |
+| Community pricing feed | - | - | Y |
+| All Locations dashboard | - | - | Y |
+| API access | - | - | Y |
 
 **Key files:**
 - `src/lib/tier-limits.ts` — `TIER_CONFIGS`, `FEATURE_REQUIRED_TIER`, `FEATURE_LABELS`
@@ -175,7 +175,7 @@ Read the relevant PRD before modifying any of these systems:
 
 **Bonus lookups:** `accounts.bonus_lookups` (purchased) + `bonus_lookups_used` (consumed). 50-lookup top-up packs ($5). Persist until used (not cleared on monthly reset).
 
-**UI feature gating:** consignor management (starter+), markdown schedules (starter+), payouts (starter+), reports (starter+), "Priced Before" panel (standard+), email notifications (standard+), multi-location (standard+), cross-customer pricing (pro), community feed (pro), "All Locations" (pro)
+**UI feature gating:** consignor management (shop+), markdown schedules (shop+), payouts (shop+), reports (shop+), "Priced Before" panel (shop+), email notifications (shop+), multi-location (shop+), cross-customer pricing (enterprise), community feed (enterprise), "All Locations" (enterprise)
 
 **Server-side tier guards (two layers):**
 
@@ -194,9 +194,8 @@ Read the relevant PRD before modifying any of these systems:
 
 **Stripe price IDs (test mode):**
 - `STRIPE_SOLO_PRICE_ID=price_1TB07NRoBkkefSr8k75xWZU4` ($9/mo)
-- `STRIPE_STARTER_PRICE_ID=price_1TB07NRoBkkefSr86Zf66OfO` ($49/mo)
-- `STRIPE_STANDARD_PRICE_ID=price_1TB07NRoBkkefSr8kQX1pXxL` ($79/mo)
-- `STRIPE_PRO_PRICE_ID=price_1TB07ORoBkkefSr8TjMEohzi` ($129/mo)
+- `STRIPE_SHOP_PRICE_ID=price_1TB07NRoBkkefSr8kQX1pXxL` ($79/mo)
+- `STRIPE_ENTERPRISE_PRICE_ID=price_1TB07ORoBkkefSr8TjMEohzi` ($129/mo)
 - `STRIPE_TOPUP_50_PRICE_ID=price_1TB07ORoBkkefSr8Ey050TZt` ($5 one-time)
 
 ### Account Type System
@@ -213,7 +212,7 @@ Key functions in `src/lib/feature-gates.ts`: `isAccountActive()`, `getEffectiveT
 Solo ($9/mo, 200 AI lookups/mo) — pricing-only experience:
 - **Sidebar**: Dashboard, Price Lookup, My Inventory, Settings. "Solo Pricer" label. Upgrade CTA → direct Stripe checkout
 - **Dashboard**: `SoloDashboard` component (usage meter, quick actions, upgrade CTA). No consignor/location content
-- **Settings**: Billing + Profile tabs only. Usage meter, buy top-up, manage billing, upgrade to Starter CTA
+- **Settings**: Billing + Profile tabs only. Usage meter, buy top-up, manage billing, upgrade to Shop CTA
 - **Inventory**: Items without `consignor_id` (nullable). Mark as Sold, Archive
 - Component: `src/components/SoloDashboard.tsx`
 
@@ -251,10 +250,10 @@ intake_date → expiry_date → grace_end_date. `getLifecycleStatus()` in `src/t
 - **Dashboard** (`/dashboard`): stats, lifecycle alerts, quick actions. Solo → `SoloDashboard`
 - **Consignors** (`/dashboard/consignors`): list, detail (lifecycle bar, agreement button), intake form with photo AI
 - **Inventory** (`/dashboard/inventory`): status tabs, search, filters, edit/sell/donate modals, CSV export, bulk label printing
-- **Pricing** (`/dashboard/inventory/[id]/price` + `/dashboard/pricing`): photo upload, eBay comps, AI pricing, "Priced Before" panel (standard+), "Market Intelligence" panel (pro), auto-capitalize, description hints
+- **Pricing** (`/dashboard/inventory/[id]/price` + `/dashboard/pricing`): photo upload, eBay comps, AI pricing, "Priced Before" panel (shop+), "Market Intelligence" panel (enterprise), auto-capitalize, description hints
 - **Reports** (`/dashboard/reports`): 13 sections (Store Performance, Pricing Performance, Inventory Snapshot, Activity Summary, Consignor Report, Category Performance, Aging Inventory, Consignor Rankings, Weekly Ops, Markdown Effectiveness, Pricing Accuracy, Payout Reconciliation, Donation & Tax). Time filter, CSV exports, AI query bar
 - **Payouts** (`/dashboard/payouts`): consignor split calcs, mark as paid, filter tabs, CSV export
-- **Settings** (`/dashboard/settings`): tier-aware tabs. Solo: Billing+Profile. Starter+: Location Settings, Locations (owner), Account Settings (owner)
+- **Settings** (`/dashboard/settings`): tier-aware tabs. Solo: Billing+Profile. Shop+: Location Settings, Locations (owner), Account Settings (owner)
 - **Sidebar**: tier-aware nav, location switcher (owner), expiring consignor badge, role/tier label
 - **Admin** (`/admin`): Overview stats, Users (CRUD + invite), Accounts (detail + tier/status/type management, reset password)
 - **Help**: Tooltips, floating widget (`HelpWidget` — tier-aware quick links, page-aware ordering, client+server response caching with 24h TTL), AI search via `/api/help/search` + `src/lib/help-knowledge-base.ts`
@@ -282,7 +281,7 @@ Always audit actual column names before writing queries:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier` (solo/starter/standard/pro), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable), `is_system` (boolean, NOT NULL, default false)
+- Accounts: `id`, `name`, `tier` (solo/shop/enterprise), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable), `is_system` (boolean, NOT NULL, default false)
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`, `platform_role` (text, nullable: super_admin/support/finance)
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
@@ -301,11 +300,11 @@ Uses `upsert` (onConflict: 'id') for public.users row because Supabase trigger o
 
 ## Environment Variables
 
-See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Resend, Stripe. Additional: `STRIPE_SOLO_PRICE_ID`, `STRIPE_STARTER_PRICE_ID`, `STRIPE_STANDARD_PRICE_ID`, `STRIPE_PRO_PRICE_ID`, `STRIPE_TOPUP_50_PRICE_ID`, `CRON_SECRET`. See `DEPLOYMENT.md` for Vercel deployment guide.
+See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Resend, Stripe. Additional: `STRIPE_SOLO_PRICE_ID`, `STRIPE_SHOP_PRICE_ID`, `STRIPE_ENTERPRISE_PRICE_ID`, `STRIPE_TOPUP_50_PRICE_ID`, `CRON_SECRET`. See `DEPLOYMENT.md` for Vercel deployment guide.
 
 ## Testing
 
-**463 Jest tests passing.** 5 Playwright E2E specs. 35 manual test plans at `/docs/test-plans/`.
+**453 Jest tests passing.** 5 Playwright E2E specs. 35 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -388,6 +387,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260316000000` — make items.consignor_id nullable (Solo users save without consignor)
 - `20260316010000` — add 'archived' to items status CHECK constraint
 - `20260316020000` — platform roles: add `users.platform_role`, `accounts.is_system`, migrate data
+- `20260316030000` — tier rename: starter/standard → shop, pro → enterprise, update CHECK constraints and data
 
 ## Security
 
@@ -405,7 +405,7 @@ Full report: `docs/code-review/code-review-march-2026.md`
 
 - **C4: No server-side solo route guards** — solo users could navigate directly to `/dashboard/consignors`, `/dashboard/reports`, `/dashboard/payouts`. Fix: `requireFeature()` in `src/lib/tier-guard.ts` (see "Server-side tier guards" above).
 
-- **C5: No tier enforcement on API routes** — solo users could call starter+ APIs directly. Fix: `canUseFeature()` checks in `/api/consignors`, `/api/agreements/send`, `/api/payouts` (see "Server-side tier guards" above).
+- **C5: No tier enforcement on API routes** — solo users could call shop+ APIs directly. Fix: `canUseFeature()` checks in `/api/consignors`, `/api/agreements/send`, `/api/payouts` (see "Server-side tier guards" above).
 
 **Regression tests:** `__tests__/api/critical-security.test.ts` — 5 UUID validation tests (C1) + 7 tier enforcement tests (C5) = 12 total.
 
@@ -431,6 +431,6 @@ Full report: `docs/code-review/code-review-march-2026.md`
 
 ## Deferred to Phase 7+
 
-- **Community Pricing Feed** — gate exists (`community_pricing_feed`, Pro), no implementation
-- **API Access** — gate exists (`api_access`, Pro), no endpoints
-- **Advanced Markdown Schedules** — Standard tier, currently same as Starter (hardcoded schedule)
+- **Community Pricing Feed** — gate exists (`community_pricing_feed`, Enterprise), no implementation
+- **API Access** — gate exists (`api_access`, Enterprise), no endpoints
+- **Advanced Markdown Schedules** — Shop tier, basic implementation (hardcoded schedule)

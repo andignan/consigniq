@@ -58,7 +58,7 @@ export default function InventoryPage() {
   const searchParams = useSearchParams()
   const user = useUser()
   const { activeLocationId } = useLocation()
-  const isSolo = (user?.accounts?.tier ?? 'starter') === 'solo'
+  const isSolo = (user?.accounts?.tier ?? 'shop') === 'solo'
   const statusTabs = isSolo ? SOLO_STATUS_TABS : STATUS_TABS
 
   const [items, setItems] = useState<ItemWithConsignor[]>([])

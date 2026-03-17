@@ -38,7 +38,7 @@ export default function PriceLookupPage() {
   const [saving, setSaving] = useState(false)
 
   const contextUser = useUser()
-  const isSolo = (contextUser?.accounts?.tier ?? 'starter') === 'solo'
+  const isSolo = (contextUser?.accounts?.tier ?? 'shop') === 'solo'
 
   async function handlePhoto(file: File) {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']

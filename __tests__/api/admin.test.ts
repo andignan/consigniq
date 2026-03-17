@@ -84,7 +84,7 @@ beforeEach(() => {
     eq: jest.fn().mockReturnValue({
       select: jest.fn().mockReturnValue({
         single: jest.fn().mockResolvedValue({
-          data: { id: 'acc-1', name: 'Test', tier: 'pro', status: 'active' },
+          data: { id: 'acc-1', name: 'Test', tier: 'enterprise', status: 'active' },
           error: null,
         }),
       }),
@@ -154,10 +154,10 @@ describe('GET /api/admin/accounts', () => {
   })
 
   it('filters accounts by tier', async () => {
-    const req = makeRequest('http://localhost:3000/api/admin/accounts?tier=pro')
+    const req = makeRequest('http://localhost:3000/api/admin/accounts?tier=enterprise')
     const res = await getAccounts(req)
     expect(res.status).toBe(200)
-    expect(mockEq).toHaveBeenCalledWith('tier', 'pro')
+    expect(mockEq).toHaveBeenCalledWith('tier', 'enterprise')
   })
 
   it('filters accounts by status', async () => {
@@ -173,7 +173,7 @@ describe('PATCH /api/admin/accounts', () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'Not authed' } })
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
-      body: JSON.stringify({ id: 'acc-1', tier: 'pro' }),
+      body: JSON.stringify({ id: 'acc-1', tier: 'enterprise' }),
     })
     const res = await patchAccount(req)
     expect(res.status).toBe(401)
@@ -183,7 +183,7 @@ describe('PATCH /api/admin/accounts', () => {
     mockSingle.mockResolvedValue({ data: { platform_role: null, is_superadmin: false }, error: null })
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
-      body: JSON.stringify({ id: 'acc-1', tier: 'pro' }),
+      body: JSON.stringify({ id: 'acc-1', tier: 'enterprise' }),
     })
     const res = await patchAccount(req)
     expect(res.status).toBe(403)
@@ -192,7 +192,7 @@ describe('PATCH /api/admin/accounts', () => {
   it('returns 400 if id missing', async () => {
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
-      body: JSON.stringify({ tier: 'pro' }),
+      body: JSON.stringify({ tier: 'enterprise' }),
     })
     const res = await patchAccount(req)
     expect(res.status).toBe(400)
@@ -201,11 +201,11 @@ describe('PATCH /api/admin/accounts', () => {
   it('updates account tier', async () => {
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
-      body: JSON.stringify({ id: 'acc-1', tier: 'pro' }),
+      body: JSON.stringify({ id: 'acc-1', tier: 'enterprise' }),
     })
     const res = await patchAccount(req)
     expect(res.status).toBe(200)
-    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'pro' })
+    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'enterprise' })
   })
 
   it('updates account status', async () => {
@@ -221,7 +221,7 @@ describe('PATCH /api/admin/accounts', () => {
   it('rejects invalid tier values', async () => {
     const req = makeRequest('http://localhost:3000/api/admin/accounts', {
       method: 'PATCH',
-      body: JSON.stringify({ id: 'acc-1', tier: 'enterprise' }),
+      body: JSON.stringify({ id: 'acc-1', tier: 'platinum' }),
     })
     const res = await patchAccount(req)
     expect(res.status).toBe(400)

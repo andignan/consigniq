@@ -24,19 +24,14 @@ describe('Solo pricing prompt', () => {
     expect(role).not.toContain('consignment')
   })
 
-  it('starter prompt mentions consignment', () => {
-    const role = buildPromptRole('starter')
+  it('shop prompt mentions consignment', () => {
+    const role = buildPromptRole('shop')
     expect(role).toContain('consignment')
     expect(role).not.toContain('resale')
   })
 
-  it('standard prompt mentions consignment', () => {
-    const role = buildPromptRole('standard')
-    expect(role).toContain('consignment')
-  })
-
-  it('pro prompt mentions consignment', () => {
-    const role = buildPromptRole('pro')
+  it('enterprise prompt mentions consignment', () => {
+    const role = buildPromptRole('enterprise')
     expect(role).toContain('consignment')
   })
 
@@ -45,8 +40,8 @@ describe('Solo pricing prompt', () => {
     expect(guidance).toContain('resale')
   })
 
-  it('starter guidance mentions consignment', () => {
-    const guidance = buildPricingGuidance('starter')
+  it('shop guidance mentions consignment', () => {
+    const guidance = buildPricingGuidance('shop')
     expect(guidance).toContain('consignment')
   })
 })

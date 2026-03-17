@@ -5,9 +5,8 @@
 // Used in: settings page, admin users, admin accounts
 export const TIER_BADGE_CLASSES: Record<string, string> = {
   solo: 'bg-slate-100 text-slate-600',
-  starter: 'bg-gray-100 text-gray-600',
-  standard: 'bg-brand-50 text-brand-600',
-  pro: 'bg-amber-50 text-amber-700',
+  shop: 'bg-brand-50 text-brand-600',
+  enterprise: 'bg-amber-50 text-amber-700',
 }
 
 // ─── Account status badge classes ────────────────────────────

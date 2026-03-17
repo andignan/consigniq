@@ -121,7 +121,7 @@ beforeEach(() => {
 
   // Default: authenticated user with profile (includes tier for tier gate checks)
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
-  mockSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'starter' } }, error: null })
+  mockSingle.mockResolvedValue({ data: { account_id: 'acc-1', accounts: { tier: 'shop' } }, error: null })
 })
 
 // ==================== /api/agreements/send ====================

@@ -108,7 +108,7 @@ export default async function DashboardPage({
   const { data: { user: authUser } } = await supabase.auth.getUser()
   let accountId = ''
   let userRole = 'staff'
-  let accountTier = 'starter'
+  let accountTier = 'shop'
   if (authUser) {
     const { data: profile } = await supabase
       .from('users')
@@ -117,7 +117,7 @@ export default async function DashboardPage({
       .single()
     accountId = profile?.account_id ?? ''
     userRole = profile?.role ?? 'staff'
-    accountTier = (profile?.accounts as { tier?: string } | null)?.tier ?? 'starter'
+    accountTier = (profile?.accounts as { tier?: string } | null)?.tier ?? 'shop'
   }
 
   const isSolo = accountTier === 'solo'

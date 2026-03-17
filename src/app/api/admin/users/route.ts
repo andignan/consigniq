@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'email, full_name, and account_name are required' }, { status: 400 })
   }
 
-  if (!tier || !['solo', 'starter', 'standard', 'pro'].includes(tier)) {
-    return NextResponse.json({ error: 'tier must be solo, starter, standard, or pro' }, { status: 400 })
+  if (!tier || !['solo', 'shop', 'enterprise'].includes(tier)) {
+    return NextResponse.json({ error: 'tier must be solo, shop, or enterprise' }, { status: 400 })
   }
 
   if (!account_type || !['paid', 'trial', 'complimentary'].includes(account_type)) {

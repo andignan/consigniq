@@ -3,7 +3,7 @@
 import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 
 export default function TrialExpiredPage() {
-  const tiers: Tier[] = ['solo', 'starter', 'standard', 'pro']
+  const tiers: Tier[] = ['solo', 'shop', 'enterprise']
 
   async function handleCheckout(tier: string) {
     try {

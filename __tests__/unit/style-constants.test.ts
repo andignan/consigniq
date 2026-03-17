@@ -12,8 +12,8 @@ import {
 
 describe('style-constants', () => {
   describe('TIER_BADGE_CLASSES', () => {
-    it('has all four tier keys', () => {
-      expect(Object.keys(TIER_BADGE_CLASSES).sort()).toEqual(['pro', 'solo', 'standard', 'starter'])
+    it('has all three tier keys', () => {
+      expect(Object.keys(TIER_BADGE_CLASSES).sort()).toEqual(['enterprise', 'shop', 'solo'])
     })
 
     it('each value is a non-empty string with bg- and text- classes', () => {

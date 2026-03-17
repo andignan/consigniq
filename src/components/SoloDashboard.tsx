@@ -128,7 +128,7 @@ export default function SoloDashboard() {
       </div>
 
       {/* Upgrade CTA */}
-      <UpgradeCard targetTier="starter" context="dashboard" />
+      <UpgradeCard targetTier="shop" context="dashboard" />
     </div>
   )
 }

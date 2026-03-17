@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Loader2, Building2, MapPin, Users, Package, UserCheck, Globe } from 'lucide-react'
 
 interface Stats {
-  accounts: { total: number; byTier: { starter: number; standard: number; pro: number }; byStatus: { active: number; suspended: number; cancelled: number } }
+  accounts: { total: number; byTier: { solo: number; shop: number; enterprise: number }; byStatus: { active: number; suspended: number; cancelled: number } }
   locations: { total: number }
   users: { total: number }
   items: { total: number; byStatus: { pending: number; priced: number; sold: number; donated: number } }
@@ -71,9 +71,9 @@ export default function AdminOverview() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Accounts by Tier</h2>
           <div className="space-y-3">
-            <TierRow label="Starter" count={stats.accounts.byTier.starter} total={stats.accounts.total} color="bg-gray-400" />
-            <TierRow label="Standard" count={stats.accounts.byTier.standard} total={stats.accounts.total} color="bg-brand-500" />
-            <TierRow label="Pro" count={stats.accounts.byTier.pro} total={stats.accounts.total} color="bg-brand-800" />
+            <TierRow label="Solo" count={stats.accounts.byTier.solo} total={stats.accounts.total} color="bg-slate-400" />
+            <TierRow label="Shop" count={stats.accounts.byTier.shop} total={stats.accounts.total} color="bg-brand-500" />
+            <TierRow label="Enterprise" count={stats.accounts.byTier.enterprise} total={stats.accounts.total} color="bg-brand-800" />
           </div>
         </div>
 

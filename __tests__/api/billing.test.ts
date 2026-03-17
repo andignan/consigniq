@@ -77,8 +77,8 @@ beforeEach(() => {
     return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: null, error: null }) }) }) }
   })
 
-  process.env.STRIPE_STANDARD_PRICE_ID = 'price_standard'
-  process.env.STRIPE_PRO_PRICE_ID = 'price_pro'
+  process.env.STRIPE_SHOP_PRICE_ID = 'price_shop'
+  process.env.STRIPE_ENTERPRISE_PRICE_ID = 'price_enterprise'
   process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
 
   mockCheckoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/session_123' })
@@ -89,7 +89,7 @@ beforeEach(() => {
 describe('POST /api/billing/checkout', () => {
   it('returns 401 for unauthenticated user', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'Not logged in' } })
-    const req = makeRequest('/api/billing/checkout', { tier: 'standard' })
+    const req = makeRequest('/api/billing/checkout', { tier: 'shop' })
     const res = await checkoutPOST(req)
     expect(res.status).toBe(401)
   })
@@ -107,7 +107,7 @@ describe('POST /api/billing/checkout', () => {
       }
       return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: null, error: null }) }) }) }
     })
-    const req = makeRequest('/api/billing/checkout', { tier: 'standard' })
+    const req = makeRequest('/api/billing/checkout', { tier: 'shop' })
     const res = await checkoutPOST(req)
     expect(res.status).toBe(403)
   })
@@ -119,7 +119,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('creates checkout session and returns URL', async () => {
-    const req = makeRequest('/api/billing/checkout', { tier: 'standard' })
+    const req = makeRequest('/api/billing/checkout', { tier: 'shop' })
     const res = await checkoutPOST(req)
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -155,7 +155,7 @@ describe('POST /api/billing/checkout', () => {
       return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: null, error: null }) }) }) }
     })
 
-    const req = makeRequest('/api/billing/checkout', { tier: 'pro' })
+    const req = makeRequest('/api/billing/checkout', { tier: 'enterprise' })
     const res = await checkoutPOST(req)
     expect(res.status).toBe(200)
     expect(mockCustomerCreate).toHaveBeenCalled()

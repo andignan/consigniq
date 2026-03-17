@@ -1,4 +1,4 @@
-export type Tier = 'solo' | 'starter' | 'standard' | 'pro'
+export type Tier = 'solo' | 'shop' | 'enterprise'
 
 export type AccountType = 'paid' | 'trial' | 'complimentary' | 'cancelled_grace' | 'cancelled_limited'
 
@@ -43,27 +43,8 @@ export const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'photo_identification',
     ],
   },
-  starter: {
-    label: 'Starter',
-    price: 49,
-    aiPricingLimit: null,
-    features: [
-      'ai_pricing',
-      'price_lookup',
-      'save_to_inventory',
-      'csv_export',
-      'photo_identification',
-      'consignor_mgmt',
-      'lifecycle',
-      'payouts',
-      'agreements',
-      'staff_management',
-      'reports',
-      'markdown_schedule',
-    ],
-  },
-  standard: {
-    label: 'Standard',
+  shop: {
+    label: 'Shop',
     price: 79,
     aiPricingLimit: null,
     features: [
@@ -84,8 +65,8 @@ export const TIER_CONFIGS: Record<Tier, TierConfig> = {
       'email_notifications',
     ],
   },
-  pro: {
-    label: 'Pro',
+  enterprise: {
+    label: 'Enterprise',
     price: 129,
     aiPricingLimit: null,
     features: [
@@ -140,27 +121,26 @@ export const FEATURE_REQUIRED_TIER: Record<Feature, Tier> = {
   save_to_inventory: 'solo',
   csv_export: 'solo',
   photo_identification: 'solo',
-  consignor_mgmt: 'starter',
-  lifecycle: 'starter',
-  payouts: 'starter',
-  agreements: 'starter',
-  multi_location: 'standard',
-  staff_management: 'starter',
-  reports: 'starter',
-  repeat_item_history: 'standard',
-  markdown_schedule: 'starter',
-  email_notifications: 'standard',
-  cross_customer_pricing: 'pro',
-  community_pricing_feed: 'pro',
-  multi_location_all: 'pro',
-  api_access: 'pro',
+  consignor_mgmt: 'shop',
+  lifecycle: 'shop',
+  payouts: 'shop',
+  agreements: 'shop',
+  multi_location: 'shop',
+  staff_management: 'shop',
+  reports: 'shop',
+  repeat_item_history: 'shop',
+  markdown_schedule: 'shop',
+  email_notifications: 'shop',
+  cross_customer_pricing: 'enterprise',
+  community_pricing_feed: 'enterprise',
+  multi_location_all: 'enterprise',
+  api_access: 'enterprise',
 }
 
 // Stripe price ID placeholders
 export const STRIPE_PRICE_IDS = {
   solo: process.env.STRIPE_SOLO_PRICE_ID,
-  starter: process.env.STRIPE_STARTER_PRICE_ID,
-  standard: process.env.STRIPE_STANDARD_PRICE_ID,
-  pro: process.env.STRIPE_PRO_PRICE_ID,
+  shop: process.env.STRIPE_SHOP_PRICE_ID,
+  enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID,
   topup_50: process.env.STRIPE_TOPUP_50_PRICE_ID,
 }

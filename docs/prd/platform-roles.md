@@ -4,7 +4,7 @@
 
 ## Overview
 
-Platform roles separate platform management access from customer tier features. Customer accounts have tiers (solo/starter/standard/pro) that control product features. Platform users have `platform_role` values that control admin panel access.
+Platform roles separate platform management access from customer tier features. Customer accounts have tiers (solo/shop/enterprise) that control product features. Platform users have `platform_role` values that control admin panel access.
 
 ## Platform Roles
 

@@ -16,7 +16,7 @@ const SOLO_QUICK_LINKS: QuickSection[] = [
     items: [
       { q: 'How do lookups work?', a: 'You get 200 AI pricing lookups per month. Each time you use "Full AI Pricing" or "eBay Comps Only", it counts as one lookup. Your counter resets 30 days from your last reset. You can buy 50 more lookups for $5 if you run out.' },
       { q: 'How do I save an item to inventory?', a: 'After pricing an item on the Price Lookup page, click "Save to My Inventory". The item saves with its AI-suggested price, category, and condition. View saved items on the My Inventory page.' },
-      { q: "What's included in Solo Pricer?", a: 'Solo Pricer ($9/mo) includes 200 AI pricing lookups, eBay sold comps, photo identification, personal inventory tracking, and CSV export. Upgrade to Starter ($49/mo) for consignor management, lifecycle tracking, reports, payouts, and staff accounts.' },
+      { q: "What's included in Solo Pricer?", a: 'Solo Pricer ($9/mo) includes 200 AI pricing lookups, eBay sold comps, photo identification, personal inventory tracking, and CSV export. Upgrade to Shop ($79/mo) for consignor management, lifecycle tracking, multi-location, reports, payouts, and staff accounts.' },
     ],
   },
   {
@@ -31,7 +31,7 @@ const SOLO_QUICK_LINKS: QuickSection[] = [
     section: 'Account',
     items: [
       { q: 'How do I buy more lookups?', a: 'Go to Settings → Billing and click "Buy 50 more lookups — $5". You can also buy from the dashboard when your remaining lookups are low. Bonus lookups never expire.' },
-      { q: 'How do I upgrade my plan?', a: 'Go to Settings → Billing and click "Upgrade to Starter — $49/mo". This adds consignor management, lifecycle tracking, reports, payouts, markdown schedules, and staff accounts.' },
+      { q: 'How do I upgrade my plan?', a: 'Go to Settings → Billing and click "Upgrade to Shop — $79/mo". This adds consignor management, lifecycle tracking, multi-location, reports, payouts, markdown schedules, and staff accounts.' },
       { q: 'How do I change my password?', a: "Go to Settings → Profile and click \"Change Password\". We'll send a password reset link to your email. Click the link to set a new password." },
     ],
   },
@@ -59,7 +59,7 @@ const FULL_QUICK_LINKS: QuickSection[] = [
     items: [
       { q: 'How do I invite staff?', a: "Go to Settings → Account Settings → click \"Invite User\". Enter their email and select their role (owner or staff). They'll receive an invitation to join your account." },
       { q: 'How do I change split percentages?', a: 'Go to Settings → Location Settings. The "Default Store Split %" and "Default Consignor Split %" fields control the revenue split for new consignors. Both must add to 100%.' },
-      { q: 'What do the tiers include?', a: 'ConsignIQ offers Solo ($9), Starter ($49), Standard ($79), and Pro ($129) tiers. Solo is pricing-only. Starter adds consignor management, reports, payouts. Standard adds multi-location and email notifications. Pro adds cross-customer pricing intel.' },
+      { q: 'What do the tiers include?', a: 'ConsignIQ offers Solo ($9), Shop ($79), and Enterprise ($129) tiers. Solo is pricing-only. Shop adds consignor management, multi-location, reports, payouts, and email notifications. Enterprise adds cross-customer pricing intel, community feed, and API access.' },
     ],
   },
 ]
@@ -110,9 +110,9 @@ function setCachedAnswer(question: string, answer: string) {
 export default function HelpWidget() {
   const pathname = usePathname()
   const contextUser = useUser()
-  const accountTier = (contextUser?.accounts?.tier ?? 'starter') as Tier
+  const accountTier = (contextUser?.accounts?.tier ?? 'shop') as Tier
   const isSolo = accountTier === 'solo'
-  const tierLabel = TIER_CONFIGS[accountTier]?.label ?? 'Starter'
+  const tierLabel = TIER_CONFIGS[accountTier]?.label ?? 'Shop'
 
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')

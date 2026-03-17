@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
   const [formEmail, setFormEmail] = useState('')
   const [formName, setFormName] = useState('')
   const [formAccountName, setFormAccountName] = useState('')
-  const [formTier, setFormTier] = useState('starter')
+  const [formTier, setFormTier] = useState('shop')
   const [formAccountType, setFormAccountType] = useState('paid')
   // formComplimentaryTier removed — Tier dropdown value is used for complimentary_tier
   const [submitting, setSubmitting] = useState(false)
@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
         setFormEmail('')
         setFormName('')
         setFormAccountName('')
-        setFormTier('starter')
+        setFormTier('shop')
         setFormAccountType('paid')
         loadUsers()
         setTimeout(() => {
@@ -198,7 +198,7 @@ export default function AdminUsersPage() {
     setFormEmail('')
     setFormName('')
     setFormAccountName('')
-    setFormTier('starter')
+    setFormTier('shop')
     setFormAccountType('paid')
     setFormError('')
     setFormSuccess('')
@@ -247,9 +247,8 @@ export default function AdminUsersPage() {
         >
           <option value="">All Tiers</option>
           <option value="solo">Solo</option>
-          <option value="starter">Starter</option>
-          <option value="standard">Standard</option>
-          <option value="pro">Pro</option>
+          <option value="shop">Shop</option>
+          <option value="enterprise">Enterprise</option>
         </select>
       </div>
 
@@ -381,9 +380,8 @@ export default function AdminUsersPage() {
                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="solo">Solo</option>
-                <option value="starter">Starter</option>
-                <option value="standard">Standard</option>
-                <option value="pro">Pro</option>
+                <option value="shop">Shop</option>
+                <option value="enterprise">Enterprise</option>
               </select>
             </div>
             <div>

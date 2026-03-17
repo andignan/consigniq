@@ -5,10 +5,10 @@
 import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 
 describe('TrialExpiredPage tier display', () => {
-  const tiers: Tier[] = ['solo', 'starter', 'standard', 'pro']
+  const tiers: Tier[] = ['solo', 'shop', 'enterprise']
 
-  it('renders all 4 tiers', () => {
-    expect(tiers).toHaveLength(4)
+  it('renders all 3 tiers', () => {
+    expect(tiers).toHaveLength(3)
     for (const tier of tiers) {
       expect(TIER_CONFIGS[tier]).toBeDefined()
     }
@@ -25,9 +25,8 @@ describe('TrialExpiredPage tier display', () => {
 
   it('solo shows lookup limit, others show unlimited', () => {
     expect(TIER_CONFIGS.solo.aiPricingLimit).toBe(200)
-    expect(TIER_CONFIGS.starter.aiPricingLimit).toBeNull()
-    expect(TIER_CONFIGS.standard.aiPricingLimit).toBeNull()
-    expect(TIER_CONFIGS.pro.aiPricingLimit).toBeNull()
+    expect(TIER_CONFIGS.shop.aiPricingLimit).toBeNull()
+    expect(TIER_CONFIGS.enterprise.aiPricingLimit).toBeNull()
   })
 
   it('tiers are in ascending price order', () => {
@@ -37,10 +36,9 @@ describe('TrialExpiredPage tier display', () => {
     }
   })
 
-  it('solo is $9, starter $49, standard $79, pro $129', () => {
+  it('solo is $9, shop $79, enterprise $129', () => {
     expect(TIER_CONFIGS.solo.price).toBe(9)
-    expect(TIER_CONFIGS.starter.price).toBe(49)
-    expect(TIER_CONFIGS.standard.price).toBe(79)
-    expect(TIER_CONFIGS.pro.price).toBe(129)
+    expect(TIER_CONFIGS.shop.price).toBe(79)
+    expect(TIER_CONFIGS.enterprise.price).toBe(129)
   })
 })

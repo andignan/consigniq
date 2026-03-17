@@ -98,7 +98,7 @@ describe('GET /api/admin/users', () => {
   it('returns users list for superadmin', async () => {
     mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
     const mockUsers = [
-      { id: 'u1', email: 'test@test.com', full_name: 'Test', role: 'owner', accounts: { name: 'Acme', tier: 'starter', account_type: 'paid' } },
+      { id: 'u1', email: 'test@test.com', full_name: 'Test', role: 'owner', accounts: { name: 'Acme', tier: 'shop', account_type: 'paid' } },
     ]
 
     function makeThenableQuery(data: unknown[]) {
@@ -177,7 +177,7 @@ describe('POST /api/admin/users', () => {
         email: 'new@test.com',
         full_name: 'New User',
         account_name: 'New Shop',
-        tier: 'starter',
+        tier: 'shop',
         account_type: 'trial',
       }),
     }))
@@ -192,7 +192,7 @@ describe('POST /api/admin/users', () => {
     expect(accountInsertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'New Shop',
-        tier: 'starter',
+        tier: 'shop',
         account_type: 'trial',
       })
     )
@@ -235,7 +235,7 @@ describe('POST /api/admin/users', () => {
         account_name: 'Comp Shop',
         tier: 'solo',
         account_type: 'complimentary',
-        complimentary_tier: 'pro',
+        complimentary_tier: 'enterprise',
       }),
     }))
 
@@ -244,7 +244,7 @@ describe('POST /api/admin/users', () => {
       expect.objectContaining({
         account_type: 'complimentary',
         is_complimentary: true,
-        complimentary_tier: 'pro',
+        complimentary_tier: 'enterprise',
       })
     )
   })
@@ -265,7 +265,7 @@ describe('POST /api/admin/users', () => {
         email: 'fail@test.com',
         full_name: 'Fail User',
         account_name: 'Fail Shop',
-        tier: 'starter',
+        tier: 'shop',
         account_type: 'paid',
       }),
     }))

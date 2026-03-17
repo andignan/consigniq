@@ -18,7 +18,7 @@ export async function GET() {
   const [
     accountsTotal, locationTotal, userTotal,
     // Account tiers
-    soloCount, starterCount, standardCount, proCount,
+    soloCount, shopCount, enterpriseCount,
     // Account statuses
     activeAccounts, suspendedAccounts, cancelledAccounts,
     // Item statuses
@@ -31,9 +31,8 @@ export async function GET() {
     supabase.from('users').select('*', { count: 'exact', head: true }),
     // Account tiers
     supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'solo'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'starter'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'standard'),
-    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'pro'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'shop'),
+    supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('tier', 'enterprise'),
     // Account statuses
     supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('status', 'active'),
     supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('is_system', false).eq('status', 'suspended'),
@@ -57,9 +56,8 @@ export async function GET() {
       total: accountsTotal.count ?? 0,
       byTier: {
         solo: soloCount.count ?? 0,
-        starter: starterCount.count ?? 0,
-        standard: standardCount.count ?? 0,
-        pro: proCount.count ?? 0,
+        shop: shopCount.count ?? 0,
+        enterprise: enterpriseCount.count ?? 0,
       },
       byStatus: {
         active: activeAccounts.count ?? 0,

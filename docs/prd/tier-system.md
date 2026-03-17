@@ -4,31 +4,31 @@
 
 ## Tier Feature Matrix
 
-| Feature | Solo ($9) | Starter ($49) | Standard ($79) | Pro ($129) |
-|---|---|---|---|---|
-| AI pricing lookups | 200/mo | Unlimited | Unlimited | Unlimited |
-| Price Lookup | Y | Y | Y | Y |
-| Photo identification | Y | Y | Y | Y |
-| Save to inventory | Y | Y | Y | Y |
-| CSV export | Y | Y | Y | Y |
-| Consignor management | - | Y | Y | Y |
-| 60-day lifecycle | - | Y | Y | Y |
-| Agreement emails | - | Y | Y | Y |
-| Payouts | - | Y | Y | Y |
-| Reports & analytics | - | Y | Y | Y |
-| Markdown schedules | - | Y | Y | Y |
-| Staff management | - | Y | Y | Y |
-| Repeat item history | - | - | Y | Y |
-| Email notifications | - | - | Y | Y |
-| Multi-location | - | - | Y | Y |
-| Cross-customer pricing | - | - | - | Y |
-| Community pricing feed | - | - | - | Y |
-| All Locations dashboard | - | - | - | Y |
-| API access | - | - | - | Y |
+| Feature | Solo ($9) | Shop ($79) | Enterprise ($129) |
+|---|---|---|---|
+| AI pricing lookups | 200/mo | Unlimited | Unlimited |
+| Price Lookup | Y | Y | Y |
+| Photo identification | Y | Y | Y |
+| Save to inventory | Y | Y | Y |
+| CSV export | Y | Y | Y |
+| Consignor management | - | Y | Y |
+| 60-day lifecycle | - | Y | Y |
+| Agreement emails | - | Y | Y |
+| Payouts | - | Y | Y |
+| Reports & analytics | - | Y | Y |
+| Markdown schedules | - | Y | Y |
+| Staff management | - | Y | Y |
+| Repeat item history | - | Y | Y |
+| Email notifications | - | Y | Y |
+| Multi-location | - | Y | Y |
+| Cross-customer pricing | - | - | Y |
+| Community pricing feed | - | - | Y |
+| All Locations dashboard | - | - | Y |
+| API access | - | - | Y |
 
 ## How canUseFeature() Works
 
-`TIER_ORDER = { solo: 0, starter: 1, standard: 2, pro: 3 }`
+`TIER_ORDER = { solo: 0, shop: 1, enterprise: 2 }`
 
 `canUseFeature(tier, feature)` → `TIER_ORDER[tier] >= TIER_ORDER[FEATURE_REQUIRED_TIER[feature]]`
 

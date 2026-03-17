@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (owner?.email) {
       try {
-        const tier = (account.cancelled_tier || 'starter') as Tier
+        const tier = (account.cancelled_tier || 'shop') as Tier
         const tierLabel = TIER_CONFIGS[tier]?.label || 'your plan'
         const endDate = new Date(account.subscription_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
         const emailContent = buildGraceReminderEmail({
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (owner?.email) {
       try {
-        const tier = (account.cancelled_tier || 'starter') as Tier
+        const tier = (account.cancelled_tier || 'shop') as Tier
         const tierLabel = TIER_CONFIGS[tier]?.label || 'your plan'
         const emailContent = buildAccessEndedEmail({
           fullName: owner.full_name || owner.email,

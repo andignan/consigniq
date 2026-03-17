@@ -59,12 +59,12 @@ describe('C5: Solo tier blocked from Starter+ features', () => {
     expect(canUseFeature('solo', 'staff_management')).toBe(false)
   })
 
-  it('starter can use all blocked features', () => {
-    expect(canUseFeature('starter', 'consignor_mgmt')).toBe(true)
-    expect(canUseFeature('starter', 'payouts')).toBe(true)
-    expect(canUseFeature('starter', 'agreements')).toBe(true)
-    expect(canUseFeature('starter', 'reports')).toBe(true)
-    expect(canUseFeature('starter', 'lifecycle')).toBe(true)
-    expect(canUseFeature('starter', 'staff_management')).toBe(true)
+  it('shop can use all blocked features', () => {
+    expect(canUseFeature('shop', 'consignor_mgmt')).toBe(true)
+    expect(canUseFeature('shop', 'payouts')).toBe(true)
+    expect(canUseFeature('shop', 'agreements')).toBe(true)
+    expect(canUseFeature('shop', 'reports')).toBe(true)
+    expect(canUseFeature('shop', 'lifecycle')).toBe(true)
+    expect(canUseFeature('shop', 'staff_management')).toBe(true)
   })
 })

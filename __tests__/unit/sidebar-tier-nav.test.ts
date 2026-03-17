@@ -17,9 +17,9 @@ describe('Sidebar tier navigation', () => {
     }
   })
 
-  it('starter tier can access consignors, reports, and payouts', () => {
+  it('shop tier can access consignors, reports, and payouts', () => {
     for (const feature of fullNavFeatures) {
-      expect(canUseFeature('starter', feature)).toBe(true)
+      expect(canUseFeature('shop', feature)).toBe(true)
     }
   })
 
@@ -28,7 +28,7 @@ describe('Sidebar tier navigation', () => {
   })
 
   it('tier labels exist for all tiers', () => {
-    const tiers: Tier[] = ['solo', 'starter', 'standard', 'pro']
+    const tiers: Tier[] = ['solo', 'shop', 'enterprise']
     for (const tier of tiers) {
       expect(TIER_CONFIGS[tier].label).toBeTruthy()
     }

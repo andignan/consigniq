@@ -39,65 +39,53 @@ describe('canUseFeature', () => {
     expect(canUseFeature('solo', 'lifecycle')).toBe(false)
   })
 
-  it('starter can use ai_pricing', () => {
-    expect(canUseFeature('starter', 'ai_pricing')).toBe(true)
+  it('shop can use ai_pricing', () => {
+    expect(canUseFeature('shop', 'ai_pricing')).toBe(true)
   })
 
-  it('starter can use consignor_mgmt', () => {
-    expect(canUseFeature('starter', 'consignor_mgmt')).toBe(true)
+  it('shop can use consignor_mgmt', () => {
+    expect(canUseFeature('shop', 'consignor_mgmt')).toBe(true)
   })
 
-  it('starter cannot use repeat_item_history', () => {
-    expect(canUseFeature('starter', 'repeat_item_history')).toBe(false)
+  it('shop can use repeat_item_history', () => {
+    expect(canUseFeature('shop', 'repeat_item_history')).toBe(true)
   })
 
-  it('starter can use markdown_schedule', () => {
-    expect(canUseFeature('starter', 'markdown_schedule')).toBe(true)
+  it('shop can use markdown_schedule', () => {
+    expect(canUseFeature('shop', 'markdown_schedule')).toBe(true)
   })
 
-  it('starter cannot use cross_customer_pricing', () => {
-    expect(canUseFeature('starter', 'cross_customer_pricing')).toBe(false)
+  it('shop cannot use cross_customer_pricing', () => {
+    expect(canUseFeature('shop', 'cross_customer_pricing')).toBe(false)
   })
 
-  it('standard can use repeat_item_history', () => {
-    expect(canUseFeature('standard', 'repeat_item_history')).toBe(true)
-  })
-
-  it('standard can use markdown_schedule', () => {
-    expect(canUseFeature('standard', 'markdown_schedule')).toBe(true)
-  })
-
-  it('standard cannot use cross_customer_pricing', () => {
-    expect(canUseFeature('standard', 'cross_customer_pricing')).toBe(false)
-  })
-
-  it('pro can use all features', () => {
-    expect(canUseFeature('pro', 'ai_pricing')).toBe(true)
-    expect(canUseFeature('pro', 'repeat_item_history')).toBe(true)
-    expect(canUseFeature('pro', 'cross_customer_pricing')).toBe(true)
-    expect(canUseFeature('pro', 'community_pricing_feed')).toBe(true)
-    expect(canUseFeature('pro', 'multi_location_all')).toBe(true)
-    expect(canUseFeature('pro', 'api_access')).toBe(true)
+  it('enterprise can use all features', () => {
+    expect(canUseFeature('enterprise', 'ai_pricing')).toBe(true)
+    expect(canUseFeature('enterprise', 'repeat_item_history')).toBe(true)
+    expect(canUseFeature('enterprise', 'cross_customer_pricing')).toBe(true)
+    expect(canUseFeature('enterprise', 'community_pricing_feed')).toBe(true)
+    expect(canUseFeature('enterprise', 'multi_location_all')).toBe(true)
+    expect(canUseFeature('enterprise', 'api_access')).toBe(true)
   })
 })
 
 describe('getUpgradeMessage', () => {
   it('returns message with correct tier for repeat_item_history', () => {
     const msg = getUpgradeMessage('repeat_item_history')
-    expect(msg).toContain('Standard')
+    expect(msg).toContain('Shop')
     expect(msg).toContain('$79')
   })
 
   it('returns message with correct tier for cross_customer_pricing', () => {
     const msg = getUpgradeMessage('cross_customer_pricing')
-    expect(msg).toContain('Pro')
+    expect(msg).toContain('Enterprise')
     expect(msg).toContain('$129')
   })
 
   it('returns message with correct tier for consignor_mgmt', () => {
     const msg = getUpgradeMessage('consignor_mgmt')
-    expect(msg).toContain('Starter')
-    expect(msg).toContain('$49')
+    expect(msg).toContain('Shop')
+    expect(msg).toContain('$79')
   })
 })
 
@@ -110,20 +98,16 @@ describe('TIER_CONFIGS', () => {
     expect(TIER_CONFIGS.solo.price).toBe(9)
   })
 
-  it('starter has unlimited AI pricing', () => {
-    expect(TIER_CONFIGS.starter.aiPricingLimit).toBeNull()
+  it('shop has unlimited AI pricing', () => {
+    expect(TIER_CONFIGS.shop.aiPricingLimit).toBeNull()
   })
 
-  it('starter costs $49/mo', () => {
-    expect(TIER_CONFIGS.starter.price).toBe(49)
+  it('shop costs $79/mo', () => {
+    expect(TIER_CONFIGS.shop.price).toBe(79)
   })
 
-  it('standard has unlimited AI pricing', () => {
-    expect(TIER_CONFIGS.standard.aiPricingLimit).toBeNull()
-  })
-
-  it('pro has unlimited AI pricing', () => {
-    expect(TIER_CONFIGS.pro.aiPricingLimit).toBeNull()
+  it('enterprise has unlimited AI pricing', () => {
+    expect(TIER_CONFIGS.enterprise.aiPricingLimit).toBeNull()
   })
 })
 
@@ -132,22 +116,22 @@ describe('FEATURE_REQUIRED_TIER', () => {
     expect(FEATURE_REQUIRED_TIER.ai_pricing).toBe('solo')
     expect(FEATURE_REQUIRED_TIER.price_lookup).toBe('solo')
     expect(FEATURE_REQUIRED_TIER.csv_export).toBe('solo')
-    expect(FEATURE_REQUIRED_TIER.consignor_mgmt).toBe('starter')
-    expect(FEATURE_REQUIRED_TIER.lifecycle).toBe('starter')
-    expect(FEATURE_REQUIRED_TIER.payouts).toBe('starter')
-    expect(FEATURE_REQUIRED_TIER.repeat_item_history).toBe('standard')
-    expect(FEATURE_REQUIRED_TIER.markdown_schedule).toBe('starter')
-    expect(FEATURE_REQUIRED_TIER.email_notifications).toBe('standard')
-    expect(FEATURE_REQUIRED_TIER.cross_customer_pricing).toBe('pro')
-    expect(FEATURE_REQUIRED_TIER.community_pricing_feed).toBe('pro')
-    expect(FEATURE_REQUIRED_TIER.multi_location_all).toBe('pro')
-    expect(FEATURE_REQUIRED_TIER.api_access).toBe('pro')
+    expect(FEATURE_REQUIRED_TIER.consignor_mgmt).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.lifecycle).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.payouts).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.repeat_item_history).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.markdown_schedule).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.email_notifications).toBe('shop')
+    expect(FEATURE_REQUIRED_TIER.cross_customer_pricing).toBe('enterprise')
+    expect(FEATURE_REQUIRED_TIER.community_pricing_feed).toBe('enterprise')
+    expect(FEATURE_REQUIRED_TIER.multi_location_all).toBe('enterprise')
+    expect(FEATURE_REQUIRED_TIER.api_access).toBe('enterprise')
   })
 })
 
 describe('isAccountActive', () => {
   it('returns true for paid accounts', () => {
-    expect(isAccountActive({ tier: 'starter', account_type: 'paid' })).toBe(true)
+    expect(isAccountActive({ tier: 'shop', account_type: 'paid' })).toBe(true)
   })
 
   it('returns true for complimentary accounts', () => {
@@ -156,30 +140,30 @@ describe('isAccountActive', () => {
 
   it('returns true for trial accounts before expiry', () => {
     const future = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: future })).toBe(true)
+    expect(isAccountActive({ tier: 'shop', account_type: 'trial', trial_ends_at: future })).toBe(true)
   })
 
   it('returns false for trial accounts after expiry', () => {
     const past = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: past })).toBe(false)
+    expect(isAccountActive({ tier: 'shop', account_type: 'trial', trial_ends_at: past })).toBe(false)
   })
 
   it('returns false for trial accounts with no trial_ends_at', () => {
-    expect(isAccountActive({ tier: 'starter', account_type: 'trial', trial_ends_at: null })).toBe(false)
+    expect(isAccountActive({ tier: 'shop', account_type: 'trial', trial_ends_at: null })).toBe(false)
   })
 
   it('returns false for suspended accounts', () => {
-    expect(isAccountActive({ tier: 'pro', account_type: 'paid', status: 'suspended' })).toBe(false)
+    expect(isAccountActive({ tier: 'enterprise', account_type: 'paid', status: 'suspended' })).toBe(false)
   })
 
   it('returns false for cancelled accounts', () => {
-    expect(isAccountActive({ tier: 'pro', account_type: 'paid', status: 'cancelled' })).toBe(false)
+    expect(isAccountActive({ tier: 'enterprise', account_type: 'paid', status: 'cancelled' })).toBe(false)
   })
 })
 
 describe('getEffectiveTier', () => {
   it('returns account tier for paid accounts', () => {
-    expect(getEffectiveTier({ tier: 'starter', account_type: 'paid' })).toBe('starter')
+    expect(getEffectiveTier({ tier: 'shop', account_type: 'paid' })).toBe('shop')
   })
 
   it('returns complimentary_tier for complimentary accounts', () => {
@@ -187,17 +171,17 @@ describe('getEffectiveTier', () => {
       tier: 'solo',
       account_type: 'complimentary',
       is_complimentary: true,
-      complimentary_tier: 'pro',
-    })).toBe('pro')
+      complimentary_tier: 'enterprise',
+    })).toBe('enterprise')
   })
 
   it('returns account tier for complimentary without complimentary_tier', () => {
     expect(getEffectiveTier({
-      tier: 'starter',
+      tier: 'shop',
       account_type: 'complimentary',
       is_complimentary: true,
       complimentary_tier: null,
-    })).toBe('starter')
+    })).toBe('shop')
   })
 })
 
@@ -207,7 +191,7 @@ describe('canAccountUseFeature', () => {
       tier: 'solo' as const,
       account_type: 'complimentary' as const,
       is_complimentary: true,
-      complimentary_tier: 'pro' as const,
+      complimentary_tier: 'enterprise' as const,
     }
     expect(canAccountUseFeature(account, 'cross_customer_pricing')).toBe(true)
     expect(canAccountUseFeature(account, 'consignor_mgmt')).toBe(true)
@@ -215,7 +199,7 @@ describe('canAccountUseFeature', () => {
 
   it('expired trial cannot use any features', () => {
     const account = {
-      tier: 'standard' as const,
+      tier: 'shop' as const,
       account_type: 'trial' as const,
       trial_ends_at: new Date(Date.now() - 86400000).toISOString(),
     }
@@ -237,7 +221,7 @@ describe('isLookupLimitReached', () => {
   })
 
   it('returns false for unlimited tiers', () => {
-    expect(isLookupLimitReached('starter', 10000, 0, 0)).toBe(false)
+    expect(isLookupLimitReached('shop', 10000, 0, 0)).toBe(false)
   })
 
   it('bonus lookups persist through monthly reset', () => {

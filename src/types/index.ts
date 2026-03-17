@@ -2,7 +2,7 @@
 // ConsignIQ — Core TypeScript Types
 // ============================================================
 
-export type Tier = 'starter' | 'standard' | 'pro'
+export type Tier = 'solo' | 'shop' | 'enterprise'
 export type UserRole = 'owner' | 'staff'
 export type PlatformRole = 'super_admin' | 'support' | 'finance'
 export type ConsignorStatus = 'active' | 'expired' | 'grace' | 'closed'

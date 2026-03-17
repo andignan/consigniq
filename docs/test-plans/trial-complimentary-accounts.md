@@ -33,7 +33,7 @@
 ## 4. Complimentary Account
 
 - [ ] Complimentary accounts bypass all tier checks
-- [ ] Features available match complimentary_tier (e.g., complimentary_tier = 'pro' gives pro features)
+- [ ] Features available match complimentary_tier (e.g., complimentary_tier = 'enterprise' gives enterprise features)
 - [ ] No billing prompts or trial banners shown
 - [ ] Account_type shows as 'complimentary' in admin panel
 - [ ] isAccountActive() returns true for complimentary accounts

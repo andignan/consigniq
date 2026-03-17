@@ -45,7 +45,7 @@ interface ItemCounts {
   donated: number
 }
 
-const TIER_OPTIONS = ['solo', 'starter', 'standard', 'pro']
+const TIER_OPTIONS = ['solo', 'shop', 'enterprise']
 const STATUS_OPTIONS = ['active', 'suspended', 'cancelled', 'inactive']
 
 export default function AccountDetailPage() {

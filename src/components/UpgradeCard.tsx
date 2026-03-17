@@ -5,34 +5,24 @@ import Link from 'next/link'
 import { TIER_CONFIGS } from '@/lib/tier-limits'
 
 export const UPGRADE_CARD_CONFIG = {
-  starter: {
-    headline: 'Upgrade to Starter',
+  shop: {
+    headline: 'Upgrade to Shop',
     dashboardHeadline: 'Running a consignment shop?',
     description: 'Everything you need for consignment management.',
     features: [
       'Unlimited AI pricing lookups',
       'Consignor management & lifecycle',
+      'Multi-location support',
       'Payouts, agreements, reports',
       'Staff management',
     ],
   },
-  standard: {
-    headline: 'Upgrade to Standard',
-    dashboardHeadline: 'Ready for more locations?',
-    description: 'Multi-location support and advanced features.',
-    features: [
-      'Everything in Starter',
-      'Multi-location support',
-      'Email notifications for expiring agreements',
-      'Repeat item pricing history',
-    ],
-  },
-  pro: {
-    headline: 'Upgrade to Pro',
+  enterprise: {
+    headline: 'Upgrade to Enterprise',
     dashboardHeadline: 'Unlock the full platform',
     description: 'Cross-network intelligence and full platform access.',
     features: [
-      'Everything in Standard',
+      'Everything in Shop',
       'Cross-customer pricing intel',
       'Community pricing feed',
       'All Locations dashboard',

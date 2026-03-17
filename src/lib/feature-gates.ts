@@ -1,6 +1,6 @@
 import { type Tier, type Feature, type AccountType, TIER_CONFIGS, FEATURE_REQUIRED_TIER, FEATURE_LABELS } from './tier-limits'
 
-const TIER_ORDER: Record<Tier, number> = { solo: 0, starter: 1, standard: 2, pro: 3 }
+const TIER_ORDER: Record<Tier, number> = { solo: 0, shop: 1, enterprise: 2 }
 
 export function canUseFeature(tier: Tier, feature: Feature): boolean {
   const requiredTier = FEATURE_REQUIRED_TIER[feature]

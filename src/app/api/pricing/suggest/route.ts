@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     : '\nNo comparable sales data available. Use your knowledge of typical resale values.'
 
   // Detect tier for prompt customization — solo users are individual resellers, not shop owners
-  let detectedTier = 'starter'
+  let detectedTier = 'shop'
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (account) {
-        const tier = (account.tier || 'starter') as Tier
+        const tier = (account.tier || 'shop') as Tier
         detectedTier = tier
         const tierConfig = TIER_CONFIGS[tier]
 
@@ -203,7 +203,7 @@ ${pricingGuidance}`
             .eq('id', profile.account_id)
             .single()
 
-          const tierCfg = TIER_CONFIGS[(acct?.tier || 'starter') as Tier]
+          const tierCfg = TIER_CONFIGS[(acct?.tier || 'shop') as Tier]
           if (tierCfg.aiPricingLimit !== null && (acct?.ai_lookups_this_month ?? 0) >= tierCfg.aiPricingLimit) {
             // Monthly exhausted, use bonus
             await supabase
