@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (537 tests across unit + API)
+- `npm test` — Jest test suite (544 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -58,6 +58,7 @@ Three client factories:
 - `/api/admin/stats` — cross-account platform stats
 - `/api/admin/accounts` — GET list/detail, PATCH tier/status/account_type. Filters: `?id=`, `?tier=`, `?status=`
 - `/api/admin/users` — GET with `?search=`, `?account_type=`, `?tier=`. POST creates customer user (account+location+auth+users row, rejects account names matching system accounts) or platform user (when `platform_role` provided — uses system account, auto-creates system location if missing, super_admin only). Sends invite email via Resend (non-critical). PATCH takes `{ user_id, platform_role }` to set/remove platform roles (super_admin only)
+- `/api/admin/users/[userId]` — DELETE (superadmin only). Deletes users table row + auth user. Cannot delete last super_admin. UUID validation
 - `/api/admin/users/reset-password` — POST, takes `{ user_id }`, sends reset email via Resend
 - `/api/admin/network-stats` — cross-account pricing intelligence stats
 - `/api/admin/accounts/delete` — POST, takes `{ account_id, reason? }`. Complimentary/trial: hard deletes all data + auth users. Paid with Stripe: cancels subscription, soft deletes (status='deleted', deleted_at set). Sends notification email
@@ -306,7 +307,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**537 Jest tests passing.** 5 Playwright E2E specs. 40 manual test plans at `/docs/test-plans/`.
+**544 Jest tests passing.** 5 Playwright E2E specs. 41 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -355,6 +356,7 @@ __tests__/
 │   ├── payouts.test.ts            — GET/PATCH, auth, filters, split calcs, mark as paid
 │   ├── agreements.test.ts         — send + notify-expiring, auth, validation, templates
 │   ├── admin-users.test.ts        — GET/POST, superadmin enforcement, invite email, platform user creation
+│   ├── admin-user-delete.test.ts  — DELETE /api/admin/users/[userId], auth, UUID validation, last-super-admin guard
 │   ├── trial-check-expiry.test.ts — auth, reminder emails, expired count
 │   ├── password-flow.test.ts      — reset-password, forgot-password
 │   ├── critical-security.test.ts  — UUID validation (5), tier enforcement (8)

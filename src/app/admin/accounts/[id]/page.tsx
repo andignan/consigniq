@@ -506,6 +506,35 @@ export default function AccountDetailPage() {
                   >
                     Reset Password
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Remove ${u.full_name || u.email} from this account? This will delete their login.`)) return
+                      setSaving(true)
+                      setSaveMsg('')
+                      try {
+                        const res = await fetch(`/api/admin/users/${u.id}`, {
+                          method: 'DELETE',
+                          credentials: 'include',
+                        })
+                        if (res.ok) {
+                          setUsers(prev => prev.filter(x => x.id !== u.id))
+                          setSaveMsg(`${u.full_name || u.email} removed`)
+                        } else {
+                          const data = await res.json()
+                          setSaveMsg(data.error || 'Failed to remove user')
+                        }
+                      } catch {
+                        setSaveMsg('Failed to remove user')
+                      } finally {
+                        setSaving(false)
+                        setTimeout(() => setSaveMsg(''), 4000)
+                      }
+                    }}
+                    disabled={saving}
+                    className="text-xs font-medium px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  >
+                    Remove
+                  </button>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                     u.role === 'owner' ? 'bg-brand-50 text-brand-600' : 'bg-gray-100 text-gray-600'
                   }`}>
