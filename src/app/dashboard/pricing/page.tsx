@@ -1,14 +1,15 @@
 // app/dashboard/pricing/page.tsx
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   Sparkles, Loader2, DollarSign, ExternalLink, RefreshCw, AlertCircle,
-  Camera, X, Search,
+  Search,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type ItemCondition } from '@/types'
 import { getDescriptionHint } from '@/lib/description-hints'
 import { compressImage } from '@/lib/compress-image'
+import PhotoUploader, { type PhotoSlot } from '@/components/PhotoUploader'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 import { useUser } from '@/contexts/UserContext'
@@ -23,11 +24,8 @@ export default function PriceLookupPage() {
   const [condition, setCondition] = useState<ItemCondition>('good')
   const [description, setDescription] = useState('')
 
-  // Photo
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null)
-  const [photoMediaType, setPhotoMediaType] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Photos
+  const [photos, setPhotos] = useState<PhotoSlot[]>([])
 
   // Results
   const [comps, setComps] = useState<CompResult[]>([])
@@ -40,26 +38,46 @@ export default function PriceLookupPage() {
   const contextUser = useUser()
   const isSolo = (contextUser?.accounts?.tier ?? 'shop') === 'solo'
 
-  async function handlePhoto(file: File) {
+  // Handle file from PhotoUploader
+  const handlePhotoFile = useCallback(async (file: File) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!validTypes.includes(file.type)) {
       setError('Only JPG, PNG, and WebP images are supported')
       return
     }
 
+    try {
+      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+      const newSlot: PhotoSlot = {
+        id: Math.random().toString(36).slice(2),
+        blob: compressed.blob,
+        base64: compressed.base64,
+        mediaType: compressed.mediaType,
+        previewUrl: compressed.previewUrl,
+      }
+      setPhotos(prev => [...prev, newSlot])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process photo')
+    }
+  }, [])
+
+  async function analyzePhotos() {
+    if (photos.length === 0) return
     setStage('identifying')
     setError(null)
     try {
-      // Compress image client-side before sending
-      const compressed = await compressImage(file)
-      setPhotoPreview(compressed.previewUrl)
-      setPhotoBase64(compressed.base64)
-      setPhotoMediaType(compressed.mediaType)
-
-      const compressedFile = new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
-      formData.append('photo', compressedFile)
-      const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
+      photos.forEach((photo, i) => {
+        const file = new File([photo.blob], `photo_${i}.jpg`, { type: 'image/jpeg' })
+        if (i === 0) formData.append('photo', file)
+        formData.append(`photo_${i + 1}`, file)
+      })
+
+      const res = await fetch('/api/pricing/identify', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error ?? 'Identification failed')
@@ -76,13 +94,6 @@ export default function PriceLookupPage() {
       setError(err instanceof Error ? err.message : 'Photo identification failed')
       setStage('idle')
     }
-  }
-
-  function clearPhoto() {
-    setPhotoPreview(null)
-    setPhotoBase64(null)
-    setPhotoMediaType(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   async function fetchComps(): Promise<CompResult[]> {
@@ -131,13 +142,17 @@ export default function PriceLookupPage() {
 
     setStage('pricing')
     try {
+      const photoPayload = photos.length > 0
+        ? { photos: photos.map(p => ({ base64: p.base64, mediaType: p.mediaType })) }
+        : {}
+
       const suggestRes = await fetch('/api/pricing/suggest', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name, category, condition, description, comps: fetchedComps,
-          ...(photoBase64 && photoMediaType ? { photoBase64, photoMediaType } : {}),
+          ...photoPayload,
         }),
       })
       if (!suggestRes.ok) {
@@ -164,7 +179,7 @@ export default function PriceLookupPage() {
     setError(null)
     setSaved(false)
     setSaving(false)
-    clearPhoto()
+    setPhotos([])
   }
 
   async function saveToInventory() {
@@ -185,7 +200,6 @@ export default function PriceLookupPage() {
       high_price: suggestion.high,
       ai_reasoning: suggestion.reasoning,
     }
-    console.log('[save-to-inventory] payload:', JSON.stringify(payload))
 
     try {
       const res = await fetch('/api/items', {
@@ -195,9 +209,26 @@ export default function PriceLookupPage() {
         body: JSON.stringify(payload),
       })
       const resBody = await res.json().catch(() => ({}))
-      console.log('[save-to-inventory] response:', res.status, JSON.stringify(resBody))
 
       if (res.ok) {
+        // Upload photos to storage (non-blocking)
+        const itemId = resBody.item?.id
+        if (itemId && photos.length > 0) {
+          try {
+            for (const photo of photos) {
+              const formData = new FormData()
+              formData.append('photo', new File([photo.blob], 'photo.jpg', { type: 'image/jpeg' }))
+              await fetch(`/api/items/${itemId}/photos`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+              })
+            }
+          } catch {
+            // Non-critical — item is saved even if photo upload fails
+          }
+        }
+
         setSaved(true)
         if (isSolo) {
           window.location.href = '/dashboard/pricing'
@@ -228,48 +259,14 @@ export default function PriceLookupPage() {
 
       {/* Photo Upload */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={e => {
-            const file = e.target.files?.[0]
-            if (file) handlePhoto(file)
-          }}
+        <PhotoUploader
+          photos={photos}
+          onPhotosChange={setPhotos}
+          onFileSelected={handlePhotoFile}
+          onAnalyze={analyzePhotos}
+          analyzing={stage === 'identifying'}
+          disabled={isRunning && stage !== 'identifying'}
         />
-        {photoPreview ? (
-          <div className="relative">
-            <img
-              src={photoPreview}
-              alt="Item photo"
-              className="w-full h-48 object-contain rounded-xl bg-gray-50"
-            />
-            <button
-              onClick={clearPhoto}
-              className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
-            >
-              <X className="w-4 h-4 text-gray-500" />
-            </button>
-            {stage === 'identifying' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
-                <div className="flex items-center gap-2 text-sm text-brand-600 font-medium">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Identifying item...
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isRunning}
-            className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:opacity-50"
-          >
-            <Camera className="w-5 h-5" />
-            Upload a photo to auto-identify
-          </button>
-        )}
       </div>
 
       {/* Form */}

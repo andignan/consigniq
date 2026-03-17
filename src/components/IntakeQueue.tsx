@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
-  Plus, Trash2, Check, ChevronDown, Loader2, Package, ArrowRight, Camera, X,
+  Plus, Trash2, Check, ChevronDown, Loader2, Package, ArrowRight,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import { getDescriptionHint } from '@/lib/description-hints'
 import { compressImage } from '@/lib/compress-image'
+import PhotoUploader, { type PhotoSlot } from '@/components/PhotoUploader'
 
 // ============================================================
 // Types
@@ -18,6 +19,7 @@ interface DraftItem {
   category: string
   condition: ItemCondition
   description: string
+  photos: PhotoSlot[]
   saving?: boolean
   saved?: boolean
   savedId?: string     // real DB ID after save
@@ -30,6 +32,7 @@ function makeDraft(): DraftItem {
     category: 'Other',
     condition: 'good',
     description: '',
+    photos: [],
   }
 }
 
@@ -71,6 +74,12 @@ export function IntakeQueue({
   function updateDraft(id: string, field: keyof DraftItem, value: string) {
     setQueue(prev =>
       prev.map(item => item.id === id ? { ...item, [field]: value } : item)
+    )
+  }
+
+  function updateDraftPhotos(id: string, photos: PhotoSlot[]) {
+    setQueue(prev =>
+      prev.map(item => item.id === id ? { ...item, photos } : item)
     )
   }
 
@@ -129,6 +138,25 @@ export function IntakeQueue({
 
     if (!res.ok) throw new Error('Failed to save item')
     const { item } = await res.json()
+
+    // Upload photos (non-blocking)
+    if (item && draft.photos.length > 0) {
+      try {
+        for (const photo of draft.photos) {
+          if (photo.blob.size === 0) continue
+          const formData = new FormData()
+          formData.append('photo', new File([photo.blob], 'photo.jpg', { type: 'image/jpeg' }))
+          await fetch(`/api/items/${item.id}/photos`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          })
+        }
+      } catch {
+        // Non-critical — item is saved even if photo upload fails
+      }
+    }
+
     return item as Item
   }
 
@@ -265,6 +293,7 @@ export function IntakeQueue({
               isFirst={index === 0}
               firstInputRef={index === 0 ? firstInputRef : undefined}
               onChange={updateDraft}
+              onPhotosChange={(photos) => updateDraftPhotos(draft.id, photos)}
               onRemove={() => removeRow(draft.id)}
               onNameKeyDown={(e) => handleNameKeyDown(e, draft.id)}
               onDescKeyDown={(e) => handleDescKeyDown(e, draft.id, index)}
@@ -338,6 +367,7 @@ interface IntakeRowProps {
   isFirst: boolean
   firstInputRef?: React.RefObject<HTMLInputElement>
   onChange: (id: string, field: keyof DraftItem, value: string) => void
+  onPhotosChange: (photos: PhotoSlot[]) => void
   onRemove: () => void
   onNameKeyDown: (e: React.KeyboardEvent) => void
   onDescKeyDown: (e: React.KeyboardEvent) => void
@@ -349,27 +379,43 @@ function IntakeRow({
   isFirst,
   firstInputRef,
   onChange,
+  onPhotosChange,
   onRemove,
   onNameKeyDown,
   onDescKeyDown,
 }: IntakeRowProps) {
-  const photoInputRef = useRef<HTMLInputElement>(null)
   const [identifying, setIdentifying] = useState(false)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
-  async function handlePhoto(file: File) {
+  const handlePhotoFile = useCallback(async (file: File) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!validTypes.includes(file.type)) return
 
+    try {
+      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+      const newSlot: PhotoSlot = {
+        id: Math.random().toString(36).slice(2),
+        blob: compressed.blob,
+        base64: compressed.base64,
+        mediaType: compressed.mediaType,
+        previewUrl: compressed.previewUrl,
+      }
+      onPhotosChange([...draft.photos, newSlot])
+    } catch {
+      // Compression failed silently
+    }
+  }, [draft.photos, onPhotosChange])
+
+  async function analyzePhotos() {
+    if (draft.photos.length === 0) return
     setIdentifying(true)
     try {
-      // Compress image client-side before sending
-      const compressed = await compressImage(file)
-      setPhotoPreview(compressed.previewUrl)
-
-      const compressedFile = new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
-      formData.append('photo', compressedFile)
+      draft.photos.forEach((photo, i) => {
+        const file = new File([photo.blob], `photo_${i}.jpg`, { type: 'image/jpeg' })
+        if (i === 0) formData.append('photo', file)
+        formData.append(`photo_${i + 1}`, file)
+      })
+
       const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
       if (!res.ok) return
       const { result } = await res.json()
@@ -385,13 +431,7 @@ function IntakeRow({
       // Identification failed silently — manager can still type manually
     } finally {
       setIdentifying(false)
-      if (photoInputRef.current) photoInputRef.current.value = ''
     }
-  }
-
-  function clearPhoto() {
-    setPhotoPreview(null)
-    if (photoInputRef.current) photoInputRef.current.value = ''
   }
 
   const isDisabled = draft.saved || draft.saving || identifying
@@ -402,53 +442,18 @@ function IntakeRow({
         draft.saving ? 'bg-brand-50' : draft.saved ? 'bg-emerald-50' : identifying ? 'bg-violet-50' : 'bg-white hover:bg-gray-50/50'
       }`}
     >
-      {/* Photo upload drop zone */}
+      {/* Photo uploader */}
       {!draft.saved && (
         <div className="mb-3">
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) handlePhoto(file)
-            }}
+          <PhotoUploader
+            photos={draft.photos}
+            onPhotosChange={onPhotosChange}
+            onFileSelected={handlePhotoFile}
+            onAnalyze={analyzePhotos}
+            analyzing={identifying}
+            disabled={isDisabled}
+            compact
           />
-          {photoPreview ? (
-            <div className="relative">
-              <img
-                src={photoPreview}
-                alt="Item photo"
-                className="w-full h-36 object-contain rounded-xl bg-gray-50"
-              />
-              <button
-                type="button"
-                onClick={clearPhoto}
-                className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-              {identifying && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
-                  <div className="flex items-center gap-2 text-sm text-brand-600 font-medium">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Identifying item...
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => photoInputRef.current?.click()}
-              disabled={isDisabled}
-              className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:opacity-50"
-            >
-              <Camera className="w-5 h-5" />
-              Upload a photo to auto-identify
-            </button>
-          )}
         </div>
       )}
 

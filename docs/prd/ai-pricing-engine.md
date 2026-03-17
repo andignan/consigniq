@@ -20,7 +20,9 @@ Three-stage pricing flow: eBay comp lookup → AI price suggestion → optional 
 
 ## AI Price Suggestion (`/api/pricing/suggest`)
 
-**Request:** `{ name, category, condition, description?, comps[], photoBase64?, photoMediaType? }`
+**Request:** `{ name, category, condition, description?, comps[], photoBase64?, photoMediaType?, photos?: Array<{ base64, mediaType }> }`
+
+**Multi-photo support:** Accepts `photos` array (preferred) or legacy `photoBase64`/`photoMediaType` (backward compat). When `photos` array is provided, all are sent as image content blocks to Claude.
 
 **Tier-aware prompts:**
 - **Solo:** "resale pricing expert" — prices for eBay/Poshmark/Marketplace. Guidance: competitive pricing for faster sale.
@@ -36,11 +38,15 @@ Three-stage pricing flow: eBay comp lookup → AI price suggestion → optional 
 
 ## Photo Identification (`/api/pricing/identify`)
 
-**Input:** `multipart/form-data` with `photo` field. Supported: JPEG, PNG, WebP.
+**Input:** `multipart/form-data` with photo fields. Supports 1-3 photos via `photo` (backward compat) + `photo_1`, `photo_2`, `photo_3` fields. Supported formats: JPEG, PNG, WebP.
 
-**Claude vision prompt:** Identifies name (with brand), category (one of 12), condition (one of 5), and description (brand, material, size, color, features, damage). Returns `IdentifyResult` JSON.
+**Multi-photo support:** When multiple photos are provided, all are sent as separate image content blocks to Claude vision. Prompt includes "Multiple photos may show different angles" note. `max_tokens` set to 400 (up from 300 for single photo).
 
-**Client-side compression:** All callers use `compressImage()` before upload — max 1200px on longest side, JPEG 0.8 quality, 10MB input limit. Fixes "Request Entity Too Large" on desktop Chrome.
+**Claude vision prompt:** Identifies name (with brand), category (one of 12), condition (one of 10), and description (brand, material, size, color, features, damage). Returns `IdentifyResult` JSON.
+
+**Client-side compression:** All callers use `compressImage()` before upload — max 1200px on longest side, JPEG 0.8 quality, 10MB input limit. Multi-photo callers use `{ maxFileSize: 400 * 1024 }` option for 400KB target with quality retry (0.8 → 0.6 → 0.4).
+
+**"Analyze Photos" button:** Photo identification is no longer auto-triggered on upload. Users click "Analyze Photos" button (in `PhotoUploader` component) to manually trigger identification. This allows uploading multiple photos before analyzing.
 
 ## Cross-Account Pricing Intelligence (`/api/pricing/cross-account`)
 

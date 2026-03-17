@@ -99,8 +99,26 @@ export async function POST(request: NextRequest) {
     })
   } else {
     // ─── Complimentary/trial/paid-no-stripe: hard delete ─────
+    // Clean up photo storage before deleting data
+    try {
+      const { data: photos } = await supabase
+        .from('item_photos')
+        .select('storage_path')
+        .eq('account_id', account_id)
+
+      if (photos && photos.length > 0) {
+        // Batch delete in chunks of 100
+        for (let i = 0; i < photos.length; i += 100) {
+          const batch = photos.slice(i, i + 100).map(p => p.storage_path)
+          await supabase.storage.from('item-photos').remove(batch)
+        }
+      }
+    } catch (err) {
+      console.error('Photo storage cleanup failed:', err instanceof Error ? err.message : String(err))
+    }
+
     // Delete in order to respect foreign key constraints
-    const tables = ['items', 'consignors', 'price_history', 'agreements', 'markdowns', 'invitations']
+    const tables = ['item_photos', 'items', 'consignors', 'price_history', 'agreements', 'markdowns', 'invitations']
     for (const table of tables) {
       await supabase.from(table).delete().eq('account_id', account_id)
     }

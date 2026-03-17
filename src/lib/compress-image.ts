@@ -5,13 +5,23 @@
 const MAX_DIMENSION = 1200
 const JPEG_QUALITY = 0.8
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB input limit
+const RETRY_QUALITIES = [0.6, 0.4]
+
+interface CompressOptions {
+  maxFileSize?: number // Target max output size in bytes (e.g. 400 * 1024 for 400KB)
+}
 
 /**
  * Compresses an image file using canvas.
  * Returns a compressed Blob (JPEG) and a data URL preview.
  * Throws if the input file exceeds 10MB.
+ *
+ * If options.maxFileSize is set and output exceeds it, retries at lower quality levels.
  */
-export async function compressImage(file: File): Promise<{
+export async function compressImage(
+  file: File,
+  options?: CompressOptions
+): Promise<{
   blob: Blob
   base64: string
   mediaType: string
@@ -46,14 +56,27 @@ export async function compressImage(file: File): Promise<{
   ctx.drawImage(bitmap, 0, 0, newWidth, newHeight)
   bitmap.close()
 
-  // Export as JPEG blob
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error('Canvas compression failed'))),
-      'image/jpeg',
-      JPEG_QUALITY
-    )
-  })
+  // Export as JPEG blob, with quality retry loop if maxFileSize is set
+  const qualities = [JPEG_QUALITY, ...RETRY_QUALITIES]
+  let blob: Blob | null = null
+
+  for (const quality of qualities) {
+    blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Canvas compression failed'))),
+        'image/jpeg',
+        quality
+      )
+    })
+
+    if (!options?.maxFileSize || blob.size <= options.maxFileSize) {
+      break
+    }
+  }
+
+  if (!blob) {
+    throw new Error('Canvas compression failed')
+  }
 
   // Convert to base64 for API payload
   const arrayBuf = await blob.arrayBuffer()

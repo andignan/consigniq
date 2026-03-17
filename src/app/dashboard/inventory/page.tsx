@@ -51,6 +51,7 @@ type ModalMode = null | 'edit' | 'sell' | 'donate'
 
 interface ItemWithConsignor extends Item {
   consignor?: { id: string; name: string }
+  primary_photo_url?: string | null
 }
 
 // ─── Main page ────────────────────────────────────────────────
@@ -577,6 +578,18 @@ export default function InventoryPage() {
                     onChange={() => toggleItem(item.id)}
                     className="mt-1 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
                   />
+                )}
+                {/* Primary photo thumbnail */}
+                {item.primary_photo_url ? (
+                  <img
+                    src={item.primary_photo_url}
+                    alt=""
+                    className="w-8 h-8 rounded-lg object-cover bg-gray-100 shrink-0 mt-0.5"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <Package className="w-4 h-4 text-gray-200" />
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

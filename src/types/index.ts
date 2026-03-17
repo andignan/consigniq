@@ -124,6 +124,17 @@ export interface Item {
   consignor?: Pick<Consignor, 'id' | 'name'>
 }
 
+export interface ItemPhoto {
+  id: string
+  item_id: string
+  account_id: string
+  storage_path: string
+  public_url: string
+  display_order: number
+  is_primary: boolean
+  created_at: string
+}
+
 export interface Agreement {
   id: string
   account_id: string

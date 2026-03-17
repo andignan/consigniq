@@ -27,43 +27,64 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData()
-  const file = formData.get('photo') as File | null
 
-  if (!file) {
-    return NextResponse.json({ error: 'photo is required' }, { status: 400 })
-  }
-
-  // Validate file type
+  // Collect all photo files: 'photo' (backward compat) + 'photo_1', 'photo_2', 'photo_3'
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-  if (!validTypes.includes(file.type)) {
-    return NextResponse.json(
-      { error: 'Only JPG, PNG, and WebP images are supported' },
-      { status: 400 }
-    )
+  const photoFiles: File[] = []
+
+  const mainPhoto = formData.get('photo') as File | null
+  if (mainPhoto && validTypes.includes(mainPhoto.type)) {
+    photoFiles.push(mainPhoto)
+  }
+  for (let i = 1; i <= 3; i++) {
+    const f = formData.get(`photo_${i}`) as File | null
+    if (f && validTypes.includes(f.type)) {
+      photoFiles.push(f)
+    }
   }
 
-  // Convert to base64
-  const bytes = await file.arrayBuffer()
-  const base64 = Buffer.from(bytes).toString('base64')
-  const mediaType = file.type as 'image/jpeg' | 'image/png' | 'image/webp'
+  if (photoFiles.length === 0) {
+    return NextResponse.json({ error: 'At least one photo is required' }, { status: 400 })
+  }
+
+  // Convert all photos to base64 image content blocks
+  const imageBlocks: Array<{
+    type: 'image'
+    source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/webp'; data: string }
+  }> = []
+
+  for (const file of photoFiles) {
+    if (!validTypes.includes(file.type)) continue
+    const bytes = await file.arrayBuffer()
+    const base64 = Buffer.from(bytes).toString('base64')
+    imageBlocks.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+        data: base64,
+      },
+    })
+  }
+
+  const multiPhotoNote = imageBlocks.length > 1
+    ? ' Multiple photos may show different angles of the same item — use all photos to identify the item accurately.'
+    : ''
 
   try {
     const anthropic = getAnthropicClient()
 
     const message = await anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 300,
+      max_tokens: 400,
       messages: [
         {
           role: 'user',
           content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 },
-            },
+            ...imageBlocks,
             {
               type: 'text',
-              text: `You are a consignment shop expert. Identify this item from the photo.
+              text: `You are a consignment shop expert. Identify this item from the photo${imageBlocks.length > 1 ? 's' : ''}.${multiPhotoNote}
 
 Respond with ONLY a JSON object (no markdown, no code fences):
 {

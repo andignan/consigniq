@@ -15,7 +15,7 @@ export interface PriceSuggestion {
 }
 
 export async function POST(request: NextRequest) {
-  const { name, category, condition, description, comps, photoBase64, photoMediaType } = await request.json() as {
+  const { name, category, condition, description, comps, photoBase64, photoMediaType, photos } = await request.json() as {
     name: string
     category: string
     condition: string
@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     comps: CompResult[]
     photoBase64?: string
     photoMediaType?: string
+    photos?: Array<{ base64: string; mediaType: string }>
   }
 
   if (!name || !category || !condition) {
@@ -140,19 +141,37 @@ ${pricingGuidance}`
   try {
     const anthropic = getAnthropicClient()
 
+    // Build image content blocks: support both new multi-photo array and legacy single photo
+    const imageBlocks: Array<{
+      type: 'image'
+      source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/webp'; data: string }
+    }> = []
+
+    if (photos && photos.length > 0) {
+      for (const p of photos) {
+        imageBlocks.push({
+          type: 'image' as const,
+          source: {
+            type: 'base64' as const,
+            media_type: p.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+            data: p.base64,
+          },
+        })
+      }
+    } else if (photoBase64 && photoMediaType) {
+      imageBlocks.push({
+        type: 'image' as const,
+        source: {
+          type: 'base64' as const,
+          media_type: photoMediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+          data: photoBase64,
+        },
+      })
+    }
+
     const userContent: Parameters<typeof anthropic.messages.create>[0]['messages'][0]['content'] =
-      photoBase64 && photoMediaType
-        ? [
-            {
-              type: 'image' as const,
-              source: {
-                type: 'base64' as const,
-                media_type: photoMediaType as 'image/jpeg' | 'image/png' | 'image/webp',
-                data: photoBase64,
-              },
-            },
-            { type: 'text' as const, text: prompt },
-          ]
+      imageBlocks.length > 0
+        ? [...imageBlocks, { type: 'text' as const, text: prompt }]
         : prompt
 
     const message = await anthropic.messages.create({

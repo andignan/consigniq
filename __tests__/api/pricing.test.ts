@@ -3,10 +3,16 @@
  * Covers: comps (SerpApi), identify (Claude vision), suggest (Claude pricing)
  */
 
-// Mock Supabase (pricing routes don't use it directly but middleware expects it)
+// Mock Supabase — suggest route uses .from() for tier/usage checks
+const mockSingle = jest.fn().mockResolvedValue({ data: { account_id: 'acc1', tier: 'shop', ai_lookups_this_month: 0, ai_lookups_reset_at: null, bonus_lookups: 0, bonus_lookups_used: 0 }, error: null })
+const mockEq = jest.fn().mockReturnValue({ single: mockSingle })
+const mockSelect = jest.fn().mockReturnValue({ eq: mockEq })
+const mockRpc = jest.fn().mockResolvedValue({ error: null })
 jest.mock('@/lib/supabase/server', () => ({
   createServerClient: () => ({
     auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'u1' } }, error: null }) },
+    from: jest.fn().mockReturnValue({ select: mockSelect, update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }) }),
+    rpc: mockRpc,
   }),
 }))
 
@@ -151,6 +157,109 @@ describe('POST /api/pricing/identify', () => {
     const res = await POST(req)
     expect(res.status).toBe(500)
   })
+
+  it('returns 400 when no photos provided (empty formData)', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+    const { POST } = await import('@/app/api/pricing/identify/route')
+    const { NextRequest } = await import('next/server')
+
+    const formData = new FormData()
+    // No photo, no photo_1, photo_2, photo_3
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/identify'), {
+      method: 'POST',
+      body: formData,
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toContain('photo')
+  })
+
+  it('single photo backward compat still works', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        name: 'Vintage Lamp', category: 'Kitchen & Home', condition: 'good', description: 'A brass lamp'
+      })}],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+    }))
+
+    const { POST } = await import('@/app/api/pricing/identify/route')
+    const { NextRequest } = await import('next/server')
+
+    const formData = new FormData()
+    formData.append('photo', new Blob(['fake-image-data'], { type: 'image/jpeg' }), 'test.jpg')
+
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/identify'), {
+      method: 'POST',
+      body: formData,
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+
+    // Verify only 1 image block was sent
+    const callArgs = mockCreate.mock.calls[0][0]
+    const userContent = callArgs.messages[0].content
+    const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
+    expect(imageBlocks).toHaveLength(1)
+
+    // Prompt should say "photo" (singular)
+    const textBlock = userContent.find((b: { type: string }) => b.type === 'text')
+    expect(textBlock.text).toContain('from the photo.')
+    expect(textBlock.text).not.toContain('Multiple photos')
+  })
+
+  it('accepts multiple photos (photo + photo_1 + photo_2) and builds correct image blocks', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        name: 'Oak Table', category: 'Furniture', condition: 'good', description: 'Solid oak dining table'
+      })}],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+    }))
+
+    const { POST } = await import('@/app/api/pricing/identify/route')
+    const { NextRequest } = await import('next/server')
+
+    const formData = new FormData()
+    formData.append('photo', new Blob(['main-photo'], { type: 'image/jpeg' }), 'main.jpg')
+    formData.append('photo_1', new Blob(['angle-1'], { type: 'image/png' }), 'angle1.png')
+    formData.append('photo_2', new Blob(['angle-2'], { type: 'image/webp' }), 'angle2.webp')
+
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/identify'), {
+      method: 'POST',
+      body: formData,
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+
+    // Verify 3 image blocks were sent to Claude
+    const callArgs = mockCreate.mock.calls[0][0]
+    const userContent = callArgs.messages[0].content
+    const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
+    expect(imageBlocks).toHaveLength(3)
+
+    // Verify media types are preserved
+    expect(imageBlocks[0].source.media_type).toBe('image/jpeg')
+    expect(imageBlocks[1].source.media_type).toBe('image/png')
+    expect(imageBlocks[2].source.media_type).toBe('image/webp')
+
+    // Prompt should reference multiple photos
+    const textBlock = userContent.find((b: { type: string }) => b.type === 'text')
+    expect(textBlock.text).toContain('from the photos.')
+    expect(textBlock.text).toContain('Multiple photos')
+  })
 })
 
 describe('POST /api/pricing/suggest', () => {
@@ -196,5 +305,156 @@ describe('POST /api/pricing/suggest', () => {
     })
     const res = await POST(req)
     expect(res.status).toBe(500)
+  })
+
+  it('accepts photos array and builds multiple image blocks', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+    jest.mock('@/lib/pricing/categories', () => ({
+      getCategoryConfig: () => ({
+        label: 'Other',
+        searchTerms: (name: string) => name,
+        priceGuidance: 'Test guidance',
+        typicalMargin: { low: 0.15, high: 0.45 },
+      }),
+    }))
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        price: 45, low: 30, high: 60, reasoning: 'Based on comps'
+      })}],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+    }))
+
+    const { POST } = await import('@/app/api/pricing/suggest/route')
+    const { NextRequest } = await import('next/server')
+
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/suggest'), {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Oak Table',
+        category: 'Furniture',
+        condition: 'good',
+        comps: [],
+        photos: [
+          { base64: 'aW1hZ2UxZGF0YQ==', mediaType: 'image/jpeg' },
+          { base64: 'aW1hZ2UyZGF0YQ==', mediaType: 'image/png' },
+        ],
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+
+    // Verify 2 image blocks were sent
+    const callArgs = mockCreate.mock.calls[0][0]
+    const userContent = callArgs.messages[0].content
+    // Content should be an array (not a string) when images are present
+    expect(Array.isArray(userContent)).toBe(true)
+    const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
+    expect(imageBlocks).toHaveLength(2)
+    expect(imageBlocks[0].source.media_type).toBe('image/jpeg')
+    expect(imageBlocks[1].source.media_type).toBe('image/png')
+  })
+
+  it('legacy single photo (photoBase64/photoMediaType) still works', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+    jest.mock('@/lib/pricing/categories', () => ({
+      getCategoryConfig: () => ({
+        label: 'Other',
+        searchTerms: (name: string) => name,
+        priceGuidance: 'Test guidance',
+        typicalMargin: { low: 0.15, high: 0.45 },
+      }),
+    }))
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        price: 25, low: 15, high: 35, reasoning: 'Fair market value'
+      })}],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+    }))
+
+    const { POST } = await import('@/app/api/pricing/suggest/route')
+    const { NextRequest } = await import('next/server')
+
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/suggest'), {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Vintage Lamp',
+        category: 'Kitchen & Home',
+        condition: 'good',
+        comps: [],
+        photoBase64: 'bGVnYWN5cGhvdG8=',
+        photoMediaType: 'image/jpeg',
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+
+    // Verify 1 image block from legacy fields
+    const callArgs = mockCreate.mock.calls[0][0]
+    const userContent = callArgs.messages[0].content
+    expect(Array.isArray(userContent)).toBe(true)
+    const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
+    expect(imageBlocks).toHaveLength(1)
+    expect(imageBlocks[0].source.data).toBe('bGVnYWN5cGhvdG8=')
+    expect(imageBlocks[0].source.media_type).toBe('image/jpeg')
+  })
+
+  it('photos array takes precedence over legacy photoBase64', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+    jest.mock('@/lib/pricing/categories', () => ({
+      getCategoryConfig: () => ({
+        label: 'Other',
+        searchTerms: (name: string) => name,
+        priceGuidance: 'Test guidance',
+        typicalMargin: { low: 0.15, high: 0.45 },
+      }),
+    }))
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({
+        price: 50, low: 40, high: 60, reasoning: 'Based on condition'
+      })}],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+    }))
+
+    const { POST } = await import('@/app/api/pricing/suggest/route')
+    const { NextRequest } = await import('next/server')
+
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/suggest'), {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Chair',
+        category: 'Furniture',
+        condition: 'good',
+        comps: [],
+        photos: [
+          { base64: 'bmV3cGhvdG8=', mediaType: 'image/jpeg' },
+        ],
+        photoBase64: 'bGVnYWN5cGhvdG8=',
+        photoMediaType: 'image/jpeg',
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+
+    // photos array should be used, not legacy fields
+    const callArgs = mockCreate.mock.calls[0][0]
+    const userContent = callArgs.messages[0].content
+    const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
+    expect(imageBlocks).toHaveLength(1)
+    expect(imageBlocks[0].source.data).toBe('bmV3cGhvdG8=')
   })
 })

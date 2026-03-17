@@ -98,10 +98,19 @@ Client-side export with columns: name, category, condition, status, price, sold_
 
 ## API
 
-**GET `/api/items`:** Params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search` (ilike on name). Joins `consignor:consignors(id, name)`.
+**GET `/api/items`:** Params: `id`, `location_id`, `consignor_id`, `status`, `category`, `search` (ilike on name). Joins `consignor:consignors(id, name)` and `item_photos` (left join). Returns `primary_photo_url` (from first `is_primary` photo) on each item for thumbnail display.
 
 **POST `/api/items`:** Required: `account_id`, `location_id`, `consignor_id`, `name`, `category`, `condition`. Sets `status: 'pending'`, `intake_date: today`, `current_markdown_pct: 0`.
 
 **PATCH `/api/items`:** Takes `{ id, ...updates }`. Handles auto-timestamps and price_history write.
 
-**DELETE `/api/items`:** Takes `{ id }`. Blocks deletion of sold items (returns 400 — "Cannot delete sold items — this would affect payout history"). Hard deletes the row from the database.
+**DELETE `/api/items`:** Takes `{ id }`. Blocks deletion of sold items (returns 400 — "Cannot delete sold items — this would affect payout history"). Cleans up photo storage files before deleting the item (cascade deletes `item_photos` rows). Hard deletes the row from the database.
+
+## Item Photos
+
+Up to 3 photos per item, stored in Supabase Storage (`item-photos` bucket). See `/docs/prd/item-photos.md` for full details.
+
+- `items.photo_url` is **deprecated** — use `item_photos` table instead
+- Primary photo shown as 32x32 thumbnail in inventory list rows
+- Photos managed via `PhotoUploader` component (shared across Price Lookup, Inventory pricing, IntakeQueue)
+- Manual "Analyze Photos" button replaces auto-identify on upload

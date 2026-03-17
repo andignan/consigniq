@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (579 tests across unit + API)
+- `npm test` — Jest test suite (644 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -53,6 +53,11 @@ Three client factories:
 - `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton. Tier-aware prompt: solo="resale pricing", shop+="consignment pricing"
 - `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton. All callers compress images client-side via `src/lib/compress-image.ts` (max 1200px, JPEG 0.8 quality)
 - `/api/pricing/cross-account` — Enterprise-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
+
+**Item Photos:**
+- `/api/items/[id]/photos` — POST (upload photo, max 3 per item, FormData `photo` file), GET (list ordered photos)
+- `/api/items/[id]/photos/[photoId]` — DELETE (remove photo, promote primary, re-normalize order)
+- `/api/items/[id]/photos/reorder` — PATCH (reorder via `{ photo_ids: string[] }`, updates display_order + is_primary)
 
 **Admin (superadmin only):**
 - `/api/admin/stats` — cross-account platform stats
@@ -136,6 +141,7 @@ Read the relevant PRD before modifying any of these systems:
 - **Account Deletion:** `/docs/prd/account-deletion.md`
 - **Platform Roles:** `/docs/prd/platform-roles.md`
 - **Sidebar Identity:** `/docs/prd/sidebar-identity.md`
+- **Item Photos:** `/docs/prd/item-photos.md`
 
 **Canonical brand reference:** `/docs/brand-guidelines.md` (copy of brand-identity PRD, use for future sessions)
 
@@ -172,6 +178,7 @@ Read the relevant PRD before modifying any of these systems:
 - `src/lib/stripe.ts` — `getStripe()` singleton
 - `src/lib/anthropic.ts` — `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton (used by all 5 AI routes)
 - `src/lib/sidebar-identity.ts` — `SIDEBAR_BADGES`, `getBadgeConfig()`, `getDisplayName()` (config-driven sidebar identity display)
+- `src/components/PhotoUploader.tsx` — shared multi-photo upload component (up to 3, reorder, analyze button). Used by Price Lookup, Inventory pricing, IntakeQueue
 - `src/lib/auth-helpers.ts` — `getAuthenticatedUser()`, `getAuthenticatedProfile()` (shared auth pattern for all API routes)
 - `src/lib/errors.ts` — `ERRORS` constants (`UNAUTHORIZED`, `PROFILE_NOT_FOUND`, `OWNER_REQUIRED`, `UPGRADE_REQUIRED`)
 - `src/components/UpgradePrompt.tsx` — shown for locked features
@@ -290,6 +297,7 @@ Always audit actual column names before writing queries:
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin`, `platform_role` (text, nullable: super_admin/support/finance)
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
+- Item_photos: `id`, `item_id` (FK items, CASCADE), `account_id` (FK accounts), `storage_path`, `public_url`, `display_order` (smallint), `is_primary` (boolean), `created_at`. RLS by account. Supabase Storage bucket: `item-photos` (public, 2MB, jpeg/png/webp). `photo_url` on items is deprecated.
 - Agreements: `id`, `account_id`, `consignor_id`, `generated_at`, `expiry_date`, `grace_end`, `email_sent_at`
 
 ### Never hardcode location_id
@@ -309,7 +317,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**579 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
+**644 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -341,7 +349,8 @@ __tests__/
 │   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency, ConsignIQ System account name
 │   ├── confirm-modal.test.ts        — ConfirmModal component contract, confirm() removal verification
 │   ├── sidebar-identity.test.ts     — getBadgeConfig all 8 keys, getDisplayName edge cases, color classes, platform role precedence
-│   └── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
+│   ├── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
+│   └── photo-uploader.test.ts       — PhotoSlot interface, max 3 slots, reorder logic, primary badge, analyze button
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression
@@ -368,7 +377,8 @@ __tests__/
 │   ├── admin-stats-count.test.ts  — I3 COUNT queries, head:true verification
 │   ├── settings-profile.test.ts  — PATCH /api/settings/profile auth, validation, name update
 │   ├── account-delete.test.ts   — POST /api/admin/accounts/delete, auth, hard/soft delete
-│   └── platform-roles.test.ts  — PATCH /api/admin/users platform role management
+│   ├── platform-roles.test.ts  — PATCH /api/admin/users platform role management
+│   └── item-photos.test.ts    — POST/GET/DELETE/PATCH photo endpoints, auth, max 3, primary promotion, reorder
 ```
 
 ### Playwright E2E
@@ -399,6 +409,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260316010000` — add 'archived' to items status CHECK constraint
 - `20260316020000` — platform roles: add `users.platform_role`, `accounts.is_system`, migrate data
 - `20260316030000` — tier rename: starter/standard → shop, pro → enterprise, update CHECK constraints and data
+- `20260317000000` — item_photos table, indexes, RLS. Storage bucket `item-photos` created manually
 
 ## Security
 

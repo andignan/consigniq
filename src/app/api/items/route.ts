@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
     .from('items')
     .select(`
       *,
-      consignor:consignors(id, name)
+      consignor:consignors(id, name),
+      item_photos!left(public_url, is_primary)
     `)
     .order('created_at', { ascending: false })
 
@@ -40,7 +41,19 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ items: data })
+
+  // Flatten primary photo URL into each item
+  const items = (data ?? []).map((item: Record<string, unknown>) => {
+    const photos = item.item_photos as Array<{ public_url: string; is_primary: boolean }> | null
+    const primary = photos?.find(p => p.is_primary) ?? photos?.[0]
+    return {
+      ...item,
+      primary_photo_url: primary?.public_url ?? null,
+      item_photos: undefined, // remove raw join data
+    }
+  })
+
+  return NextResponse.json({ items })
 }
 
 export async function POST(request: NextRequest) {
@@ -179,6 +192,21 @@ export async function DELETE(request: NextRequest) {
 
   if (item?.status === 'sold') {
     return NextResponse.json({ error: 'Cannot delete sold items — this would affect payout history' }, { status: 400 })
+  }
+
+  // Clean up photos from storage before deleting the item (cascade deletes item_photos rows)
+  try {
+    const { data: photos } = await supabase
+      .from('item_photos')
+      .select('storage_path')
+      .eq('item_id', id)
+
+    if (photos && photos.length > 0) {
+      const paths = photos.map(p => p.storage_path)
+      await supabase.storage.from('item-photos').remove(paths)
+    }
+  } catch (err) {
+    console.error('Photo cleanup failed:', err instanceof Error ? err.message : String(err))
   }
 
   const { error } = await supabase

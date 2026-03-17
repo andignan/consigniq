@@ -1,16 +1,17 @@
 // app/dashboard/inventory/[id]/price/page.tsx
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
-  ExternalLink, AlertCircle, RefreshCw, Search, Camera, X, Pencil,
+  ExternalLink, AlertCircle, RefreshCw, Search, Pencil,
   History, TrendingUp, Printer, Globe,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
 import { compressImage } from '@/lib/compress-image'
+import PhotoUploader, { type PhotoSlot } from '@/components/PhotoUploader'
 import Tooltip from '@/components/Tooltip'
 import UpgradePrompt from '@/components/UpgradePrompt'
 import { useUser } from '@/contexts/UserContext'
@@ -186,39 +187,140 @@ export default function PricingPage() {
     fetchMarketIntel()
   }, [item?.id, item?.category, item?.name, item?.condition, accountTier])
 
-  // Photo
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null)
-  const [photoMediaType, setPhotoMediaType] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  // Photos
+  const [photos, setPhotos] = useState<PhotoSlot[]>([])
+  const [photosLoaded, setPhotosLoaded] = useState(false)
 
-  async function handlePhoto(file: File) {
+  // Load existing photos for this item
+  useEffect(() => {
+    if (!id || photosLoaded) return
+    async function loadPhotos() {
+      try {
+        const res = await fetch(`/api/items/${id}/photos`, { credentials: 'include' })
+        if (res.ok) {
+          const { photos: existing } = await res.json()
+          if (existing && existing.length > 0) {
+            const slots: PhotoSlot[] = existing.map((p: { id: string; public_url: string; storage_path: string }) => ({
+              id: p.id,
+              blob: new Blob(), // placeholder — existing photos don't need blob
+              base64: '',
+              mediaType: 'image/jpeg',
+              previewUrl: p.public_url,
+              uploadedPhotoId: p.id,
+              publicUrl: p.public_url,
+            }))
+            setPhotos(slots)
+          }
+        }
+      } catch {
+        // Non-critical
+      } finally {
+        setPhotosLoaded(true)
+      }
+    }
+    loadPhotos()
+  }, [id, photosLoaded])
+
+  const handlePhotoFile = useCallback(async (file: File) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!validTypes.includes(file.type)) {
       setError('Only JPG, PNG, and WebP images are supported')
       return
     }
 
-    // Call identify API to update item details
+    try {
+      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+      const newSlot: PhotoSlot = {
+        id: Math.random().toString(36).slice(2),
+        blob: compressed.blob,
+        base64: compressed.base64,
+        mediaType: compressed.mediaType,
+        previewUrl: compressed.previewUrl,
+      }
+
+      // Upload immediately (item already has ID)
+      try {
+        const formData = new FormData()
+        formData.append('photo', new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' }))
+        const uploadRes = await fetch(`/api/items/${id}/photos`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        })
+        if (uploadRes.ok) {
+          const { photo } = await uploadRes.json()
+          newSlot.uploadedPhotoId = photo.id
+          newSlot.publicUrl = photo.public_url
+        }
+      } catch {
+        newSlot.error = 'Upload failed'
+      }
+
+      setPhotos(prev => [...prev, newSlot])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process photo')
+    }
+  }, [id])
+
+  function handlePhotosChange(updated: PhotoSlot[]) {
+    // Check for removed photos — delete from server
+    const removedPhotos = photos.filter(p => p.uploadedPhotoId && !updated.find(u => u.id === p.id))
+    for (const removed of removedPhotos) {
+      fetch(`/api/items/${id}/photos/${removed.uploadedPhotoId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).catch(() => {})
+    }
+
+    // Check for reorder — send to server if all have uploadedPhotoId
+    const allUploaded = updated.every(p => p.uploadedPhotoId)
+    if (allUploaded && updated.length > 1) {
+      const photoIds = updated.map(p => p.uploadedPhotoId!)
+      fetch(`/api/items/${id}/photos/reorder`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_ids: photoIds }),
+      }).catch(() => {})
+    }
+
+    setPhotos(updated)
+  }
+
+  async function analyzePhotos() {
+    if (photos.length === 0) return
     setStage('identifying')
     setError(null)
     try {
-      // Compress image client-side before sending
-      const compressed = await compressImage(file)
-      setPhotoPreview(compressed.previewUrl)
-      setPhotoBase64(compressed.base64)
-      setPhotoMediaType(compressed.mediaType)
-
-      const compressedFile = new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' })
       const formData = new FormData()
-      formData.append('photo', compressedFile)
-      const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
+
+      // For existing photos without blob data, fetch them
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i]
+        let file: File
+        if (photo.blob.size > 0) {
+          file = new File([photo.blob], `photo_${i}.jpg`, { type: 'image/jpeg' })
+        } else if (photo.publicUrl) {
+          const res = await fetch(photo.publicUrl)
+          const blob = await res.blob()
+          file = new File([blob], `photo_${i}.jpg`, { type: 'image/jpeg' })
+        } else {
+          continue
+        }
+        if (i === 0) formData.append('photo', file)
+        formData.append(`photo_${i + 1}`, file)
+      }
+
+      const res = await fetch('/api/pricing/identify', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error ?? 'Identification failed')
       }
       const { result } = await res.json()
-      // Update the item in local state with AI-identified details
       setItem(prev => prev ? {
         ...prev,
         name: result.name,
@@ -231,13 +333,6 @@ export default function PricingPage() {
       setError(err instanceof Error ? err.message : 'Photo identification failed')
       setStage('loaded')
     }
-  }
-
-  function clearPhoto() {
-    setPhotoPreview(null)
-    setPhotoBase64(null)
-    setPhotoMediaType(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   // Load item by ID
@@ -314,6 +409,15 @@ export default function PricingPage() {
 
     setStage('pricing')
     try {
+      // Collect photo base64s for AI
+      const photoPayload = photos.length > 0
+        ? {
+            photos: photos
+              .filter(p => p.base64) // only photos with base64 (new uploads)
+              .map(p => ({ base64: p.base64, mediaType: p.mediaType })),
+          }
+        : {}
+
       const suggestRes = await fetch('/api/pricing/suggest', {
         method: 'POST',
         credentials: 'include',
@@ -324,7 +428,7 @@ export default function PricingPage() {
           condition: item.condition,
           description: item.description,
           comps: fetchedComps,
-          ...(photoBase64 && photoMediaType ? { photoBase64, photoMediaType } : {}),
+          ...photoPayload,
         }),
       })
       if (!suggestRes.ok) {
@@ -343,7 +447,6 @@ export default function PricingPage() {
   const hasManualPrice = manualPrice !== '' && parseFloat(manualPrice) > 0
   const finalPrice = hasManualPrice ? parseFloat(manualPrice) : suggestion?.price ?? 0
   const hasResults = stage === 'comps-ready' || stage === 'ready'
-  // Comps-only mode requires manual price; full AI mode can use suggestion or manual
   const canApply = hasResults && (suggestion ? finalPrice > 0 : hasManualPrice)
 
   async function applyPrice() {
@@ -733,48 +836,14 @@ export default function PricingPage() {
       {/* Photo Upload */}
       {(stage === 'loaded' || stage === 'identifying') && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0]
-              if (file) handlePhoto(file)
-            }}
+          <PhotoUploader
+            photos={photos}
+            onPhotosChange={handlePhotosChange}
+            onFileSelected={handlePhotoFile}
+            onAnalyze={analyzePhotos}
+            analyzing={stage === 'identifying'}
+            disabled={stage !== 'loaded' && stage !== 'identifying'}
           />
-          {photoPreview ? (
-            <div className="relative">
-              <img
-                src={photoPreview}
-                alt="Item photo"
-                className="w-full h-48 object-contain rounded-xl bg-gray-50"
-              />
-              <button
-                onClick={clearPhoto}
-                className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
-              {stage === 'identifying' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-xl">
-                  <div className="flex items-center gap-2 text-sm text-brand-600 font-medium">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Identifying item...
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={stage === 'identifying'}
-              className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:opacity-50"
-            >
-              <Camera className="w-5 h-5" />
-              Upload a photo to re-identify &amp; enhance pricing
-            </button>
-          )}
         </div>
       )}
 
