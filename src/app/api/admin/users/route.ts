@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
           accountName: 'ConsignIQ',
           tier: 'solo',
           setupLink,
+          isPlatformUser: true,
         })
         await sendEmail({ to: email, ...emailContent })
       }

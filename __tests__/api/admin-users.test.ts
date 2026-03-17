@@ -25,12 +25,14 @@ jest.mock('@/lib/email', () => ({
   sendEmail: (...args: unknown[]) => mockSendEmail(...args),
 }))
 
+const mockBuildInviteEmail = jest.fn((data: Record<string, unknown>) => ({
+  subject: "You've been invited to ConsignIQ",
+  text: `Hi ${data.fullName}, setup: ${data.setupLink}`,
+  html: `<p>Hi ${data.fullName}</p>`,
+}))
+
 jest.mock('@/lib/email-templates', () => ({
-  buildInviteEmail: (data: Record<string, unknown>) => ({
-    subject: "You've been invited to ConsignIQ",
-    text: `Hi ${data.fullName}, setup: ${data.setupLink}`,
-    html: `<p>Hi ${data.fullName}</p>`,
-  }),
+  buildInviteEmail: (...args: unknown[]) => mockBuildInviteEmail(...args),
 }))
 
 import { NextRequest } from 'next/server'
@@ -320,6 +322,87 @@ describe('POST /api/admin/users', () => {
         platform_role: 'support',
       }),
       { onConflict: 'id' }
+    )
+  })
+
+  it('passes isPlatformUser: true in invite email for platform users', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1', platformRole: 'super_admin' })
+
+    // System account + location lookups
+    const usersUpsertMock = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: { id: 'usr-plat2', platform_role: 'support' }, error: null }),
+      }),
+    })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'accounts') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-acc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'locations') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: { id: 'sys-loc' }, error: null }),
+              }),
+            }),
+          }),
+        }
+      }
+      if (table === 'users') return { upsert: usersUpsertMock }
+      return {}
+    })
+
+    mockSupabaseAuth.admin.createUser.mockResolvedValue({
+      data: { user: { id: 'auth-plat2' } },
+      error: null,
+    })
+    mockSupabaseAuth.admin.generateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://consigniq.com/auth/setup?token=abc' } },
+      error: null,
+    })
+    mockSendEmail.mockResolvedValue({ id: 'msg-plat2' })
+
+    await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'plat2@consigniq.com',
+        full_name: 'Platform User 2',
+        platform_role: 'support',
+      }),
+    }))
+
+    expect(mockBuildInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ isPlatformUser: true })
+    )
+  })
+
+  it('does not pass isPlatformUser for customer users', async () => {
+    mockCheckSuperadmin.mockResolvedValue({ authorized: true, userId: 'u1' })
+    setupPostMocks()
+
+    await POST(makeRequest('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'cust@test.com',
+        full_name: 'Customer',
+        account_name: 'Shop',
+        tier: 'shop',
+        account_type: 'paid',
+      }),
+    }))
+
+    expect(mockBuildInviteEmail).toHaveBeenCalledWith(
+      expect.not.objectContaining({ isPlatformUser: true })
     )
   })
 

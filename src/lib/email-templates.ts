@@ -1,6 +1,8 @@
 // lib/email-templates.ts
 // Email templates for agreement and notification emails
 
+import { APP } from '@/lib/constants'
+
 const EMAIL_COLORS = {
   brandPrimary: '#0A9E78',
   headerBg: '#071020',
@@ -182,6 +184,7 @@ interface InviteEmailData {
   accountName: string
   tier: string
   setupLink: string
+  isPlatformUser?: boolean
 }
 
 export function buildInviteEmail(data: InviteEmailData) {
@@ -198,13 +201,14 @@ export function buildInviteEmail(data: InviteEmailData) {
   const firstName = data.fullName.split(' ')[0]
   const landingUrl = `${appUrl}/auth/invite?link=${encodeURIComponent(encodedLink)}&name=${encodeURIComponent(firstName)}&account=${encodeURIComponent(data.accountName)}`
 
+  const displayAccount = data.isPlatformUser ? 'ConsignIQ (Platform)' : data.accountName
+
   const text = `Hi ${data.fullName},
 
 You've been invited to ConsignIQ!
 
-Account: ${data.accountName}
-Plan: ${tierName}
-
+Account: ${displayAccount}
+${data.isPlatformUser ? '' : `Plan: ${tierName}\n`}
 To get started, set your password and log in using the link below:
 
 ${landingUrl}
@@ -223,7 +227,7 @@ This is an automated message from ConsignIQ.
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
     <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${APP.emailTagline}</p>
   </div>
 
   <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">You're Invited!</h2>
@@ -232,13 +236,13 @@ This is an automated message from ConsignIQ.
     Hi ${data.fullName},
   </p>
   <p style="font-size:14px;line-height:1.6;color:${EMAIL_COLORS.textBody};">
-    You've been invited to join <strong>${data.accountName}</strong> on ConsignIQ.
+    You've been invited to join <strong>${displayAccount}</strong> on ConsignIQ.
   </p>
 
   <div style="background:${EMAIL_COLORS.bgSubtle};border:1px solid ${EMAIL_COLORS.borderDefault};border-radius:8px;padding:16px;margin:20px 0;">
     <table style="width:100%;font-size:14px;">
-      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Account</td><td style="padding:4px 0;font-weight:600;">${data.accountName}</td></tr>
-      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Plan</td><td style="padding:4px 0;font-weight:600;">${tierName}</td></tr>
+      <tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Account</td><td style="padding:4px 0;font-weight:600;">${displayAccount}</td></tr>
+      ${data.isPlatformUser ? '' : `<tr><td style="padding:4px 0;color:${EMAIL_COLORS.textMuted};">Plan</td><td style="padding:4px 0;font-weight:600;">${tierName}</td></tr>`}
     </table>
   </div>
 
@@ -297,7 +301,7 @@ This is an automated message from ConsignIQ.
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
     <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${APP.emailTagline}</p>
   </div>
 
   <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Reset Your Password</h2>
@@ -430,7 +434,7 @@ This is an automated message from ConsignIQ.
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
     <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${APP.emailTagline}</p>
   </div>
 
   <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">You're now on ${data.tierLabel}!</h2>
@@ -488,7 +492,7 @@ This is an automated message from ConsignIQ.
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
     <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${APP.emailTagline}</p>
   </div>
 
   <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Your subscription has been cancelled</h2>
@@ -546,7 +550,7 @@ This is an automated message from ConsignIQ.
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${EMAIL_COLORS.textPrimary};max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:${EMAIL_COLORS.headerBg};border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
     <h1 style="margin:0 0 4px;font-size:22px;color:${EMAIL_COLORS.white};">Consign<span style="color:${EMAIL_COLORS.brandPrimary};">IQ</span></h1>
-    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">AI-Powered Consignment Management</p>
+    <p style="margin:0;font-size:13px;color:${EMAIL_COLORS.textFaint};">${APP.emailTagline}</p>
   </div>
 
   <h2 style="font-size:18px;color:${EMAIL_COLORS.textPrimary};margin:0 0 16px;">Action required — payment failed</h2>
@@ -602,7 +606,7 @@ The ConsignIQ Team`
 <body style="font-family:sans-serif;color:#1f2937;max-width:480px;margin:0 auto;padding:24px;">
   <div style="text-align:center;margin-bottom:24px;">
     <h1 style="font-size:24px;font-weight:bold;color:#1f2937;margin:0;">ConsignIQ</h1>
-    <p style="font-size:12px;color:${EMAIL_COLORS.textFaint};margin:4px 0 0 0;">AI-Powered Consignment Management</p>
+    <p style="font-size:12px;color:${EMAIL_COLORS.textFaint};margin:4px 0 0 0;">${APP.emailTagline}</p>
   </div>
   <h2 style="font-size:18px;font-weight:bold;margin-bottom:16px;">Account Closed</h2>
   <p style="font-size:14px;line-height:1.6;margin-bottom:16px;">Hi ${data.ownerName},</p>
