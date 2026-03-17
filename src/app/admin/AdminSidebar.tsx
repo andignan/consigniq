@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { LayoutDashboard, Building2, LogOut, Menu, X, Users as Users2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getBadgeConfig, getDisplayName } from '@/lib/sidebar-identity'
 import Logo from '@/components/Logo'
 
 const NAV_ITEMS = [
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/accounts', label: 'Accounts', icon: Building2 },
 ]
 
-export default function AdminSidebar({ name, email }: { name: string; email: string }) {
+export default function AdminSidebar({ name, email, platformRole }: { name: string; email: string; platformRole: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -33,10 +34,7 @@ export default function AdminSidebar({ name, email }: { name: string; email: str
   const navContent = (
     <>
       <div className="p-5 border-b border-white/10">
-        <div className="flex items-center gap-2 mb-1">
-          <Logo size="sm" variant="dark" />
-          <span className="text-xs font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded">Admin</span>
-        </div>
+        <Logo size="sm" variant="dark" />
       </div>
 
       <nav className="flex-1 p-3 space-y-1">
@@ -59,8 +57,16 @@ export default function AdminSidebar({ name, email }: { name: string; email: str
 
       <div className="p-3 border-t border-white/10">
         <div className="px-3 py-2 mb-1">
-          <p className="text-white text-sm font-medium truncate">{name}</p>
+          <p className="text-white text-sm font-medium truncate">{getDisplayName(name)}</p>
           <p className="text-stone-400 text-xs truncate">{email}</p>
+          {(() => {
+            const badge = getBadgeConfig(null, null, platformRole)
+            return badge ? (
+              <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${badge.colorClasses}`}>
+                {badge.label}
+              </span>
+            ) : null
+          })()}
         </div>
         <button
           onClick={handleSignOut}
@@ -87,7 +93,6 @@ export default function AdminSidebar({ name, email }: { name: string; email: str
         </button>
         <div className="flex items-center gap-2 ml-3">
           <Logo size="sm" variant="dark" />
-          <span className="text-xs font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded">Admin</span>
         </div>
       </div>
 

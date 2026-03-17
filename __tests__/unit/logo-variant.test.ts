@@ -58,6 +58,9 @@ describe('Logo component variant prop', () => {
     )
     expect(source).toContain('variant="dark"')
     expect(source).not.toContain('<Logo size="sm" />')
+    // Admin badge is now dynamic via getBadgeConfig, not hardcoded
+    expect(source).not.toContain("'>Admin</span>")
+    expect(source).toContain('getBadgeConfig')
   })
 
   it('dashboard sidebar uses variant="dark"', () => {

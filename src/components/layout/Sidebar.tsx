@@ -8,6 +8,7 @@ import { useLocation } from '@/contexts/LocationContext'
 import { useUser } from '@/contexts/UserContext'
 import type { User } from '@/types/database'
 import { type Tier } from '@/lib/tier-limits'
+import { getBadgeConfig, getDisplayName } from '@/lib/sidebar-identity'
 import Logo from '@/components/Logo'
 
 // Icons as inline SVGs (same as before)
@@ -252,8 +253,8 @@ export default function Sidebar({ user }: SidebarProps) {
         <div className="text-white">
           <Logo size="sm" variant="dark" />
         </div>
-        {isSolo && (
-          <p className="text-stone-500 text-xs mt-0.5">Solo Pricer</p>
+        {!isSolo && user?.accounts?.name && (
+          <p className="text-white/65 text-xs mt-1 px-0 leading-snug line-clamp-2">{user.accounts.name}</p>
         )}
       </div>
 
@@ -295,9 +296,17 @@ export default function Sidebar({ user }: SidebarProps) {
       <div className="px-3 py-4 border-t border-stone-800">
         <div className="px-3 py-2 mb-1">
           <p className="text-stone-300 text-sm font-medium truncate">
-            {user?.full_name?.trim() || user?.email || 'Unknown'}
+            {getDisplayName(user?.full_name) || user?.email || 'Unknown'}
           </p>
           <p className="text-stone-500 text-xs truncate">{user?.email || ''}</p>
+          {(() => {
+            const badge = getBadgeConfig(accountTier, user?.role ?? null, null)
+            return badge ? (
+              <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${badge.colorClasses}`}>
+                {badge.label}
+              </span>
+            ) : null
+          })()}
         </div>
         <button
           onClick={handleSignOut}

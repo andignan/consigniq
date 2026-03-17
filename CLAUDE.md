@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (558 tests across unit + API)
+- `npm test` — Jest test suite (579 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -135,6 +135,7 @@ Read the relevant PRD before modifying any of these systems:
 - **Subscription Lifecycle:** `/docs/prd/subscription-lifecycle.md`
 - **Account Deletion:** `/docs/prd/account-deletion.md`
 - **Platform Roles:** `/docs/prd/platform-roles.md`
+- **Sidebar Identity:** `/docs/prd/sidebar-identity.md`
 
 **Canonical brand reference:** `/docs/brand-guidelines.md` (copy of brand-identity PRD, use for future sessions)
 
@@ -170,6 +171,7 @@ Read the relevant PRD before modifying any of these systems:
 - `src/lib/feature-gates.ts` — `canUseFeature()`, `getUpgradeMessage()`, `isAccountActive()`, `getEffectiveTier()`, `canAccountUseFeature()`, `isLookupLimitReached()`
 - `src/lib/stripe.ts` — `getStripe()` singleton
 - `src/lib/anthropic.ts` — `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton (used by all 5 AI routes)
+- `src/lib/sidebar-identity.ts` — `SIDEBAR_BADGES`, `getBadgeConfig()`, `getDisplayName()` (config-driven sidebar identity display)
 - `src/lib/auth-helpers.ts` — `getAuthenticatedUser()`, `getAuthenticatedProfile()` (shared auth pattern for all API routes)
 - `src/lib/errors.ts` — `ERRORS` constants (`UNAUTHORIZED`, `PROFILE_NOT_FOUND`, `OWNER_REQUIRED`, `UPGRADE_REQUIRED`)
 - `src/components/UpgradePrompt.tsx` — shown for locked features
@@ -307,7 +309,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**558 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
+**579 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -338,6 +340,7 @@ __tests__/
 │   ├── admin-users-page.test.ts     — Form modes, role-based visibility, submit body construction, platform user/system account tier hiding
 │   ├── email-templates.test.ts      — Tagline constant, platform invite omits Plan, template consistency, ConsignIQ System account name
 │   ├── confirm-modal.test.ts        — ConfirmModal component contract, confirm() removal verification
+│   ├── sidebar-identity.test.ts     — getBadgeConfig all 8 keys, getDisplayName edge cases, color classes, platform role precedence
 │   └── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
