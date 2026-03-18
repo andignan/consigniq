@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Loader2, Sparkles, CheckCircle, DollarSign,
-  ExternalLink, AlertCircle, RefreshCw, Search, Pencil,
+  ExternalLink, AlertCircle, RefreshCw, Pencil,
   History, TrendingUp, Printer, Globe,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type Item, type ItemCondition } from '@/types'
@@ -22,7 +22,7 @@ import type { CompResult } from '@/app/api/pricing/comps/route'
 import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 import type { CrossAccountStats } from '@/app/api/pricing/cross-account/route'
 
-type Stage = 'loading' | 'loaded' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'applying' | 'done' | 'error'
+type Stage = 'loading' | 'loaded' | 'identifying' | 'fetching-comps' | 'pricing' | 'ready' | 'applying' | 'done' | 'error'
 
 export default function PricingPage() {
   const { id } = useParams<{ id: string }>()
@@ -380,18 +380,6 @@ export default function PricingPage() {
     return []
   }
 
-  async function runCompsOnly() {
-    if (!item) return
-    setError(null)
-    setSuggestion(null)
-    setComps([])
-    setManualPrice('')
-
-    const fetchedComps = await fetchComps()
-    setComps(fetchedComps)
-    setStage('comps-ready')
-  }
-
   async function runFullPricing(existingComps?: CompResult[]) {
     if (!item) return
     setError(null)
@@ -446,7 +434,7 @@ export default function PricingPage() {
 
   const hasManualPrice = manualPrice !== '' && parseFloat(manualPrice) > 0
   const finalPrice = hasManualPrice ? parseFloat(manualPrice) : suggestion?.price ?? 0
-  const hasResults = stage === 'comps-ready' || stage === 'ready'
+  const hasResults = stage === 'ready'
   const canApply = hasResults && (suggestion ? finalPrice > 0 : hasManualPrice)
 
   async function applyPrice() {
@@ -847,22 +835,15 @@ export default function PricingPage() {
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action button */}
       {stage === 'loaded' && (
-        <div className="flex gap-3 mb-4">
-          <button
-            onClick={runCompsOnly}
-            className="flex-1 flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 hover:bg-brand-50 font-semibold py-3.5 rounded-xl transition-colors text-sm"
-          >
-            <Search className="w-4 h-4" />
-            eBay Comps Only
-          </button>
+        <div className="mb-4">
           <button
             onClick={() => runFullPricing()}
-            className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm text-sm"
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-sm text-sm"
           >
             <Sparkles className="w-4 h-4" />
-            Full AI Pricing
+            Get AI Pricing
           </button>
         </div>
       )}
@@ -966,17 +947,6 @@ export default function PricingPage() {
             </div>
           )}
 
-          {/* Escalate to AI pricing from comps-only */}
-          {stage === 'comps-ready' && !suggestion && (
-            <button
-              onClick={() => runFullPricing(comps)}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              Get AI Suggestion
-            </button>
-          )}
-
           {/* Manual price + Apply */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="border border-gray-200 rounded-xl p-4 mb-4">
@@ -1017,7 +987,7 @@ export default function PricingPage() {
                 {canApply ? `Apply Price — $${finalPrice.toFixed(2)}` : 'Enter a price to apply'}
               </button>
               <button
-                onClick={() => suggestion ? runFullPricing() : runCompsOnly()}
+                onClick={() => runFullPricing()}
                 className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-xl transition-colors text-sm"
               >
                 <RefreshCw className="w-4 h-4" />

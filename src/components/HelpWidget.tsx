@@ -14,7 +14,7 @@ const SOLO_QUICK_LINKS: QuickSection[] = [
   {
     section: 'Getting Started',
     items: [
-      { q: 'How do lookups work?', a: 'You get 200 AI pricing lookups per month. Each time you use "Full AI Pricing" or "eBay Comps Only", it counts as one lookup. Your counter resets 30 days from your last reset. You can buy 50 more lookups for $5 if you run out.' },
+      { q: 'How do lookups work?', a: 'You get 200 AI pricing lookups per month. Each time you use "Get AI Pricing", it counts as one lookup. Your counter resets 30 days from your last reset. You can buy 50 more lookups for $5 if you run out.' },
       { q: 'How do I save an item to inventory?', a: 'After pricing an item on the Price Lookup page, click "Save to My Inventory". The item saves with its AI-suggested price, category, and condition. View saved items on the My Inventory page.' },
       { q: "What's included in Solo Pricer?", a: 'Solo Pricer ($9/mo) includes 200 AI pricing lookups, eBay sold comps, photo identification, personal inventory tracking, and CSV export. Upgrade to Shop ($79/mo) for consignor management, lifecycle tracking, multi-location, reports, payouts, and staff accounts.' },
     ],

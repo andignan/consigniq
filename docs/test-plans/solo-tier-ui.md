@@ -8,7 +8,7 @@
 
 ## Price Lookup
 1. Subtitle reads "Price items and save to your inventory"
-2. Hover disabled "Full AI Pricing" button → tooltip shows "Enter an item name to get AI pricing"
+2. Hover disabled "Get AI Pricing" button → tooltip shows "Enter an item name to get AI pricing"
 3. Enter item name + get AI pricing → "Save to My Inventory" button appears
 4. Click "Save to My Inventory" → success message "Saved to your inventory"
 5. Check /dashboard/inventory → saved item appears

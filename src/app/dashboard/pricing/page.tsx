@@ -4,7 +4,6 @@
 import { useState, useCallback } from 'react'
 import {
   Sparkles, Loader2, DollarSign, ExternalLink, RefreshCw, AlertCircle,
-  Search,
 } from 'lucide-react'
 import { ITEM_CATEGORIES, CONDITION_LABELS, type ItemCondition } from '@/types'
 import { getDescriptionHint } from '@/lib/description-hints'
@@ -15,7 +14,7 @@ import type { PriceSuggestion } from '@/app/api/pricing/suggest/route'
 import { useUser } from '@/contexts/UserContext'
 import { Check } from 'lucide-react'
 
-type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'comps-ready' | 'ready' | 'error'
+type Stage = 'idle' | 'identifying' | 'fetching-comps' | 'pricing' | 'ready' | 'error'
 
 export default function PriceLookupPage() {
   // Form
@@ -113,17 +112,6 @@ export default function PriceLookupPage() {
       console.error('[price-lookup] Comps fetch error:', err)
     }
     return []
-  }
-
-  async function runCompsOnly() {
-    if (!name.trim()) return
-    setError(null)
-    setSuggestion(null)
-    setComps([])
-
-    const fetchedComps = await fetchComps()
-    setComps(fetchedComps)
-    setStage(fetchedComps.length > 0 ? 'comps-ready' : 'comps-ready')
   }
 
   async function runFullPricing(existingComps?: CompResult[]) {
@@ -245,7 +233,7 @@ export default function PriceLookupPage() {
   }
 
   const isRunning = stage === 'identifying' || stage === 'fetching-comps' || stage === 'pricing'
-  const hasResults = stage === 'comps-ready' || stage === 'ready'
+  const hasResults = stage === 'ready'
 
   return (
     <div className="w-full lg:max-w-5xl lg:mx-auto px-4 py-6">
@@ -337,29 +325,12 @@ export default function PriceLookupPage() {
 
         <div className="flex gap-2 mt-4">
           <button
-            onClick={runCompsOnly}
-            disabled={!name.trim() || isRunning}
-            className="flex-1 flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 hover:bg-brand-50 disabled:border-gray-200 disabled:text-gray-400 font-semibold py-3 rounded-xl transition-colors text-sm"
-          >
-            {isRunning && !suggestion && stage === 'fetching-comps' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Searching comps...
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4" />
-                eBay Comps Only
-              </>
-            )}
-          </button>
-          <button
             onClick={() => runFullPricing()}
             disabled={!name.trim() || isRunning}
             title={!name.trim() ? 'Enter an item name to get AI pricing' : undefined}
             className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
           >
-            {isRunning && (stage === 'pricing' || (stage === 'fetching-comps' && !suggestion)) ? (
+            {isRunning && (stage === 'pricing' || stage === 'fetching-comps') ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {stage === 'fetching-comps' ? 'Searching comps...' : 'Analyzing...'}
@@ -367,7 +338,7 @@ export default function PriceLookupPage() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Full AI Pricing
+                Get AI Pricing
               </>
             )}
           </button>
@@ -494,17 +465,6 @@ export default function PriceLookupPage() {
             <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 text-center">
               <p className="text-sm text-gray-400">No eBay comparable sales found for this item.</p>
             </div>
-          )}
-
-          {/* Escalate to AI pricing from comps-only */}
-          {stage === 'comps-ready' && !suggestion && (
-            <button
-              onClick={() => runFullPricing(comps)}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              Get AI Suggestion
-            </button>
           )}
 
           {/* Price Another Item */}

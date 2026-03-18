@@ -3,16 +3,9 @@
 ## Scope
 eBay comps via SerpApi, Claude AI pricing suggestions, photo identification, category-aware pricing.
 
-## Happy Path — Comps Only
-1. Navigate to `/dashboard/inventory/[id]/price` or `/dashboard/pricing`
-2. Enter item name, category, condition
-3. Click "eBay Comps Only"
-4. Verify comps load with title, price, thumbnail
-5. Verify "Get AI Suggestion" button appears after comps load
-
-## Happy Path — Full AI Pricing
+## Happy Path — AI Pricing
 1. Enter item details + optional photo
-2. Click "Full AI Pricing"
+2. Click "Get AI Pricing"
 3. Verify AI returns price, low, high, reasoning
 4. Verify price range is displayed visually
 5. Override price manually if needed

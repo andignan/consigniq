@@ -4,7 +4,7 @@
 
 ## Overview
 
-Three-stage pricing flow: eBay comp lookup → AI price suggestion → optional photo identification. All Claude calls use singleton `getAnthropicClient()` with model `claude-sonnet-4-20250514`.
+Single-button pricing flow: "Get AI Pricing" fetches eBay comps then AI price suggestion. Optional photo identification available separately. All Claude calls use singleton `getAnthropicClient()` with model `claude-sonnet-4-20250514`.
 
 ## eBay Comp Lookup (`/api/pricing/comps`)
 

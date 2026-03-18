@@ -3,7 +3,7 @@ export const HELP_KNOWLEDGE_BASE = `ConsignIQ Help Knowledge Base
 
 SOLO PRICER: Solo Pricer ($9/month) is a pricing-only plan for individual resellers. It includes 200 AI pricing lookups per month, eBay sold comp lookups, photo-based item identification, personal inventory tracking, and CSV export. Solo users do not have consignor management, lifecycle tracking, reports, payouts, or staff accounts. The usage counter resets 30 days from the last reset. Bonus lookup packs (50 for $5) can be purchased and never expire. Solo users can save priced items to their personal inventory from the Price Lookup page.
 
-AI LOOKUPS: Each "Full AI Pricing" or "eBay Comps Only" action on the pricing page counts as one lookup. Solo users get 200 per month. Shop and Enterprise users get unlimited lookups. Solo users can buy additional 50-lookup packs for $5 from the dashboard or Settings → Billing.
+AI LOOKUPS: Each AI pricing lookup counts as one lookup. Solo users get 200 per month. Shop and Enterprise users get unlimited lookups. Solo users can buy additional 50-lookup packs for $5 from the dashboard or Settings → Billing.
 
 PHOTO IDENTIFICATION: Upload a photo of any item using the camera icon on the Price Lookup or Item Intake pages. The AI identifies the item name, category, condition, and description automatically. Photos are compressed to 1200px max before upload. Supported formats: JPG, PNG, WebP.
 
