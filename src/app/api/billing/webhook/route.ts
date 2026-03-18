@@ -68,11 +68,7 @@ export async function POST(request: NextRequest) {
               .eq('id', accountId)
           }
         } else if (accountId && session.metadata?.tier) {
-          // Backward-compat: map old tier names from in-flight Stripe sessions
-          let rawTier = session.metadata.tier
-          if (rawTier === 'starter' || rawTier === 'standard') rawTier = 'shop'
-          if (rawTier === 'pro') rawTier = 'enterprise'
-          const tier = rawTier as Tier
+          const tier = session.metadata.tier as Tier
 
           // Check if this is a resubscription (cancelled_grace or cancelled_limited)
           const { data: currentAccount } = await supabase

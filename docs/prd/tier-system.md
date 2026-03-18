@@ -99,12 +99,12 @@ Migration `20260316030000` renamed tiers:
 
 Migrated columns: `accounts.tier`, `accounts.complimentary_tier`, `accounts.cancelled_tier`. CHECK constraint updated to `(tier IN ('solo', 'shop', 'enterprise'))`.
 
-**Stripe webhook backward-compat:** `checkout.session.completed` maps old tier names from in-flight Stripe sessions (`starter`/`standard` → `shop`, `pro` → `enterprise`) before writing to the database. This handles sessions created before the rename that complete after migration.
+**Stripe webhook backward-compat:** Removed 2026-03-17. Old tier name mapping (`starter`/`standard` → `shop`, `pro` → `enterprise`) was a temporary safety net for in-flight Stripe sessions during migration. No longer needed.
 
 ## Stripe Webhook Events
 
 Handled events in `/api/billing/webhook`:
-- `checkout.session.completed` — sets tier (with old-name mapping), clears cancellation fields, detects resubscription (sends welcome-back vs upgrade email)
+- `checkout.session.completed` — sets tier from metadata (accepts `solo`/`shop`/`enterprise` only), clears cancellation fields, detects resubscription (sends welcome-back vs upgrade email)
 - `customer.subscription.updated` — syncs tier from metadata, updates `subscription_period_end`, detects reactivation from cancelled states
 - `customer.subscription.deleted` — sets `cancelled_grace`, preserves previous tier in `cancelled_tier`, sends cancellation email
 - `invoice.payment_failed` — sends payment failed email (escalates to final warning on attempt 3+)

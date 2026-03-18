@@ -96,7 +96,7 @@ Add: `cancelled_grace`, `cancelled_limited`
 
 1. Look up account via `metadata.account_id`
 2. If `metadata.product === 'topup_50'`: add 50 to `bonus_lookups`, return
-3. Map tier from metadata (backward-compat: starter/standard → shop, pro → enterprise)
+3. Read tier from metadata (only accepts `solo`, `shop`, `enterprise`)
 4. Check if resubscription (`account_type` is `cancelled_grace` or `cancelled_limited`)
 5. Set `tier`, `account_type='paid'`, clear `trial_ends_at`, `subscription_cancelled_at`, `subscription_period_end`, `cancelled_tier`
 6. Send welcome-back email (resub) or upgrade email (new sub) using `TIER_CONFIGS` for label/price
@@ -257,7 +257,7 @@ Add: `cancelled_grace`, `cancelled_limited`
 - Grace period cron: `/api/billing/check-grace-periods` — sends reminders 3 days before `period_end`, auto-transitions overdue `cancelled_grace` → `cancelled_limited`
 - Email templates: `buildGraceReminderEmail()`, `buildAccessEndedEmail()`, `buildPaymentFinalWarningEmail()`, `buildWelcomeBackEmail()`
 - Feature gating: `cancelled_grace` and `cancelled_limited` in `AccountType` type, handled by `feature-gates.ts`
-- Backward-compat: webhook maps old tier names (starter/standard → shop, pro → enterprise) from in-flight Stripe sessions
+- Tier rename backward-compat mapping removed 2026-03-17 (no in-flight sessions with old names remain)
 
 ### Deferred
 - Suspension page component
