@@ -39,9 +39,10 @@
 - [ ] While analyzing, no primary controls or reorder arrows appear
 - [ ] While disabled, no primary controls or reorder arrows appear
 
-### 7. Analyze button styling
-- [ ] "Analyze N Photos" button is filled teal (bg-brand-600), white text
-- [ ] Button is visually prominent — not a ghost/outline style
+### 7. Analyze button three-state styling
+- [ ] 0 photos: button shows "Analyze Photos", grey disabled (`bg-gray-200 text-gray-400`)
+- [ ] 1-2 photos: button shows "Analyze N Photo(s)", teal outline (`border-brand-600 text-brand-600`) — secondary prominence
+- [ ] 3 photos: button shows "Analyze 3 Photos", filled teal (`bg-brand-600 text-white`) — full prominence
 
 ### 8. Analyze button after reorder
 - [ ] Upload 2 photos, click "Set Primary" to reorder

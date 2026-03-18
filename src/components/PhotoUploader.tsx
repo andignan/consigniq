@@ -183,9 +183,11 @@ export default function PhotoUploader({
         onClick={onAnalyze}
         disabled={analyzing || disabled || photos.length === 0}
         className={`mt-3 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
-          photos.length > 0
-            ? 'text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          photos.length === 0
+            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            : photos.length >= MAX_PHOTOS
+              ? 'text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed'
+              : 'border-2 border-brand-600 text-brand-600 bg-white hover:bg-brand-50 disabled:opacity-50 disabled:cursor-not-allowed'
         }`}
       >
         {analyzing ? (

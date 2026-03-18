@@ -75,9 +75,10 @@ UI:
   - Note: hover-dependent controls are avoided for mobile accessibility
 - Hover reorder arrows (left/right)
 - Single photo: no reorder arrows or primary controls shown
-- "Analyze Photos" button — always visible with two states:
+- "Analyze Photos" button — always visible with three visual states:
   - 0 photos (disabled): `bg-gray-200 text-gray-400 cursor-not-allowed` — clearly inactive
-  - 1+ photos (ready): filled teal (`bg-brand-600 text-white hover:bg-brand-700`), shows "Analyze N Photo(s)" with Sparkles icon
+  - 1-2 photos (slots remaining): teal outline (`border-2 border-brand-600 text-brand-600 bg-white`) — available but secondary, encourages adding more photos
+  - 3 photos (full): filled teal (`bg-brand-600 text-white hover:bg-brand-700`) — full prominence, ready to analyze
 - Mobile: `capture="environment"` for camera-first
 
 ## AI Multi-Photo Support
