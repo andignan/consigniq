@@ -24,11 +24,23 @@ const MAX_PHOTOS = 3
 // ─── Reorder logic (extracted from component) ────────────────
 
 function movePhoto(photos: PhotoSlot[], index: number, direction: 'up' | 'down'): PhotoSlot[] {
+  if (photos.length <= 1) return photos
   const newIndex = direction === 'up' ? index - 1 : index + 1
   if (newIndex < 0 || newIndex >= photos.length) return photos
   const updated = [...photos]
   const [moved] = updated.splice(index, 1)
   updated.splice(newIndex, 0, moved)
+  return updated
+}
+
+// ─── Make Primary logic (extracted from component) ───────────
+
+function makePrimary(photos: PhotoSlot[], id: string): PhotoSlot[] {
+  const idx = photos.findIndex(p => p.id === id)
+  if (idx <= 0) return photos // already primary or not found
+  const updated = [...photos]
+  const [moved] = updated.splice(idx, 1)
+  updated.unshift(moved)
   return updated
 }
 
@@ -240,5 +252,93 @@ describe('Analyze button visibility', () => {
   it('hides analyze button when no photos', () => {
     const showAnalyze = (count: number) => count > 0
     expect(showAnalyze(0)).toBe(false)
+  })
+})
+
+describe('Make Primary logic', () => {
+  const photoA = makeSlot('a')
+  const photoB = makeSlot('b')
+  const photoC = makeSlot('c')
+
+  it('moves third photo to primary (3 photos)', () => {
+    const result = makePrimary([photoA, photoB, photoC], 'c')
+    expect(result.map(p => p.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('moves second photo to primary (3 photos)', () => {
+    const result = makePrimary([photoA, photoB, photoC], 'b')
+    expect(result.map(p => p.id)).toEqual(['b', 'a', 'c'])
+  })
+
+  it('moves second photo to primary (2 photos)', () => {
+    const result = makePrimary([photoA, photoB], 'b')
+    expect(result.map(p => p.id)).toEqual(['b', 'a'])
+  })
+
+  it('no-op when already primary', () => {
+    const photos = [photoA, photoB, photoC]
+    const result = makePrimary(photos, 'a')
+    expect(result).toBe(photos) // same reference
+  })
+
+  it('no-op when photo id not found', () => {
+    const photos = [photoA, photoB]
+    const result = makePrimary(photos, 'nonexistent')
+    expect(result).toBe(photos) // same reference
+  })
+
+  it('returns new array on valid make-primary (immutable)', () => {
+    const photos = [photoA, photoB, photoC]
+    const result = makePrimary(photos, 'c')
+    expect(result).not.toBe(photos)
+  })
+
+  it('preserves all photos after make-primary', () => {
+    const result = makePrimary([photoA, photoB, photoC], 'c')
+    expect(result).toHaveLength(3)
+    expect(result.map(p => p.id).sort()).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('Reorder with single photo', () => {
+  const photoA = makeSlot('a')
+
+  it('movePhoto is no-op with 1 photo (up)', () => {
+    const photos = [photoA]
+    const result = movePhoto(photos, 0, 'up')
+    expect(result).toBe(photos)
+  })
+
+  it('movePhoto is no-op with 1 photo (down)', () => {
+    const photos = [photoA]
+    const result = movePhoto(photos, 0, 'down')
+    expect(result).toBe(photos)
+  })
+})
+
+describe('Make Primary button visibility', () => {
+  function showMakePrimary(index: number, length: number, disabled: boolean, analyzing: boolean): boolean {
+    return index > 0 && length > 1 && !disabled && !analyzing
+  }
+
+  it('shows on non-primary photos', () => {
+    expect(showMakePrimary(1, 3, false, false)).toBe(true)
+    expect(showMakePrimary(2, 3, false, false)).toBe(true)
+  })
+
+  it('hides on primary photo (index 0)', () => {
+    expect(showMakePrimary(0, 3, false, false)).toBe(false)
+  })
+
+  it('hides when only 1 photo', () => {
+    expect(showMakePrimary(0, 1, false, false)).toBe(false)
+  })
+
+  it('hides when disabled', () => {
+    expect(showMakePrimary(1, 3, true, false)).toBe(false)
+  })
+
+  it('hides when analyzing', () => {
+    expect(showMakePrimary(1, 3, false, true)).toBe(false)
   })
 })

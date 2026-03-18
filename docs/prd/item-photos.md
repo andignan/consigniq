@@ -70,7 +70,9 @@ UI:
 - Horizontal row of up to 3 photo slots (80px compact, 120px full)
 - Empty slot with camera icon and dashed border
 - Primary badge (teal) on first photo when >1 photo
+- "Make Primary" button (hover reveal) on non-primary photos — moves photo to position 0 in one action
 - Hover reorder arrows (left/right)
+- Single photo: no reorder arrows or Make Primary button shown
 - "Analyze N Photo(s)" button with Sparkles icon
 - Mobile: `capture="environment"` for camera-first
 

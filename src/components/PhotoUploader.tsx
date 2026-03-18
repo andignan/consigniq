@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { Camera, X, ChevronUp, ChevronDown, Loader2, Sparkles } from 'lucide-react'
+import { Camera, X, ChevronUp, ChevronDown, Loader2, Sparkles, Star } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -47,11 +47,21 @@ export default function PhotoUploader({
   }
 
   function movePhoto(index: number, direction: 'up' | 'down') {
+    if (photos.length <= 1) return
     const newIndex = direction === 'up' ? index - 1 : index + 1
     if (newIndex < 0 || newIndex >= photos.length) return
     const updated = [...photos]
     const [moved] = updated.splice(index, 1)
     updated.splice(newIndex, 0, moved)
+    onPhotosChange(updated)
+  }
+
+  function makePrimary(id: string) {
+    const idx = photos.findIndex(p => p.id === id)
+    if (idx <= 0) return // already primary or not found
+    const updated = [...photos]
+    const [moved] = updated.splice(idx, 1)
+    updated.unshift(moved)
     onPhotosChange(updated)
   }
 
@@ -137,6 +147,19 @@ export default function PhotoUploader({
                   </button>
                 )}
               </div>
+            )}
+
+            {/* Make Primary button */}
+            {index > 0 && photos.length > 1 && !disabled && !analyzing && (
+              <button
+                type="button"
+                onClick={() => makePrimary(photo.id)}
+                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-50 hover:border-brand-300 hover:text-brand-600 transition-colors opacity-0 group-hover:opacity-100"
+                title="Make primary"
+              >
+                <Star className="w-2.5 h-2.5" />
+                Primary
+              </button>
             )}
           </div>
         ))}
