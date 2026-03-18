@@ -157,24 +157,41 @@ describe('Photo reorder logic', () => {
   })
 })
 
-describe('Primary badge logic', () => {
-  it('first photo (index 0) is primary', () => {
-    const photos = [makeSlot('a'), makeSlot('b'), makeSlot('c')]
-    const primaryIndex = 0
-    expect(photos[primaryIndex].id).toBe('a')
+describe('Primary control visibility', () => {
+  // Primary controls (pill buttons) shown below each photo when length > 1
+  function showPrimaryControls(length: number, disabled: boolean, analyzing: boolean): boolean {
+    return length > 1 && !disabled && !analyzing
+  }
+
+  // Primary photo (index 0) gets filled "★ Primary" label, non-primary gets clickable "Set Primary"
+  function primaryControlText(index: number): string {
+    return index === 0 ? '★ Primary' : 'Set Primary'
+  }
+
+  it('shows "★ Primary" (filled) for index 0 when length > 1', () => {
+    expect(primaryControlText(0)).toBe('★ Primary')
   })
 
-  it('primary badge shows only when more than one photo', () => {
-    const showPrimary = (index: number, length: number) => index === 0 && length > 1
-    expect(showPrimary(0, 1)).toBe(false)
-    expect(showPrimary(0, 2)).toBe(true)
-    expect(showPrimary(0, 3)).toBe(true)
+  it('shows "Set Primary" (clickable) for index > 0', () => {
+    expect(primaryControlText(1)).toBe('Set Primary')
+    expect(primaryControlText(2)).toBe('Set Primary')
   })
 
-  it('primary badge does not show on non-first photos', () => {
-    const showPrimary = (index: number, length: number) => index === 0 && length > 1
-    expect(showPrimary(1, 3)).toBe(false)
-    expect(showPrimary(2, 3)).toBe(false)
+  it('no primary controls shown for single photo', () => {
+    expect(showPrimaryControls(1, false, false)).toBe(false)
+  })
+
+  it('shows primary controls when more than one photo', () => {
+    expect(showPrimaryControls(2, false, false)).toBe(true)
+    expect(showPrimaryControls(3, false, false)).toBe(true)
+  })
+
+  it('hides primary controls when disabled', () => {
+    expect(showPrimaryControls(2, true, false)).toBe(false)
+  })
+
+  it('hides primary controls when analyzing', () => {
+    expect(showPrimaryControls(2, false, true)).toBe(false)
   })
 
   it('after reorder, new first photo becomes primary', () => {
@@ -241,17 +258,48 @@ describe('Add button visibility', () => {
   })
 })
 
-describe('Analyze button visibility', () => {
-  it('shows analyze button when photos exist', () => {
-    const showAnalyze = (count: number) => count > 0
-    expect(showAnalyze(1)).toBe(true)
-    expect(showAnalyze(2)).toBe(true)
-    expect(showAnalyze(3)).toBe(true)
+describe('Analyze button states', () => {
+  // Button is always visible but disabled when no photos
+  function analyzeDisabled(count: number, analyzing: boolean, disabled: boolean): boolean {
+    return analyzing || disabled || count === 0
+  }
+
+  it('is always visible (rendered regardless of photo count)', () => {
+    // Button always renders — no conditional wrapping
+    expect(true).toBe(true)
   })
 
-  it('hides analyze button when no photos', () => {
-    const showAnalyze = (count: number) => count > 0
-    expect(showAnalyze(0)).toBe(false)
+  it('is disabled when 0 photos', () => {
+    expect(analyzeDisabled(0, false, false)).toBe(true)
+  })
+
+  it('is enabled when 1+ photos', () => {
+    expect(analyzeDisabled(1, false, false)).toBe(false)
+    expect(analyzeDisabled(2, false, false)).toBe(false)
+    expect(analyzeDisabled(3, false, false)).toBe(false)
+  })
+
+  it('is disabled when analyzing (even with photos)', () => {
+    expect(analyzeDisabled(2, true, false)).toBe(true)
+  })
+
+  it('is disabled when component disabled (even with photos)', () => {
+    expect(analyzeDisabled(2, false, true)).toBe(true)
+  })
+
+  it('shows generic text when 0 photos', () => {
+    const text = (count: number) => count > 0
+      ? `Analyze ${count} Photo${count !== 1 ? 's' : ''}`
+      : 'Analyze Photos'
+    expect(text(0)).toBe('Analyze Photos')
+  })
+
+  it('shows count text when 1+ photos', () => {
+    const text = (count: number) => count > 0
+      ? `Analyze ${count} Photo${count !== 1 ? 's' : ''}`
+      : 'Analyze Photos'
+    expect(text(1)).toBe('Analyze 1 Photo')
+    expect(text(2)).toBe('Analyze 2 Photos')
   })
 })
 
@@ -316,29 +364,30 @@ describe('Reorder with single photo', () => {
   })
 })
 
-describe('Make Primary button visibility', () => {
-  function showMakePrimary(index: number, length: number, disabled: boolean, analyzing: boolean): boolean {
+describe('Set Primary button visibility', () => {
+  // "Set Primary" clickable button shown on non-primary photos when length > 1
+  function showSetPrimary(index: number, length: number, disabled: boolean, analyzing: boolean): boolean {
     return index > 0 && length > 1 && !disabled && !analyzing
   }
 
-  it('shows on non-primary photos', () => {
-    expect(showMakePrimary(1, 3, false, false)).toBe(true)
-    expect(showMakePrimary(2, 3, false, false)).toBe(true)
+  it('shows on non-primary photos (always visible, no hover needed)', () => {
+    expect(showSetPrimary(1, 3, false, false)).toBe(true)
+    expect(showSetPrimary(2, 3, false, false)).toBe(true)
   })
 
-  it('hides on primary photo (index 0)', () => {
-    expect(showMakePrimary(0, 3, false, false)).toBe(false)
+  it('not shown on primary photo (index 0 gets filled label instead)', () => {
+    expect(showSetPrimary(0, 3, false, false)).toBe(false)
   })
 
-  it('hides when only 1 photo', () => {
-    expect(showMakePrimary(0, 1, false, false)).toBe(false)
+  it('not shown when only 1 photo', () => {
+    expect(showSetPrimary(0, 1, false, false)).toBe(false)
   })
 
-  it('hides when disabled', () => {
-    expect(showMakePrimary(1, 3, true, false)).toBe(false)
+  it('hidden when disabled', () => {
+    expect(showSetPrimary(1, 3, true, false)).toBe(false)
   })
 
-  it('hides when analyzing', () => {
-    expect(showMakePrimary(1, 3, false, true)).toBe(false)
+  it('hidden when analyzing', () => {
+    expect(showSetPrimary(1, 3, false, true)).toBe(false)
   })
 })

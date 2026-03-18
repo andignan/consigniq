@@ -9,7 +9,7 @@ AI-powered consignment and estate sale management platform. Tracks consignors, i
 - `npm run dev` — start dev server (Next.js on localhost:3000)
 - `npm run build` — production build
 - `npm run lint` — ESLint
-- `npm test` — Jest test suite (658 tests across unit + API)
+- `npm test` — Jest test suite (666 tests across unit + API)
 - `npm run test:watch` — Jest in watch mode
 - `npm run test:e2e` — Playwright E2E tests (requires `npm run dev` + seeded test data)
 - `npm run test:e2e:ui` — Playwright E2E with interactive UI
@@ -178,7 +178,7 @@ Read the relevant PRD before modifying any of these systems:
 - `src/lib/stripe.ts` — `getStripe()` singleton
 - `src/lib/anthropic.ts` — `ANTHROPIC_MODEL` constant + `getAnthropicClient()` singleton (used by all 5 AI routes)
 - `src/lib/sidebar-identity.ts` — `SIDEBAR_BADGES`, `getBadgeConfig()`, `getDisplayName()` (config-driven sidebar identity display)
-- `src/components/PhotoUploader.tsx` — shared multi-photo upload component (up to 3, reorder, Make Primary, analyze button). Used by Price Lookup, Inventory pricing, IntakeQueue
+- `src/components/PhotoUploader.tsx` — shared multi-photo upload component (up to 3, reorder, always-visible primary pills, analyze button). Used by Price Lookup, Inventory pricing, IntakeQueue
 - `src/lib/auth-helpers.ts` — `getAuthenticatedUser()`, `getAuthenticatedProfile()` (shared auth pattern for all API routes)
 - `src/lib/errors.ts` — `ERRORS` constants (`UNAUTHORIZED`, `PROFILE_NOT_FOUND`, `OWNER_REQUIRED`, `UPGRADE_REQUIRED`)
 - `src/components/UpgradePrompt.tsx` — shown for locked features
@@ -317,7 +317,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**644 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
+**666 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -350,7 +350,7 @@ __tests__/
 │   ├── confirm-modal.test.ts        — ConfirmModal component contract, confirm() removal verification
 │   ├── sidebar-identity.test.ts     — getBadgeConfig all 8 keys, getDisplayName edge cases, color classes, platform role precedence
 │   ├── brand-guidelines.test.ts     — Brand doc existence, typography colors, heading/link color consistency
-│   └── photo-uploader.test.ts       — PhotoSlot interface, max 3 slots, reorder logic, makePrimary logic, primary badge, analyze button
+│   └── photo-uploader.test.ts       — PhotoSlot interface, max 3 slots, reorder logic, makePrimary logic, primary control pills, analyze button
 ├── api/
 │   ├── consignors.test.ts         — GET/POST validation, auth, location scoping
 │   ├── items.test.ts              — GET/POST/PATCH, filters, auto-timestamps, price_history, timestamp regression

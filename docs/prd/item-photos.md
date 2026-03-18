@@ -68,12 +68,16 @@ Props:
 
 UI:
 - Horizontal row of up to 3 photo slots (80px compact, 120px full)
-- Empty slot with camera icon and dashed border
-- Primary badge (teal) on first photo when >1 photo
-- "Make Primary" button (hover reveal) on non-primary photos — moves photo to position 0 in one action
+- Empty slot with teal dashed border (`border-brand-200`) and teal icon/text (`text-brand-400`) — inviting visual flow toward adding photos
+- Always-visible primary control pills below each photo when >1 photo:
+  - Primary photo (index 0): filled teal "★ Primary" label (not clickable)
+  - Non-primary photos: "Set Primary" button (`bg-gray-100 border-gray-300 text-gray-600`, hover: `bg-brand-50 border-brand-500 text-brand-600`) — moves photo to position 0 in one action
+  - Note: hover-dependent controls are avoided for mobile accessibility
 - Hover reorder arrows (left/right)
-- Single photo: no reorder arrows or Make Primary button shown
-- "Analyze N Photo(s)" button with Sparkles icon
+- Single photo: no reorder arrows or primary controls shown
+- "Analyze Photos" button — always visible with two states:
+  - 0 photos (disabled): `bg-gray-200 text-gray-400 cursor-not-allowed` — clearly inactive
+  - 1+ photos (ready): filled teal (`bg-brand-600 text-white hover:bg-brand-700`), shows "Analyze N Photo(s)" with Sparkles icon
 - Mobile: `capture="environment"` for camera-first
 
 ## AI Multi-Photo Support
