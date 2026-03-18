@@ -79,7 +79,7 @@ UI:
   - 0 photos (disabled): `bg-gray-200 text-gray-400 cursor-not-allowed` — clearly inactive
   - 1-2 photos (slots remaining): teal outline (`border-2 border-brand-600 text-brand-600 bg-white`) — available but secondary, encourages adding more photos
   - 3 photos (full): filled teal (`bg-brand-600 text-white hover:bg-brand-700`) — full prominence, ready to analyze
-- Mobile: `capture="environment"` for camera-first
+- Mobile: no `capture` attribute — iOS Safari shows standard picker (Take Photo, Photo Library, Browse Files)
 
 ## AI Multi-Photo Support
 - `/api/pricing/identify` accepts `photo` + `photo_1`, `photo_2`, `photo_3` FormData fields
