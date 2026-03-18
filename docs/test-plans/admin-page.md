@@ -4,7 +4,7 @@
 Superadmin-only `/admin` route with overview dashboard, customer accounts list, account detail with tier/status management.
 
 ## Happy Path — Access Control
-1. Log in as `admin@getconsigniq.com` (is_superadmin = true)
+1. Log in as `admin@getconsigniq.com` (platform_role = 'super_admin')
 2. Navigate to `/admin` — verify admin overview loads with stats
 3. Log out, log in as a regular owner user
 4. Navigate to `/admin` — verify redirect to `/dashboard`

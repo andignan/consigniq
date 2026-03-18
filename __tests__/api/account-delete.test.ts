@@ -30,9 +30,9 @@ jest.mock('@/lib/supabase/admin', () => ({
     const supabase = createServerClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error || !user) return { authorized: false as const, status: 401 }
-    const { data: profile } = await supabase.from('users').select('is_superadmin').eq('id', user.id).single()
-    if (!profile?.is_superadmin) return { authorized: false as const, status: 403 }
-    return { authorized: true as const, userId: user.id }
+    const { data: profile } = await supabase.from('users').select('platform_role').eq('id', user.id).single()
+    if (!profile?.platform_role) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id, platformRole: profile.platform_role as string }
   },
   createAdminClient: () => ({
     from: mockFrom,
@@ -77,7 +77,7 @@ beforeEach(() => {
   mockEq.mockReturnValue(defaultChain)
   mockDelete.mockReturnValue(defaultChain)
   mockUpdate.mockReturnValue(defaultChain)
-  mockSingle.mockResolvedValue({ data: { is_superadmin: true }, error: null })
+  mockSingle.mockResolvedValue({ data: { platform_role: 'super_admin' }, error: null })
   mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null })
 })
 
@@ -89,7 +89,7 @@ describe('POST /api/admin/accounts/delete', () => {
   })
 
   it('returns 403 if not superadmin', async () => {
-    mockSingle.mockResolvedValue({ data: { is_superadmin: false }, error: null })
+    mockSingle.mockResolvedValue({ data: { platform_role: null }, error: null })
     const res = await POST(makeRequest({ account_id: 'acc-1' }))
     expect(res.status).toBe(403)
   })
@@ -102,7 +102,7 @@ describe('POST /api/admin/accounts/delete', () => {
   it('returns 404 if account not found', async () => {
     // Second single() call (account lookup) returns null
     mockSingle
-      .mockResolvedValueOnce({ data: { is_superadmin: true }, error: null })
+      .mockResolvedValueOnce({ data: { platform_role: 'super_admin' }, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: 'Not found' } })
     const res = await POST(makeRequest({ account_id: 'nonexistent' }))
     expect(res.status).toBe(404)
@@ -113,7 +113,7 @@ describe('POST /api/admin/accounts/delete', () => {
     const users = [{ id: 'user-1', email: 'test@test.com', full_name: 'Test', role: 'owner' }]
 
     mockSingle
-      .mockResolvedValueOnce({ data: { is_superadmin: true }, error: null })
+      .mockResolvedValueOnce({ data: { platform_role: 'super_admin' }, error: null })
       .mockResolvedValueOnce({ data: account, error: null })
 
     // Users query

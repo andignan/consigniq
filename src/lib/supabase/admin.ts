@@ -28,10 +28,10 @@ export async function checkSuperadmin() {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('users')
-    .select('platform_role, is_superadmin')
+    .select('platform_role')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.platform_role && !profile?.is_superadmin) return { authorized: false as const, status: 403 }
-  return { authorized: true as const, userId: user.id, platformRole: (profile.platform_role ?? (profile.is_superadmin ? 'super_admin' : null)) as string }
+  if (!profile?.platform_role) return { authorized: false as const, status: 403 }
+  return { authorized: true as const, userId: user.id, platformRole: profile.platform_role as string }
 }

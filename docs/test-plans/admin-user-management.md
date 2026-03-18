@@ -1,7 +1,7 @@
 # Admin User Management — Manual Test Plan
 
 ## Prerequisites
-- Superadmin account (is_superadmin = true)
+- Superadmin account (platform_role = 'super_admin')
 - At least one regular user account
 
 ## 1. Admin Users Page (/admin/users)

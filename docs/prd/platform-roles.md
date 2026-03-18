@@ -31,24 +31,24 @@ All three roles grant access to `/admin` routes via `checkSuperadmin()`. Only `s
 - Used to filter system accounts from admin stats and account lists
 
 ### Legacy: `users.is_superadmin`
-- Retained for rollback safety — still read as fallback in all access-control paths (dual-read pattern with `platform_role`)
+- **Deprecated in code** (2026-03-17) — column retained in DB for rollback safety, but no application code reads it
 - Migration populated `platform_role = 'super_admin'` for all `is_superadmin = true` users
+- Do NOT drop the column — it remains as a safety net if `platform_role` needs to be rolled back
 
 ## Access Control
 
 ### `checkSuperadmin()` (`src/lib/supabase/admin.ts`)
-- Reads both `platform_role` and `is_superadmin` (dual-read for backward compatibility)
+- Reads `platform_role` only (is_superadmin fallback removed 2026-03-17)
 - Returns `{ authorized: true, userId, platformRole }` on success
 - Returns `{ authorized: false, status: 401|403 }` on failure
-- All admin API routes check `auth.authorized` — backward compatible
 
 ### `/api/auth/check-superadmin`
 - Returns `{ is_superadmin: boolean, platform_role: string|null }`
-- `is_superadmin` derived from `!!platform_role || is_superadmin === true` (dual-read for backward compatibility with login flow)
+- `is_superadmin` derived from `!!platform_role` (login flow compatibility — field name kept for client consumption)
 
 ### Layout Gates
-- `/admin/layout.tsx`: redirects to `/dashboard` if no `platform_role` and no `is_superadmin` (dual-read fallback)
-- `/dashboard/layout.tsx`: redirects to `/admin` if `platform_role` is set or `is_superadmin` is true (dual-read fallback)
+- `/admin/layout.tsx`: redirects to `/dashboard` if no `platform_role`
+- `/dashboard/layout.tsx`: redirects to `/admin` if `platform_role` is set
 
 ## Role Management
 

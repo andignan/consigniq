@@ -70,7 +70,6 @@ export interface User {
   email: string
   full_name: string | null
   role: UserRole
-  is_superadmin: boolean
   platform_role: PlatformRole | null
   created_at: string
 }

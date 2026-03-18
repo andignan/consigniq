@@ -10,7 +10,7 @@
 - Only `super_admin` can modify platform roles on other users
 - All admin queries are cross-account (no `account_id` scoping)
 - Login redirect: platform role users go to `/admin`, never `/dashboard`
-- `/api/auth/check-superadmin` returns `{ is_superadmin, platform_role }` — used by admin UI to determine role-based visibility
+- `/api/auth/check-superadmin` returns `{ is_superadmin, platform_role }` — `is_superadmin` derived from `!!platform_role`, used by login flow for redirect
 
 ## Admin Dashboard (`/admin`)
 

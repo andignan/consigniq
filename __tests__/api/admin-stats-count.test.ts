@@ -28,12 +28,12 @@ jest.mock('@/lib/supabase/admin', () => ({
 
     const { data: profile } = await supabase
       .from('users')
-      .select('platform_role, is_superadmin')
+      .select('platform_role')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.platform_role && !profile?.is_superadmin) return { authorized: false as const, status: 403 }
-    return { authorized: true as const, userId: user.id, platformRole: (profile.platform_role ?? (profile.is_superadmin ? 'super_admin' : null)) as string }
+    if (!profile?.platform_role) return { authorized: false as const, status: 403 }
+    return { authorized: true as const, userId: user.id, platformRole: profile.platform_role as string }
   },
   createAdminClient: () => ({
     from: mockFrom,
@@ -61,7 +61,7 @@ beforeEach(() => {
   // Default: all count queries return 0
   mockSelect.mockReturnValue(makeCountChain(0))
   mockEq.mockReturnValue(makeCountChain(0))
-  mockSingle.mockResolvedValue({ data: { platform_role: 'super_admin', is_superadmin: true }, error: null })
+  mockSingle.mockResolvedValue({ data: { platform_role: 'super_admin' }, error: null })
   mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null })
 })
 

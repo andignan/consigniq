@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   // Get all users with their account info
   let query = supabase
     .from('users')
-    .select('id, email, full_name, role, account_id, location_id, is_superadmin, platform_role, created_at, accounts(id, name, tier, status, account_type, trial_ends_at, is_complimentary, complimentary_tier)')
+    .select('id, email, full_name, role, account_id, location_id, platform_role, created_at, accounts(id, name, tier, status, account_type, trial_ends_at, is_complimentary, complimentary_tier)')
     .order('created_at', { ascending: false })
 
   if (search) {
@@ -139,7 +139,6 @@ export async function POST(request: NextRequest) {
         account_id: systemAccount.id,
         location_id: systemLocation.id,
         role: 'owner',
-        is_superadmin: false,
         platform_role,
       }, { onConflict: 'id' })
       .select()
@@ -294,7 +293,6 @@ export async function POST(request: NextRequest) {
       account_id: account.id,
       location_id: location.id,
       role: 'owner',
-      is_superadmin: false,
     }, { onConflict: 'id' })
     .select()
     .single()

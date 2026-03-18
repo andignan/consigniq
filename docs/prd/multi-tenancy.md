@@ -65,9 +65,9 @@ Supabase RLS policies enforce data isolation at the database level:
 ## Superadmin Bypass
 
 - `createAdminClient()` in `src/lib/supabase/admin.ts` — creates client with `SUPABASE_SERVICE_ROLE_KEY`, bypasses all RLS
-- `checkSuperadmin()` — authenticates via regular client, then verifies `is_superadmin` via service role (needed because superadmin may not satisfy RLS)
+- `checkSuperadmin()` — authenticates via regular client, then verifies `platform_role` via service role (needed because platform users may not satisfy RLS)
 - All admin routes (`/api/admin/*`) use service role for cross-account queries
-- Admin layout checks `is_superadmin` server-side, redirects non-superadmins to `/dashboard`
+- Admin layout checks `platform_role` server-side, redirects non-platform users to `/dashboard`
 
 ## Critical Rules
 

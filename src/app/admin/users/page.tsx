@@ -11,7 +11,6 @@ interface UserRow {
   full_name: string | null
   role: string
   account_id: string
-  is_superadmin: boolean
   platform_role: string | null
   created_at: string
   accounts: {

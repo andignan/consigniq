@@ -7,7 +7,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ is_superadmin: false })
+    return NextResponse.json({ is_superadmin: false, platform_role: null })
   }
 
   // Use service role to bypass RLS
@@ -18,12 +18,12 @@ export async function GET() {
 
   const { data: profile } = await serviceClient
     .from('users')
-    .select('platform_role, is_superadmin')
+    .select('platform_role')
     .eq('id', user.id)
     .single()
 
   return NextResponse.json({
-    is_superadmin: !!profile?.platform_role || profile?.is_superadmin === true,
-    platform_role: profile?.platform_role ?? (profile?.is_superadmin ? 'super_admin' : null),
+    is_superadmin: !!profile?.platform_role,
+    platform_role: profile?.platform_role ?? null,
   })
 }
