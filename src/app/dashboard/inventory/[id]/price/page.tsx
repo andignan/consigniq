@@ -221,45 +221,38 @@ export default function PricingPage() {
     loadPhotos()
   }, [id, photosLoaded])
 
+  // Errors thrown here are shown inline by PhotoUploader
   const handlePhotoFile = useCallback(async (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      setError('Only JPG, PNG, and WebP images are supported')
-      return
+    const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+    const newSlot: PhotoSlot = {
+      id: Math.random().toString(36).slice(2),
+      blob: compressed.blob,
+      base64: compressed.base64,
+      mediaType: compressed.mediaType,
+      previewUrl: compressed.previewUrl,
     }
 
+    // Upload immediately (item already has ID)
     try {
-      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
-      const newSlot: PhotoSlot = {
-        id: Math.random().toString(36).slice(2),
-        blob: compressed.blob,
-        base64: compressed.base64,
-        mediaType: compressed.mediaType,
-        previewUrl: compressed.previewUrl,
-      }
-
-      // Upload immediately (item already has ID)
-      try {
-        const formData = new FormData()
-        formData.append('photo', new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' }))
-        const uploadRes = await fetch(`/api/items/${id}/photos`, {
-          method: 'POST',
-          credentials: 'include',
-          body: formData,
-        })
-        if (uploadRes.ok) {
-          const { photo } = await uploadRes.json()
-          newSlot.uploadedPhotoId = photo.id
-          newSlot.publicUrl = photo.public_url
-        }
-      } catch {
+      const formData = new FormData()
+      formData.append('photo', new File([compressed.blob], 'photo.jpg', { type: 'image/jpeg' }))
+      const uploadRes = await fetch(`/api/items/${id}/photos`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      if (uploadRes.ok) {
+        const { photo } = await uploadRes.json()
+        newSlot.uploadedPhotoId = photo.id
+        newSlot.publicUrl = photo.public_url
+      } else {
         newSlot.error = 'Upload failed'
       }
-
-      setPhotos(prev => [...prev, newSlot])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process photo')
+    } catch {
+      newSlot.error = 'Upload failed'
     }
+
+    setPhotos(prev => [...prev, newSlot])
   }, [id])
 
   function handlePhotosChange(updated: PhotoSlot[]) {

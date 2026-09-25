@@ -386,23 +386,17 @@ function IntakeRow({
 }: IntakeRowProps) {
   const [identifying, setIdentifying] = useState(false)
 
+  // Errors thrown here are shown inline by PhotoUploader
   const handlePhotoFile = useCallback(async (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) return
-
-    try {
-      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
-      const newSlot: PhotoSlot = {
-        id: Math.random().toString(36).slice(2),
-        blob: compressed.blob,
-        base64: compressed.base64,
-        mediaType: compressed.mediaType,
-        previewUrl: compressed.previewUrl,
-      }
-      onPhotosChange([...draft.photos, newSlot])
-    } catch {
-      // Compression failed silently
+    const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+    const newSlot: PhotoSlot = {
+      id: Math.random().toString(36).slice(2),
+      blob: compressed.blob,
+      base64: compressed.base64,
+      mediaType: compressed.mediaType,
+      previewUrl: compressed.previewUrl,
     }
+    onPhotosChange([...draft.photos, newSlot])
   }, [draft.photos, onPhotosChange])
 
   async function analyzePhotos() {

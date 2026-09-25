@@ -31,9 +31,13 @@ export async function compressImage(
     throw new Error('Image too large. Please use a photo under 10MB.')
   }
 
-  // Load image
-  const bitmap = await createImageBitmap(file)
-  const { width, height } = bitmap
+  if (file.type && !file.type.startsWith('image/')) {
+    throw new Error('That file is not an image. Please choose a JPG, PNG, WebP, or HEIC photo.')
+  }
+
+  // Load image (falls back to <img> decode, which handles HEIC in Safari)
+  const source = await decodeImage(file)
+  const { width, height } = source
 
   // Calculate scaled dimensions (max 1200px on longest side)
   let newWidth = width
@@ -53,8 +57,8 @@ export async function compressImage(
   canvas.width = newWidth
   canvas.height = newHeight
   const ctx = canvas.getContext('2d')!
-  ctx.drawImage(bitmap, 0, 0, newWidth, newHeight)
-  bitmap.close()
+  ctx.drawImage(source.image, 0, 0, newWidth, newHeight)
+  source.release()
 
   // Export as JPEG blob, with quality retry loop if maxFileSize is set
   const qualities = [JPEG_QUALITY, ...RETRY_QUALITIES]
@@ -88,4 +92,74 @@ export async function compressImage(
   const previewUrl = URL.createObjectURL(blob)
 
   return { blob, base64, mediaType: 'image/jpeg', previewUrl }
+}
+
+const UNREADABLE_IMAGE_MESSAGE =
+  "Couldn't read this photo. Please try a JPG or PNG version."
+
+interface DecodedImage {
+  image: CanvasImageSource
+  width: number
+  height: number
+  release: () => void
+}
+
+/**
+ * Decodes an image file for drawing to canvas.
+ * Tries createImageBitmap first, then an <img> element. The <img> path covers
+ * formats like HEIC that some browsers render but cannot decode into a bitmap.
+ */
+async function decodeImage(file: File): Promise<DecodedImage> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    return {
+      image: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      release: () => bitmap.close(),
+    }
+  } catch {
+    // Fall through to <img> decode
+  }
+
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = url
+    await img.decode()
+    if (!img.naturalWidth || !img.naturalHeight) throw new Error('empty image')
+    return {
+      image: img,
+      width: img.naturalWidth,
+      height: img.naturalHeight,
+      release: () => URL.revokeObjectURL(url),
+    }
+  } catch {
+    URL.revokeObjectURL(url)
+  }
+
+  // Chrome and Firefox can't decode HEIC (iPhone photos AirDropped to a Mac).
+  // Decode with heic-to (libheif in a Web Worker), loaded only when needed.
+  // Full-size iPhone photos take roughly 20s in Chrome.
+  if (isHeic(file)) {
+    try {
+      const { heicTo } = await import('heic-to/next')
+      const bitmap = await heicTo({ blob: file, type: 'bitmap' })
+      return {
+        image: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        release: () => bitmap.close(),
+      }
+    } catch {
+      // Fall through to error
+    }
+  }
+
+  throw new Error(UNREADABLE_IMAGE_MESSAGE)
+}
+
+export function isHeic(file: File): boolean {
+  return /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name)
 }

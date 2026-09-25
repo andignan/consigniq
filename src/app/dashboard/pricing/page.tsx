@@ -38,26 +38,17 @@ export default function PriceLookupPage() {
   const isSolo = (contextUser?.accounts?.tier ?? 'shop') === 'solo'
 
   // Handle file from PhotoUploader
+  // Errors thrown here are shown inline by PhotoUploader
   const handlePhotoFile = useCallback(async (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      setError('Only JPG, PNG, and WebP images are supported')
-      return
+    const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
+    const newSlot: PhotoSlot = {
+      id: Math.random().toString(36).slice(2),
+      blob: compressed.blob,
+      base64: compressed.base64,
+      mediaType: compressed.mediaType,
+      previewUrl: compressed.previewUrl,
     }
-
-    try {
-      const compressed = await compressImage(file, { maxFileSize: 400 * 1024 })
-      const newSlot: PhotoSlot = {
-        id: Math.random().toString(36).slice(2),
-        blob: compressed.blob,
-        base64: compressed.base64,
-        mediaType: compressed.mediaType,
-        previewUrl: compressed.previewUrl,
-      }
-      setPhotos(prev => [...prev, newSlot])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process photo')
-    }
+    setPhotos(prev => [...prev, newSlot])
   }, [])
 
   async function analyzePhotos() {

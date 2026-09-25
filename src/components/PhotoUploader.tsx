@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
-import { Camera, X, ChevronUp, ChevronDown, Loader2, Sparkles } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Camera, X, ChevronUp, ChevronDown, Loader2, Sparkles, AlertCircle } from 'lucide-react'
+import { isHeic } from '@/lib/compress-image'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ export interface PhotoSlot {
 interface PhotoUploaderProps {
   photos: PhotoSlot[]
   onPhotosChange: (photos: PhotoSlot[]) => void
-  onFileSelected: (file: File) => void  // parent handles compression
+  onFileSelected: (file: File) => void | Promise<void>  // parent handles compression; throw to show an error
   onAnalyze: () => void
   analyzing?: boolean
   disabled?: boolean
@@ -40,8 +41,26 @@ export default function PhotoUploader({
   compact = false,
 }: PhotoUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [processing, setProcessing] = useState(false)
+  const [convertingHeic, setConvertingHeic] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+
+  async function processFile(file: File) {
+    setPhotoError(null)
+    setProcessing(true)
+    setConvertingHeic(isHeic(file))
+    try {
+      await onFileSelected(file)
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'Failed to process photo')
+    } finally {
+      setProcessing(false)
+      setConvertingHeic(false)
+    }
+  }
 
   function removePhoto(id: string) {
+    setPhotoError(null)
     const updated = photos.filter(p => p.id !== id)
     onPhotosChange(updated)
   }
@@ -66,7 +85,7 @@ export default function PhotoUploader({
   }
 
   function handleFileSelect() {
-    if (photos.length >= MAX_PHOTOS || disabled || analyzing) return
+    if (photos.length >= MAX_PHOTOS || disabled || analyzing || processing) return
     fileInputRef.current?.click()
   }
 
@@ -82,8 +101,8 @@ export default function PhotoUploader({
         className="hidden"
         onChange={e => {
           const file = e.target.files?.[0]
-          if (file) onFileSelected(file)
           if (fileInputRef.current) fileInputRef.current.value = ''
+          if (file) void processFile(file)
         }}
       />
 
@@ -168,19 +187,37 @@ export default function PhotoUploader({
           <button
             type="button"
             onClick={handleFileSelect}
-            className={`${slotSize} flex flex-col items-center justify-center gap-1 border-2 border-dashed border-brand-200 rounded-xl text-brand-400 hover:border-brand-300 hover:text-brand-500 transition-colors`}
+            disabled={processing}
+            className={`${slotSize} flex flex-col items-center justify-center gap-1 border-2 border-dashed border-brand-200 rounded-xl text-brand-400 hover:border-brand-300 hover:text-brand-500 transition-colors disabled:cursor-wait`}
           >
-            <Camera className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-            {!compact && <span className="text-[10px]">Add photo</span>}
+            {processing ? (
+              <Loader2 className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} animate-spin`} />
+            ) : (
+              <Camera className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
+            )}
+            {!compact && <span className="text-[10px]">{processing ? (convertingHeic ? 'Converting HEIC...' : 'Processing...') : 'Add photo'}</span>}
           </button>
         )}
       </div>
+
+      {convertingHeic && (
+        <p className="mt-2 text-xs text-gray-500">
+          Converting iPhone HEIC photo. This can take up to 30 seconds.
+        </p>
+      )}
+
+      {photoError && (
+        <p role="alert" className="mt-2 flex items-start gap-1.5 text-xs text-red-600">
+          <AlertCircle className="w-3.5 h-3.5 mt-px shrink-0" />
+          <span>{photoError}</span>
+        </p>
+      )}
 
       {/* Analyze button — always visible, disabled when no photos */}
       <button
         type="button"
         onClick={onAnalyze}
-        disabled={analyzing || disabled || photos.length === 0}
+        disabled={analyzing || disabled || processing || photos.length === 0}
         className={`mt-3 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
           photos.length === 0
             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
