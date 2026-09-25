@@ -411,7 +411,10 @@ function IntakeRow({
       })
 
       const res = await fetch('/api/pricing/identify', { method: 'POST', credentials: 'include', body: formData })
-      if (!res.ok) return
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? 'Photo identification failed')
+      }
       const { result } = await res.json()
       if (result.name) onChange(draft.id, 'name', result.name)
       if (result.category && ITEM_CATEGORIES.includes(result.category)) {
@@ -421,9 +424,8 @@ function IntakeRow({
         onChange(draft.id, 'condition', result.condition)
       }
       if (result.description) onChange(draft.id, 'description', result.description)
-    } catch {
-      // Identification failed silently — manager can still type manually
     } finally {
+      // Errors propagate to PhotoUploader, which shows them inline
       setIdentifying(false)
     }
   }

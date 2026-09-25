@@ -323,8 +323,9 @@ export default function PricingPage() {
       } : prev)
       setStage('loaded')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Photo identification failed')
+      // Rethrow so PhotoUploader shows the message inline
       setStage('loaded')
+      throw err
     }
   }
 

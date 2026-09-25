@@ -2,7 +2,7 @@
 // AI pricing engine using Claude
 import { NextRequest, NextResponse } from 'next/server'
 import { getCategoryConfig } from '@/lib/pricing/categories'
-import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
+import { getAnthropicClient, ANTHROPIC_MODEL, parseJsonResponse } from '@/lib/anthropic'
 import { createServerClient } from '@/lib/supabase/server'
 import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
 import type { CompResult } from '@/app/api/pricing/comps/route'
@@ -184,7 +184,7 @@ ${pricingGuidance}`
 
     let parsed: PriceSuggestion
     try {
-      parsed = JSON.parse(text)
+      parsed = parseJsonResponse<PriceSuggestion>(text)
     } catch {
       console.error('Failed to parse AI response:', text)
       return NextResponse.json(

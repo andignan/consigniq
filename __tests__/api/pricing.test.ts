@@ -187,7 +187,8 @@ describe('POST /api/pricing/identify', () => {
     })
     jest.mock('@/lib/anthropic', () => ({
       getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
     }))
 
     const { POST } = await import('@/app/api/pricing/identify/route')
@@ -215,7 +216,7 @@ describe('POST /api/pricing/identify', () => {
     expect(textBlock.text).not.toContain('Multiple photos')
   })
 
-  it('accepts multiple photos (photo + photo_1 + photo_2) and builds correct image blocks', async () => {
+  it('accepts multiple photos (photo + photo_1..3) without duplicating the primary', async () => {
     process.env.ANTHROPIC_API_KEY = 'test-key'
     jest.resetModules()
 
@@ -226,16 +227,19 @@ describe('POST /api/pricing/identify', () => {
     })
     jest.mock('@/lib/anthropic', () => ({
       getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
     }))
 
     const { POST } = await import('@/app/api/pricing/identify/route')
     const { NextRequest } = await import('next/server')
 
     const formData = new FormData()
+    // Clients send the primary as both 'photo' and 'photo_1'
     formData.append('photo', new Blob(['main-photo'], { type: 'image/jpeg' }), 'main.jpg')
-    formData.append('photo_1', new Blob(['angle-1'], { type: 'image/png' }), 'angle1.png')
-    formData.append('photo_2', new Blob(['angle-2'], { type: 'image/webp' }), 'angle2.webp')
+    formData.append('photo_1', new Blob(['main-photo'], { type: 'image/jpeg' }), 'main.jpg')
+    formData.append('photo_2', new Blob(['angle-1'], { type: 'image/png' }), 'angle1.png')
+    formData.append('photo_3', new Blob(['angle-2'], { type: 'image/webp' }), 'angle2.webp')
 
     const req = new NextRequest(new URL('http://localhost:3000/api/pricing/identify'), {
       method: 'POST',
@@ -244,7 +248,7 @@ describe('POST /api/pricing/identify', () => {
     const res = await POST(req)
     expect(res.status).toBe(200)
 
-    // Verify 3 image blocks were sent to Claude
+    // Verify 3 image blocks were sent to Claude (primary not duplicated)
     const callArgs = mockCreate.mock.calls[0][0]
     const userContent = callArgs.messages[0].content
     const imageBlocks = userContent.filter((b: { type: string }) => b.type === 'image')
@@ -326,7 +330,8 @@ describe('POST /api/pricing/suggest', () => {
     })
     jest.mock('@/lib/anthropic', () => ({
       getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
     }))
 
     const { POST } = await import('@/app/api/pricing/suggest/route')
@@ -378,7 +383,8 @@ describe('POST /api/pricing/suggest', () => {
     })
     jest.mock('@/lib/anthropic', () => ({
       getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
     }))
 
     const { POST } = await import('@/app/api/pricing/suggest/route')
@@ -427,7 +433,8 @@ describe('POST /api/pricing/suggest', () => {
     })
     jest.mock('@/lib/anthropic', () => ({
       getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-      ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
     }))
 
     const { POST } = await import('@/app/api/pricing/suggest/route')

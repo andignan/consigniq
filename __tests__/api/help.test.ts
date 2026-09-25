@@ -7,7 +7,7 @@ const mockCreate = jest.fn()
 
 jest.mock('@/lib/anthropic', () => ({
   getAnthropicClient: () => ({ messages: { create: mockCreate } }),
-  ANTHROPIC_MODEL: 'claude-sonnet-4-20250514',
+  ANTHROPIC_MODEL: 'claude-sonnet-5',
 }))
 
 import { POST } from '@/app/api/help/search/route'

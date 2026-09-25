@@ -21,7 +21,7 @@ interface PhotoUploaderProps {
   photos: PhotoSlot[]
   onPhotosChange: (photos: PhotoSlot[]) => void
   onFileSelected: (file: File) => void | Promise<void>  // parent handles compression; throw to show an error
-  onAnalyze: () => void
+  onAnalyze: () => void | Promise<void>  // throw to show an error
   analyzing?: boolean
   disabled?: boolean
   compact?: boolean
@@ -56,6 +56,15 @@ export default function PhotoUploader({
     } finally {
       setProcessing(false)
       setConvertingHeic(false)
+    }
+  }
+
+  async function handleAnalyze() {
+    setPhotoError(null)
+    try {
+      await onAnalyze()
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'Photo analysis failed')
     }
   }
 
@@ -216,7 +225,7 @@ export default function PhotoUploader({
       {/* Analyze button — always visible, disabled when no photos */}
       <button
         type="button"
-        onClick={onAnalyze}
+        onClick={handleAnalyze}
         disabled={analyzing || disabled || processing || photos.length === 0}
         className={`mt-3 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
           photos.length === 0

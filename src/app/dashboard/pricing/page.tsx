@@ -81,8 +81,9 @@ export default function PriceLookupPage() {
       setDescription(result.description)
       setStage('idle')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Photo identification failed')
+      // Rethrow so PhotoUploader shows the message inline
       setStage('idle')
+      throw err
     }
   }
 

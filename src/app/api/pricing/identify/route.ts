@@ -2,7 +2,7 @@
 // Photo-based item identification using Claude vision
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { getAnthropicClient, ANTHROPIC_MODEL } from '@/lib/anthropic'
+import { getAnthropicClient, ANTHROPIC_MODEL, parseJsonResponse } from '@/lib/anthropic'
 
 export interface IdentifyResult {
   name: string
@@ -32,15 +32,17 @@ export async function POST(request: NextRequest) {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
   const photoFiles: File[] = []
 
-  const mainPhoto = formData.get('photo') as File | null
-  if (mainPhoto && validTypes.includes(mainPhoto.type)) {
-    photoFiles.push(mainPhoto)
-  }
+  // Clients send the primary as both 'photo' and 'photo_1', so 'photo' is only
+  // used when no numbered photos are present (avoids sending it to Claude twice)
   for (let i = 1; i <= 3; i++) {
     const f = formData.get(`photo_${i}`) as File | null
     if (f && validTypes.includes(f.type)) {
       photoFiles.push(f)
     }
+  }
+  const mainPhoto = formData.get('photo') as File | null
+  if (photoFiles.length === 0 && mainPhoto && validTypes.includes(mainPhoto.type)) {
+    photoFiles.push(mainPhoto)
   }
 
   if (photoFiles.length === 0) {
@@ -103,7 +105,7 @@ Respond with ONLY a JSON object (no markdown, no code fences):
 
     let parsed: IdentifyResult
     try {
-      parsed = JSON.parse(text)
+      parsed = parseJsonResponse<IdentifyResult>(text)
     } catch {
       console.error('Failed to parse identify response:', text)
       return NextResponse.json(
