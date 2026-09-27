@@ -5,6 +5,7 @@ import { getCategoryConfig } from '@/lib/pricing/categories'
 import { getAnthropicClient, ANTHROPIC_MODEL, parseJsonResponse } from '@/lib/anthropic'
 import { createServerClient } from '@/lib/supabase/server'
 import { TIER_CONFIGS, type Tier } from '@/lib/tier-limits'
+import type { PricingVenue } from '@/types/database'
 import type { CompResult } from '@/app/api/pricing/comps/route'
 
 export interface PriceSuggestion {
@@ -39,8 +40,10 @@ export async function POST(request: NextRequest) {
     ? `\nRecent eBay sold comparables:\n${comps.map((c, i) => `${i + 1}. "${c.title}" — sold for $${c.price.toFixed(2)}${c.condition ? ` (${c.condition})` : ''}`).join('\n')}`
     : '\nNo comparable sales data available. Use your knowledge of typical resale values.'
 
-  // Detect tier for prompt customization — solo users are individual resellers, not shop owners
-  let detectedTier = 'shop'
+  // Detect tier + venue for prompt customization
+  // Solo users default to online resale (eBay/Poshmark) but can opt into brick-and-mortar pricing
+  let detectedTier: string = 'shop'
+  let detectedVenue: PricingVenue = 'online_resale'
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
@@ -63,13 +66,14 @@ export async function POST(request: NextRequest) {
     if (profile) {
       const { data: account } = await supabase
         .from('accounts')
-        .select('id, tier, ai_lookups_this_month, ai_lookups_reset_at, bonus_lookups, bonus_lookups_used')
+        .select('id, tier, pricing_venue, ai_lookups_this_month, ai_lookups_reset_at, bonus_lookups, bonus_lookups_used')
         .eq('id', profile.account_id)
         .single()
 
       if (account) {
         const tier = (account.tier || 'shop') as Tier
         detectedTier = tier
+        detectedVenue = (account.pricing_venue === 'brick_and_mortar' ? 'brick_and_mortar' : 'online_resale')
         const tierConfig = TIER_CONFIGS[tier]
 
         if (tierConfig.aiPricingLimit !== null) {
@@ -100,22 +104,35 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Build prompt — Solo users are individual resellers, Starter+ are consignment shops
+  // Build prompt based on tier + venue:
+  //  - Shop+ tier: consignment-store framing (unchanged)
+  //  - Solo tier + brick_and_mortar venue: shop-pricer framing (~30% below eBay sold)
+  //  - Solo tier + online_resale venue: resale framing (eBay/Poshmark, unchanged)
   const isSoloTier = detectedTier === 'solo'
-  const roleDesc = isSoloTier
-    ? 'You are a resale pricing expert. Price this item for resale on platforms like eBay, Poshmark, or Facebook Marketplace.'
-    : 'You are a consignment shop pricing expert. Price this item for a brick-and-mortar consignment store.'
+  const isShopVenue = isSoloTier && detectedVenue === 'brick_and_mortar'
 
-  const pricingGuidance = isSoloTier
-    ? `- Price for resale — suggest what a buyer would pay on eBay or similar platforms
+  let roleDesc: string
+  let pricingGuidance: string
+  if (!isSoloTier) {
+    roleDesc = 'You are a consignment shop pricing expert. Price this item for a brick-and-mortar consignment store.'
+    pricingGuidance = `- Price for a consignment store, not eBay (stores typically price 10-20% below eBay sold prices to account for no shipping and immediate sale)
+- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
+- The reasoning should be concise and helpful for the store owner
+- If comps suggest a wide range, lean toward the middle-low end for faster turnover`
+  } else if (isShopVenue) {
+    roleDesc = 'You are a consignment shop pricer estimating walk-in customer willingness to pay. Your buyer is a local shopper taking the item home today — no shipping, no waiting, limited buyer pool.'
+    pricingGuidance = `- Price ~30% below the median eBay sold comparable to reflect the brick-and-mortar context (no shipping, immediate cash-and-carry, smaller local buyer pool)
+- Lean toward the lower end of the range for faster floor turnover
+- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
+- The reasoning should be concise and helpful for the shop pricer, referencing the eBay comps when available`
+  } else {
+    roleDesc = 'You are a resale pricing expert. Price this item for resale on platforms like eBay, Poshmark, or Facebook Marketplace.'
+    pricingGuidance = `- Price for resale — suggest what a buyer would pay on eBay or similar platforms
 - Factor in condition, demand, and typical resale margins
 - Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
 - The reasoning should reference comparable sales and market demand
 - If comps suggest a wide range, lean toward competitive pricing for faster sale`
-    : `- Price for a consignment store, not eBay (stores typically price 10-20% below eBay sold prices to account for no shipping and immediate sale)
-- Round prices to clean numbers ($5 increments under $50, $10 increments under $200, $25 increments above $200)
-- The reasoning should be concise and helpful for the store owner
-- If comps suggest a wide range, lean toward the middle-low end for faster turnover`
+  }
 
   const prompt = `${roleDesc}
 

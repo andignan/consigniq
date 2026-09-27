@@ -22,6 +22,7 @@ export interface UserProfile {
     bonus_lookups?: number
     bonus_lookups_used?: number
     status?: string
+    pricing_venue?: 'online_resale' | 'brick_and_mortar'
   }
   locations?: { id: string; name: string }
 }

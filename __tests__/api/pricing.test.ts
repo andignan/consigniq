@@ -465,3 +465,122 @@ describe('POST /api/pricing/suggest', () => {
     expect(imageBlocks[0].source.data).toBe('bmV3cGhvdG8=')
   })
 })
+
+// Helper: extract the prompt text from a mocked Anthropic call. Suggest sends
+// either a plain string or [{image}, {text}] depending on whether photos were attached.
+function extractPromptText(mockCreate: jest.Mock): string {
+  const callArgs = mockCreate.mock.calls[0][0]
+  const content = callArgs.messages[0].content
+  if (typeof content === 'string') return content
+  const textBlock = content.find((b: { type: string }) => b.type === 'text')
+  return textBlock?.text ?? ''
+}
+
+describe('POST /api/pricing/suggest — venue branching', () => {
+  function setupMocks(opts: { tier: 'solo' | 'shop' | 'enterprise'; venue: 'online_resale' | 'brick_and_mortar' | null }) {
+    process.env.ANTHROPIC_API_KEY = 'test-key'
+    jest.resetModules()
+
+    jest.mock('@/lib/pricing/categories', () => ({
+      getCategoryConfig: () => ({
+        label: 'Other',
+        searchTerms: (name: string) => name,
+        priceGuidance: 'Test guidance',
+        typicalMargin: { low: 0.15, high: 0.45 },
+      }),
+    }))
+
+    // Override the shared mockSingle for this test — both .from('users').single()
+    // and .from('accounts').single() return overlapping shape, so one mock is enough.
+    mockSingle.mockResolvedValue({
+      data: {
+        account_id: 'acc1',
+        id: 'acc1',
+        tier: opts.tier,
+        pricing_venue: opts.venue,
+        ai_lookups_this_month: 0,
+        ai_lookups_reset_at: null,
+        bonus_lookups: 0,
+        bonus_lookups_used: 0,
+      },
+      error: null,
+    })
+
+    const mockCreate = jest.fn().mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify({ price: 30, low: 20, high: 40, reasoning: 'test' }) }],
+    })
+    jest.mock('@/lib/anthropic', () => ({
+      getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+      ANTHROPIC_MODEL: 'claude-sonnet-5',
+      parseJsonResponse: jest.requireActual('@/lib/anthropic').parseJsonResponse,
+    }))
+
+    return mockCreate
+  }
+
+  async function callSuggest() {
+    const { POST } = await import('@/app/api/pricing/suggest/route')
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest(new URL('http://localhost:3000/api/pricing/suggest'), {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Lamp', category: 'Kitchen & Home', condition: 'good', comps: [] }),
+    })
+    return POST(req)
+  }
+
+  it('Solo + brick_and_mortar venue uses consignment-shop pricer framing', async () => {
+    const mockCreate = setupMocks({ tier: 'solo', venue: 'brick_and_mortar' })
+    const res = await callSuggest()
+    expect(res.status).toBe(200)
+
+    const prompt = extractPromptText(mockCreate)
+    expect(prompt).toContain('consignment shop pricer')
+    expect(prompt).toContain('walk-in customer')
+    expect(prompt).toContain('30% below the median eBay sold')
+    expect(prompt).not.toContain('eBay, Poshmark, or Facebook Marketplace')
+  })
+
+  it('Solo + online_resale venue uses eBay/Poshmark framing (regression guard)', async () => {
+    const mockCreate = setupMocks({ tier: 'solo', venue: 'online_resale' })
+    const res = await callSuggest()
+    expect(res.status).toBe(200)
+
+    const prompt = extractPromptText(mockCreate)
+    expect(prompt).toContain('resale pricing expert')
+    expect(prompt).toContain('eBay, Poshmark, or Facebook Marketplace')
+    expect(prompt).not.toContain('30% below the median eBay sold')
+  })
+
+  it('Solo with null venue defaults to online_resale prompt', async () => {
+    const mockCreate = setupMocks({ tier: 'solo', venue: null })
+    const res = await callSuggest()
+    expect(res.status).toBe(200)
+
+    const prompt = extractPromptText(mockCreate)
+    expect(prompt).toContain('resale pricing expert')
+    expect(prompt).not.toContain('walk-in customer')
+  })
+
+  it('Shop tier ignores venue and uses existing consignment-store prompt', async () => {
+    const mockCreate = setupMocks({ tier: 'shop', venue: 'brick_and_mortar' })
+    const res = await callSuggest()
+    expect(res.status).toBe(200)
+
+    const prompt = extractPromptText(mockCreate)
+    expect(prompt).toContain('consignment shop pricing expert')
+    expect(prompt).toContain('10-20% below eBay sold prices')
+    // Shop prompt does NOT include the new walk-in framing
+    expect(prompt).not.toContain('walk-in customer')
+    expect(prompt).not.toContain('30% below the median eBay sold')
+  })
+
+  it('Enterprise tier ignores venue and uses existing consignment-store prompt', async () => {
+    const mockCreate = setupMocks({ tier: 'enterprise', venue: 'brick_and_mortar' })
+    const res = await callSuggest()
+    expect(res.status).toBe(200)
+
+    const prompt = extractPromptText(mockCreate)
+    expect(prompt).toContain('consignment shop pricing expert')
+    expect(prompt).not.toContain('walk-in customer')
+  })
+})

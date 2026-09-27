@@ -50,7 +50,7 @@ Three client factories:
 
 **Pricing:**
 - `/api/pricing/comps` — SerpApi eBay sold comps, client-side filters out new-condition results. Explicit `getUser()` auth check. No debug console.logs
-- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton. Tier-aware prompt: solo="resale pricing", shop+="consignment pricing"
+- `/api/pricing/suggest` — Claude AI pricing with optional photo (vision). Checks AI lookup limits. Uses `getAnthropicClient()` singleton. Tier+venue-aware prompt: shop+="consignment pricing"; solo="resale pricing" by default, or "brick-and-mortar shop pricer (~30% below eBay sold)" when `accounts.pricing_venue='brick_and_mortar'`
 - `/api/pricing/identify` — Claude vision item identification. Explicit `getUser()` auth check. Uses `getAnthropicClient()` singleton. All callers compress images client-side via `src/lib/compress-image.ts` (max 1200px, JPEG 0.8 quality)
 - `/api/pricing/cross-account` — Enterprise-only. Three-level match: exact→fuzzy→category fallback. ≥3 samples required. Optional Claude insight.
 
@@ -86,6 +86,7 @@ Three client factories:
 - `/api/trial/check-expiry` — POST cron. Auth via `Authorization: Bearer CRON_SECRET`. Excluded from middleware
 - `/api/settings/location` (GET+PATCH), `/api/settings/account` (GET+PATCH), `/api/settings/invite` (POST), `/api/settings/profile` (PATCH — update full_name)
 - `/api/settings/team/[userId]` — PATCH (change role), DELETE (remove member). Owner only. Cannot remove last owner or self
+- `/api/settings/pricing-venue` — PATCH `{ pricing_venue: 'online_resale' | 'brick_and_mortar' }`. Updates `accounts.pricing_venue` for the authenticated user's account. Drives Solo-tier AI pricing prompt (eBay/Poshmark vs brick-and-mortar consignment-shop framing)
 - `/api/consignors/[id]` — GET, PATCH (edit name/phone/email/notes with field allowlisting), DELETE (blocks if consignor has sold items)
 
 ### Contexts
@@ -293,7 +294,7 @@ Always audit actual column names before writing queries:
 - Items: `sold_date`, `donated_at`, `priced_at`, `intake_date`, `price`, `sold_price`, `current_markdown_pct`, `effective_price`, `paid_at` (timestamptz, nullable), `payout_note` (text, nullable)
 - Markdowns: `item_id`, `markdown_pct`, `original_price`, `new_price`, `applied_at`
 - Locations: `default_split_store`, `default_split_consignor`, `agreement_days`, `grace_days`, `markdown_enabled`
-- Accounts: `id`, `name`, `tier` (solo/shop/enterprise), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable), `is_system` (boolean, NOT NULL, default false)
+- Accounts: `id`, `name`, `tier` (solo/shop/enterprise), `stripe_customer_id`, `status`, `ai_lookups_this_month`, `ai_lookups_reset_at`, `account_type` (paid/trial/complimentary/cancelled_grace/cancelled_limited), `trial_ends_at` (timestamptz), `is_complimentary` (boolean), `complimentary_tier` (text), `bonus_lookups` (integer), `bonus_lookups_used` (integer), `deleted_at` (timestamptz, nullable), `deletion_reason` (text, nullable), `subscription_cancelled_at` (timestamptz, nullable), `subscription_period_end` (timestamptz, nullable), `cancelled_tier` (text, nullable), `is_system` (boolean, NOT NULL, default false), `pricing_venue` (text, NOT NULL, default 'online_resale', CHECK in ('online_resale','brick_and_mortar'))
 - Users: `id`, `account_id`, `location_id`, `email`, `full_name`, `role`, `is_superadmin` (deprecated — DB only, not read by code), `platform_role` (text, nullable: super_admin/support/finance)
 - Invitations: `id`, `account_id`, `email`, `role`, `token`, `created_at`, `expires_at`, `accepted_at`
 - Price_history: `id`, `account_id`, `category`, `condition`, `created_at`, `days_to_sell`, `description`, `item_id`, `location_id` (NOT NULL), `name`, `priced_at` (timestamptz, NOT NULL), `sold`, `sold_at` (timestamptz, nullable), `sold_price`. Note: `priced_at`/`sold_at` converted from numeric to timestamptz (migration `20260314050000`)
@@ -317,7 +318,7 @@ See `.env.example` for full list. Key services: Supabase, Anthropic, SerpApi, Re
 
 ## Testing
 
-**666 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
+**684 Jest tests passing.** 5 Playwright E2E specs. 42 manual test plans at `/docs/test-plans/`.
 
 ### Test Structure
 ```
@@ -410,6 +411,7 @@ E2E requires running dev server + seeded Supabase data. `TEST_USER_EMAIL`/`TEST_
 - `20260316020000` — platform roles: add `users.platform_role`, `accounts.is_system`, migrate data
 - `20260316030000` — tier rename: starter/standard → shop, pro → enterprise, update CHECK constraints and data
 - `20260317000000` — item_photos table, indexes, RLS. Storage bucket `item-photos` created manually
+- `20260517000000` — add `accounts.pricing_venue` (online_resale | brick_and_mortar) for Solo-tier venue-aware AI pricing prompt
 
 ## Security
 

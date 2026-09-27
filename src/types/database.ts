@@ -4,6 +4,7 @@
 
 export type Tier = 'solo' | 'shop' | 'enterprise'
 export type AccountStatus = 'active' | 'suspended' | 'cancelled'
+export type PricingVenue = 'online_resale' | 'brick_and_mortar'
 export type UserRole = 'owner' | 'staff'
 export type ItemCondition = 'new_in_box' | 'new_with_tags' | 'new_without_tags' | 'new' | 'like_new' | 'excellent' | 'very_good' | 'good' | 'fair' | 'poor'
 export type ItemStatus = 'pending' | 'priced' | 'sold' | 'donated' | 'returned'
@@ -18,6 +19,7 @@ export interface Account {
   tier: Tier
   stripe_customer_id: string | null
   status: AccountStatus
+  pricing_venue: PricingVenue
   created_at: string
 }
 

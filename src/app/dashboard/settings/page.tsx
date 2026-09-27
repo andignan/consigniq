@@ -1279,11 +1279,46 @@ function LocationsTab({
 }
 
 // ─── Profile Tab (Solo) ──────────────────────────────────
+type PricingVenue = 'online_resale' | 'brick_and_mortar'
+
 function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
   const [editName, setEditName] = useState(user?.full_name || '')
   const [saving, setSaving] = useState(false)
   const [profileMsg, setProfileMsg] = useState<string | null>(null)
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null)
+
+  const initialVenue: PricingVenue = user?.accounts?.pricing_venue === 'brick_and_mortar' ? 'brick_and_mortar' : 'online_resale'
+  const [venue, setVenue] = useState<PricingVenue>(initialVenue)
+  const [savedVenue, setSavedVenue] = useState<PricingVenue>(initialVenue)
+  const [venueSaving, setVenueSaving] = useState(false)
+  const [venueMsg, setVenueMsg] = useState<string | null>(null)
+
+  async function handleSaveVenue() {
+    if (venue === savedVenue || venueSaving) return
+    setVenueSaving(true)
+    setVenueMsg(null)
+    try {
+      const res = await fetch('/api/settings/pricing-venue', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pricing_venue: venue }),
+      })
+      if (res.ok) {
+        setSavedVenue(venue)
+        setVenueMsg('Pricing preferences updated')
+        setTimeout(() => setVenueMsg(null), 3000)
+      } else {
+        setVenueMsg('Failed to update preferences')
+        setTimeout(() => setVenueMsg(null), 3000)
+      }
+    } catch {
+      setVenueMsg('Failed to update preferences')
+      setTimeout(() => setVenueMsg(null), 3000)
+    } finally {
+      setVenueSaving(false)
+    }
+  }
 
   async function handleSaveName() {
     if (!editName.trim() || saving) return
@@ -1371,6 +1406,71 @@ function ProfileTab({ user }: { user: ReturnType<typeof useUser> }) {
             <p className="text-xs text-emerald-600 mt-1">{passwordMsg}</p>
           ) : (
             <p className="text-xs text-gray-400 mt-1">We&apos;ll send a password reset link to your email.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Pricing Preferences</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Where do you sell? AI suggestions are tuned to match the venue you price for.
+        </p>
+        <div className="space-y-3">
+          <label
+            className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+              venue === 'online_resale' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="pricing_venue"
+              value="online_resale"
+              checked={venue === 'online_resale'}
+              onChange={() => setVenue('online_resale')}
+              className="mt-0.5 text-brand-600 focus:ring-brand-500"
+            />
+            <div>
+              <div className="text-sm font-medium text-gray-900">I sell online</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                eBay, Poshmark, Facebook Marketplace, Mercari, etc. Prices target online buyer demand.
+              </div>
+            </div>
+          </label>
+          <label
+            className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+              venue === 'brick_and_mortar' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="pricing_venue"
+              value="brick_and_mortar"
+              checked={venue === 'brick_and_mortar'}
+              onChange={() => setVenue('brick_and_mortar')}
+              className="mt-0.5 text-brand-600 focus:ring-brand-500"
+            />
+            <div>
+              <div className="text-sm font-medium text-gray-900">I price for a brick-and-mortar shop</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                Local consignment, thrift, or resale storefront. Prices discount ~30% vs online sold comps to match walk-in shopper willingness to pay.
+              </div>
+            </div>
+          </label>
+        </div>
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            onClick={handleSaveVenue}
+            disabled={venueSaving || venue === savedVenue}
+            className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {venueSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save
+          </button>
+          {venueMsg && (
+            <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
+              <Check className="w-4 h-4" />
+              {venueMsg}
+            </span>
           )}
         </div>
       </div>
